@@ -7,4 +7,9 @@ channel = "stable-24_05"
 
 [[ports]]
 localPort = 3000
-externalPort = 3000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "static"
+build = ["sh", "-c", "rm -rf build/web && python3 -m zipfile -e Settliv-web.zip build/web"]
+publicDir = "build/web"
