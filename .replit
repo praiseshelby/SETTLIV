@@ -1,0 +1,10 @@
+run = "python3 -m http.server 3000 --directory build/web --bind 0.0.0.0"
+entrypoint = "build/web/index.html"
+modules = ["web"]
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
