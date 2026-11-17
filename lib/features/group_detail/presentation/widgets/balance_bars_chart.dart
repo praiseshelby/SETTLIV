@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/person.dart';
 
 class BalanceBarsChart extends StatefulWidget {
@@ -45,7 +46,6 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     // Find maximum absolute balance for scaling
     int maxAbsPaise = 1;
@@ -61,13 +61,10 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Container(
+        return GlassSurface(
+          level: GlassLevel.level2,
+          borderRadius: 24,
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: theme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.hairline),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -75,10 +72,10 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                 'Member balances',
                 style: AppTypography.sectionHeader.copyWith(
                   color: theme.ink,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               for (final entry in sortedEntries) ...[
                 Builder(builder: (context) {
                   final person = widget.people.firstWhere(
@@ -98,16 +95,10 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
 
                   final Color barColor = isZero
                       ? theme.tertiary.withValues(alpha: 0.3)
-                      : (isOwed
-                          ? (isDark
-                              ? AppColors.emeraldBright
-                              : AppColors.emerald)
-                          : (isDark
-                              ? AppColors.coralBright
-                              : AppColors.coral));
+                      : (isOwed ? AppColors.emerald : AppColors.coral);
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -123,7 +114,7 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                                 fontWeight: person.id == 'person_arjun'
                                     ? FontWeight.w700
                                     : FontWeight.w600,
-                                fontSize: 13.5,
+                                fontSize: 13,
                               ),
                             ),
                             Text(
@@ -147,15 +138,15 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                         const SizedBox(height: 6),
                         // Bi-directional bar centered at zero
                         SizedBox(
-                          height: 8,
+                          height: 6,
                           child: CustomPaint(
-                            size: const Size(double.infinity, 8),
+                            size: const Size(double.infinity, 6),
                             painter: _BalanceBarPainter(
                               ratio: ratio,
                               isOwed: isOwed,
                               isZero: isZero,
                               barColor: barColor,
-                              trackColor: theme.raised,
+                              trackColor: theme.raised.withValues(alpha: 0.6),
                               hairlineColor: theme.hairline,
                             ),
                           ),
@@ -207,7 +198,7 @@ class _BalanceBarPainter extends CustomPainter {
     // Draw center zero line
     final linePaint = Paint()
       ..color = hairlineColor
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 1.0;
     canvas.drawLine(Offset(midX, 0), Offset(midX, size.height), linePaint);
 
     if (isZero || ratio <= 0.0) return;

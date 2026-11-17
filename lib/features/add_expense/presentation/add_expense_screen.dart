@@ -7,14 +7,16 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/category_badge.dart';
 import '../../../core/widgets/coming_soon_tag.dart';
+import '../../../core/widgets/glass_chip.dart';
+import '../../../core/widgets/glass_segmented.dart';
+import '../../../core/widgets/glass_sheet_scaffold.dart';
+import '../../../core/widgets/glass_surface.dart';
+import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/member_chip.dart';
 import '../../../core/widgets/person_avatar.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/segmented_tabs.dart';
-import '../../../core/widgets/sheet_scaffold.dart';
-import '../../../core/widgets/text_action_button.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/models/group.dart';
@@ -59,7 +61,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   late Set<String> _selectedMemberIds;
   late SplitMode _splitMode;
 
-  // Custom shares for Exact and Percent modes: personId -> raw string input
+  // Custom shares for Exact and Percent modes
   final Map<String, TextEditingController> _exactControllers = {};
   final Map<String, TextEditingController> _percentControllers = {};
 
@@ -98,7 +100,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         });
       } else if (_splitMode == SplitMode.percent) {
         exp.shares.forEach((personId, paise) {
-          final pct = ((paise / exp.amount) * 100).round();
+          final pct = exp.amount > 0 ? (paise * 100) ~/ exp.amount : 0;
           _percentControllers[personId] =
               TextEditingController(text: pct.toString());
         });
@@ -110,48 +112,46 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _selectedGroupId = widget.preselectedGroupId ?? 'group_flatmates';
       _selectedDate = DateTime.now();
       _paidById = 'person_arjun';
-      _selectedMemberIds = {};
+      _selectedMemberIds = _selectedGroupId == 'group_flatmates'
+          ? {'person_arjun', 'person_meera', 'person_kabir'}
+          : {'person_arjun', 'person_nisha', 'person_rohan', 'person_tara'};
       _splitMode = SplitMode.equal;
+      _rebuildSplitControllers();
     }
 
     _amountFocusNode = FocusNode();
-
-    // Auto-focus quick tab input on open if on quick tab
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initMembersForGroup();
-      if (_selectedTab == 0 && widget.initialExpense == null) {
-        _quickFocusNode.requestFocus();
-      }
-    });
-  }
-
-  void _initMembersForGroup() {
-    final groups = ref.read(allGroupsProvider);
-    final currentGroup = groups.firstWhere(
-      (g) => g.id == _selectedGroupId,
-      orElse: () => groups.first,
-    );
-
-    if (widget.initialExpense == null ||
-        _selectedGroupId != widget.initialExpense!.groupId) {
-      setState(() {
-        _selectedMemberIds = currentGroup.memberIds.toSet();
-        _rebuildSplitControllers();
-      });
-    }
   }
 
   void _rebuildSplitControllers() {
     for (final memberId in _selectedMemberIds) {
       _exactControllers.putIfAbsent(
         memberId,
-        () => TextEditingController(text: ''),
+        () => TextEditingController(text: '0'),
       );
       _percentControllers.putIfAbsent(
         memberId,
-        () => TextEditingController(text: ''),
+        () => TextEditingController(
+          text: (_selectedMemberIds.isNotEmpty
+                  ? (100 ~/ _selectedMemberIds.length)
+                  : 0)
+              .toString(),
+        ),
       );
     }
+  }
+
+  void _initMembersForGroup() {
+    if (_selectedGroupId == 'group_flatmates') {
+      _selectedMemberIds = {'person_arjun', 'person_meera', 'person_kabir'};
+    } else {
+      _selectedMemberIds = {
+        'person_arjun',
+        'person_nisha',
+        'person_rohan',
+        'person_tara',
+      };
+    }
+    _rebuildSplitControllers();
   }
 
   @override
@@ -170,24 +170,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     super.dispose();
   }
 
-  void _switchToManualPrefilled(QuickParseResult parseResult) {
-    setState(() {
-      _selectedTab = 1;
-      if (parseResult.amountPaise != null) {
-        final r = parseResult.amountPaise! ~/ 100;
-        final f = parseResult.amountPaise! % 100;
-        _amountController.text =
-            f > 0 ? '$r.${f.toString().padLeft(2, '0')}' : r.toString();
-      }
-      _descriptionController.text = parseResult.description;
-      _selectedCategory = parseResult.category;
-      if (parseResult.inferredGroup != null) {
-        _selectedGroupId = parseResult.inferredGroup!.id;
-      }
-      _selectedMemberIds = parseResult.participants.map((p) => p.id).toSet();
-      _splitMode = SplitMode.equal;
-      _rebuildSplitControllers();
-    });
+  void _switchToManualPrefilled(QuickParseResult result) {
+    if (result.amountPaise != null) {
+      final rupeePart = result.amountPaise! ~/ 100;
+      final frac = result.amountPaise! % 100;
+      _amountController.text = frac > 0
+          ? '$rupeePart.${frac.toString().padLeft(2, '0')}'
+          : rupeePart.toString();
+    }
+    _descriptionController.text = result.description;
+    _selectedCategory = result.category;
+    if (result.inferredGroup != null) {
+      _selectedGroupId = result.inferredGroup!.id;
+    }
+    _selectedMemberIds = result.participants.map((p) => p.id).toSet();
+    _paidById = result.payerId ?? 'person_arjun';
+    _splitMode = SplitMode.equal;
+    _rebuildSplitControllers();
+
+    setState(() => _selectedTab = 1);
+    _amountFocusNode.requestFocus();
   }
 
   Future<void> _saveExpense(Expense expense) async {
@@ -196,8 +198,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _showSavedSuccess = true;
     });
 
-    // Morph button to emerald check for 600ms
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
     final repoNotifier = ref.read(appStateProvider.notifier);
@@ -235,43 +236,73 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
 
     return Scaffold(
-      backgroundColor: theme.canvas,
-      appBar: AppBar(
-        backgroundColor: theme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close_rounded, color: theme.ink),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          widget.initialExpense != null ? 'Edit expense' : 'Add expense',
-          style: AppTypography.titleLarge.copyWith(color: theme.ink),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: SegmentedTabs(
-                labels: const ['Quick', 'Manual'],
-                selectedIndex: _selectedTab,
-                onTabSelected: (idx) {
-                  setState(() => _selectedTab = idx);
-                  if (idx == 0) {
-                    _quickFocusNode.requestFocus();
-                  } else {
-                    _amountFocusNode.requestFocus();
-                  }
-                },
+      backgroundColor: Colors.transparent,
+      body: AuroraBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Top Bar: Glass circular close button + "New expense" title
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Close',
+                      child: GlassSurface(
+                        level: GlassLevel.level1,
+                        borderRadius: 999,
+                        padding: const EdgeInsets.all(8),
+                        onTap: () => context.pop(),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: theme.ink,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      widget.initialExpense != null
+                          ? 'Edit expense'
+                          : 'New expense',
+                      style: AppTypography.titleLarge.copyWith(
+                        color: theme.ink,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: _selectedTab == 0
-                  ? _buildQuickTab(people, groups)
-                  : _buildManualTab(people, groups, currentGroup),
-            ),
-          ],
+
+              // GlassSegmented: Quick | Manual
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: GlassSegmented<int>(
+                  values: const [0, 1],
+                  labels: const ['Quick', 'Manual'],
+                  selectedValue: _selectedTab,
+                  onValueChanged: (idx) {
+                    setState(() => _selectedTab = idx);
+                    if (idx == 0) {
+                      _quickFocusNode.requestFocus();
+                    } else {
+                      _amountFocusNode.requestFocus();
+                    }
+                  },
+                ),
+              ),
+
+              // Tab Body with Sticky Glass Bottom Bar
+              Expanded(
+                child: _selectedTab == 0
+                    ? _buildQuickTab(people, groups)
+                    : _buildManualTab(people, groups, currentGroup),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -283,6 +314,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   Widget _buildQuickTab(List<Person> people, List<Group> groups) {
     final theme = context.settliv;
+    final isDark = context.isDarkMode;
     final parser = QuickExpenseParser(
       availablePeople: people,
       availableGroups: groups,
@@ -294,77 +326,269 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       defaultGroupId: _selectedGroupId,
     );
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: theme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: _quickFocusNode.hasFocus
-                  ? AppColors.midnightNavy
-                  : theme.hairline,
-              width: 1.5,
-            ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            controller: _quickTextController,
-            focusNode: _quickFocusNode,
-            maxLines: 3,
-            minLines: 2,
-            style: AppTypography.body.copyWith(
-              color: theme.ink,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: InputDecoration(
-              hintText: 'e.g. dinner 800 with Meera and Kabir',
-              hintStyle: AppTypography.body.copyWith(
-                color: theme.tertiary,
-                fontSize: 16,
-              ),
-              border: InputBorder.none,
-              isDense: true,
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        const SizedBox(height: 16),
+    final bool hasValidExpense =
+        parseResult.isValid && parseResult.amountPaise != null;
 
-        // Live Draft Card
-        if (parseResult.isValid && parseResult.amountPaise != null) ...[
-          _buildLiveDraftCard(parseResult),
-        ] else if (parseResult.hint != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: theme.raised,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.hairline),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline_rounded,
-                  size: 18,
-                  color: AppColors.saffron,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    parseResult.hint!,
-                    style: AppTypography.caption.copyWith(
+    final String bottomCaption = hasValidExpense
+        ? 'Tap confirm to add to ${parseResult.inferredGroup?.name ?? "your group"}'
+        : 'Type an expense to continue';
+
+    final String ctaLabel = hasValidExpense
+        ? 'Confirm · ${CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true)} with ${parseResult.participants.length} people'
+        : 'Add expense';
+
+    return Stack(
+      children: [
+        // Scrollable content with bottom clearance padding (140px)
+        ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 150),
+          children: [
+            // Composer Card (Glass level 2, min height 140)
+            GlassSurface(
+              level: GlassLevel.level2,
+              borderRadius: 24,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'WHAT DID YOU SPEND ON?',
+                    style: AppTypography.sectionLabel.copyWith(
                       color: theme.secondary,
-                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.8,
+                      fontSize: 11,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 80),
+                    child: TextField(
+                      controller: _quickTextController,
+                      focusNode: _quickFocusNode,
+                      maxLines: 4,
+                      minLines: 2,
+                      style: AppTypography.titleLarge.copyWith(
+                        color: theme.ink,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        height: 1.35,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. dinner 800 with Meera and Kabir',
+                        hintStyle: AppTypography.titleLarge.copyWith(
+                          color: theme.tertiary.withValues(alpha: 0.6),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -0.3,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // "Try one of these" label + 4 example chips
+            Text(
+              'TRY ONE OF THESE',
+              style: AppTypography.sectionLabel.copyWith(
+                color: theme.secondary,
+                letterSpacing: 0.8,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  GlassChip(
+                    label: 'Dinner 800 with Meera and Kabir',
+                    onTap: () {
+                      _quickTextController.text =
+                          'dinner 800 with Meera and Kabir';
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  GlassChip(
+                    label: 'Rent 18,000',
+                    onTap: () {
+                      _quickTextController.text = 'Rent 18,000';
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  GlassChip(
+                    label: 'Cab 240 with Kabir',
+                    onTap: () {
+                      _quickTextController.text = 'Cab 240 with Kabir';
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  GlassChip(
+                    label: 'Groceries 1,250',
+                    onTap: () {
+                      _quickTextController.text = 'Groceries 1,250';
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Calm three-icon hint row
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0x14FFFFFF)
+                    : Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0x1AFFFFFF)
+                      : const Color(0x40FFFFFF),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome_rounded,
+                      color: AppColors.sapphire, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Amount, people and category are picked up automatically.',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.secondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Live Draft Card when parsed
+            if (hasValidExpense) ...[
+              _buildLiveDraftCard(parseResult),
+            ] else if (parseResult.hint != null) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.amberTint,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.amber.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 18,
+                      color: AppColors.amber,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        parseResult.hint!,
+                        style: AppTypography.caption.copyWith(
+                          color: isDark
+                              ? const Color(0xFFFFD580)
+                              : const Color(0xFF8F5D00),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+
+        // Sticky GLASS bottom bar
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: GlassSurface(
+            level: GlassLevel.level3,
+            borderRadius: 0,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  bottomCaption,
+                  style: AppTypography.caption.copyWith(
+                    color: hasValidExpense
+                        ? theme.secondary
+                        : AppColors.coral,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GradientPrimaryButton(
+                  label: _showSavedSuccess ? 'Saved!' : ctaLabel,
+                  isLoading: _isSaving && !_showSavedSuccess,
+                  icon: _showSavedSuccess
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 20)
+                      : null,
+                  onPressed: (!hasValidExpense || _isSaving)
+                      ? null
+                      : () {
+                          final int memberCount =
+                              parseResult.participants.length;
+                          final perPersonPaise =
+                              parseResult.amountPaise! ~/ memberCount;
+                          final Map<String, int> shares = {};
+                          int remaining = parseResult.amountPaise!;
+                          for (int i = 0; i < parseResult.participants.length; i++) {
+                            final p = parseResult.participants[i];
+                            if (i == parseResult.participants.length - 1) {
+                              shares[p.id] = remaining;
+                            } else {
+                              shares[p.id] = perPersonPaise;
+                              remaining -= perPersonPaise;
+                            }
+                          }
+
+                          final newExp = Expense(
+                            id: widget.initialExpense?.id ??
+                                'exp_${DateTime.now().millisecondsSinceEpoch}',
+                            groupId: parseResult.inferredGroup?.id ??
+                                _selectedGroupId,
+                            title: parseResult.description,
+                            category: parseResult.category,
+                            amount: parseResult.amountPaise!,
+                            date: DateTime.now(),
+                            paidBy: parseResult.payerId ?? 'person_arjun',
+                            splitMode: SplitMode.equal,
+                            shares: shares,
+                          );
+                          _saveExpense(newExp);
+                        },
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ],
     );
   }
@@ -374,26 +598,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final int memberCount = result.participants.length;
     final perPersonPaise = result.amountPaise! ~/ memberCount;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.hairline),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return GlassSurface(
+      level: GlassLevel.level2,
+      borderRadius: 24,
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CategoryBadge(category: result.category, size: 44),
+              CategoryTile(category: result.category, size: 44, iconSize: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -403,35 +617,42 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       result.description,
                       style: AppTypography.titleLarge.copyWith(
                         color: theme.ink,
-                        fontSize: 18,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       '${result.inferredGroup?.name ?? 'Group'} · Split equally',
                       style: AppTypography.caption.copyWith(
                         color: theme.secondary,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
               Text(
-                CurrencyFormatter.formatPaise(result.amountPaise!, absolute: true),
+                CurrencyFormatter.formatPaise(result.amountPaise!,
+                    absolute: true),
                 style: AppTypography.displayMoney.copyWith(
                   fontSize: 22,
+                  fontWeight: FontWeight.w700,
                   color: theme.ink,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 14),
+          Divider(height: 1, color: theme.hairline),
+          const SizedBox(height: 12),
           Text(
-            'Split with ($memberCount members · ~${CurrencyFormatter.formatPaise(perPersonPaise, absolute: true)} each):',
+            'Split with $memberCount people · ~${CurrencyFormatter.formatPaise(perPersonPaise, absolute: true)} each:',
             style: AppTypography.caption.copyWith(
               color: theme.secondary,
               fontWeight: FontWeight.w600,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 8),
@@ -446,53 +667,21 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
-          PrimaryButton(
-            label: _showSavedSuccess
-                ? 'Saved!'
-                : 'Confirm · ${CurrencyFormatter.formatPaise(result.amountPaise!, absolute: true)} split with $memberCount people',
-            variant: _showSavedSuccess
-                ? PrimaryButtonVariant.emeraldConfirm
-                : PrimaryButtonVariant.navy,
-            isLoading: _isSaving && !_showSavedSuccess,
-            leading: _showSavedSuccess
-                ? const Icon(Icons.check_circle_rounded, color: Colors.white)
-                : null,
-            onPressed: _isSaving
-                ? null
-                : () {
-                    final Map<String, int> shares = {};
-                    int remaining = result.amountPaise!;
-                    for (int i = 0; i < result.participants.length; i++) {
-                      final p = result.participants[i];
-                      if (i == result.participants.length - 1) {
-                        shares[p.id] = remaining;
-                      } else {
-                        shares[p.id] = perPersonPaise;
-                        remaining -= perPersonPaise;
-                      }
-                    }
-
-                    final newExp = Expense(
-                      id: widget.initialExpense?.id ??
-                          'exp_${DateTime.now().millisecondsSinceEpoch}',
-                      groupId: result.inferredGroup?.id ?? _selectedGroupId,
-                      title: result.description,
-                      category: result.category,
-                      amount: result.amountPaise!,
-                      date: DateTime.now(),
-                      paidBy: result.payerId ?? 'person_arjun',
-                      splitMode: SplitMode.equal,
-                      shares: shares,
-                    );
-                    _saveExpense(newExp);
-                  },
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Center(
-            child: TextActionButton(
-              label: 'Edit details in Manual',
+            child: TextButton.icon(
               onPressed: () => _switchToManualPrefilled(result),
+              icon: const Icon(Icons.tune_rounded,
+                  size: 16, color: AppColors.sapphire),
+              label: const Text(
+                'Edit details in Manual',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  color: AppColors.sapphire,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -512,7 +701,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final theme = context.settliv;
 
     // Parse current entered amount
-    final int? enteredPaise = CurrencyFormatter.parseToPaise(_amountController.text);
+    final int? enteredPaise =
+        CurrencyFormatter.parseToPaise(_amountController.text);
     final int amountPaise = enteredPaise ?? 0;
 
     // Validate shares based on split mode
@@ -520,7 +710,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     final String buttonLabel;
     if (widget.initialExpense != null) {
-      buttonLabel = 'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
+      buttonLabel =
+          'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
     } else {
       buttonLabel =
           'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · split with ${_selectedMemberIds.length} people';
@@ -531,420 +722,426 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       orElse: () => people.first,
     );
 
-    return Column(
+    return Stack(
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            children: [
-              // 1. Giant AmountField
-              Center(
-                child: SizedBox(
-                  width: 280,
-                  child: TextField(
-                    controller: _amountController,
-                    focusNode: _amountFocusNode,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                    ],
-                    textAlign: TextAlign.center,
-                    style: AppTypography.displayMoney.copyWith(
-                      color: theme.ink,
-                      fontSize: 44,
-                    ),
-                    decoration: InputDecoration(
-                      prefixText: '₹ ',
-                      prefixStyle: AppTypography.displayMoney.copyWith(
-                        color: theme.secondary,
-                        fontSize: 36,
-                      ),
-                      hintText: '0',
-                      hintStyle: AppTypography.displayMoney.copyWith(
-                        color: theme.tertiary.withValues(alpha: 0.5),
-                        fontSize: 44,
-                      ),
-                      border: InputBorder.none,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 2. Description field
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.hairline),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: TextField(
-                  controller: _descriptionController,
-                  style: AppTypography.bodyMedium.copyWith(color: theme.ink),
-                  decoration: InputDecoration(
-                    hintText: 'What was this expense for?',
-                    hintStyle: AppTypography.body.copyWith(color: theme.tertiary),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Category chip row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+        // Scrollable content with bottom clearance padding (160px)
+        ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 160),
+          children: [
+            // 1. Amount hero, centred: attached ₹ prefix with 56/700 number & dimmed 0
+            Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    for (final cat in ExpenseCategory.values) ...[
-                      _buildCategoryChip(cat),
-                      const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // 3. Group chips
-              Text(
-                'Group',
-                style: AppTypography.caption.copyWith(
-                  color: theme.secondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  for (final g in groups) ...[
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (_selectedGroupId != g.id) {
-                            setState(() {
-                              _selectedGroupId = g.id;
-                              _initMembersForGroup();
-                            });
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _selectedGroupId == g.id
-                                ? AppColors.midnightNavy
-                                : theme.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _selectedGroupId == g.id
-                                  ? Colors.transparent
-                                  : theme.hairline,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              g.name,
-                              style: AppTypography.chip.copyWith(
-                                color: _selectedGroupId == g.id
-                                    ? Colors.white
-                                    : theme.ink,
-                                fontWeight: _selectedGroupId == g.id
-                                    ? FontWeight.w700
-                                    : FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
+                    Text(
+                      '₹',
+                      style: AppTypography.titleLarge.copyWith(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: theme.secondary,
                       ),
                     ),
-                    if (g != groups.last) const SizedBox(width: 10),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // 4. Two compact row cards: Date & Paid by
-              Row(
-                children: [
-                  // Date Card
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _openDatePickerSheet(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: theme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: theme.hairline),
+                    const SizedBox(width: 4),
+                    IntrinsicWidth(
+                      child: TextField(
+                        controller: _amountController,
+                        focusNode: _amountFocusNode,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,2}')),
+                        ],
+                        style: AppTypography.heroMoney.copyWith(
+                          fontSize: 52,
+                          color: theme.ink,
+                          letterSpacing: -1.5,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Date',
-                              style: AppTypography.caption.copyWith(
-                                color: theme.secondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormatter.formatShort(_selectedDate),
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: theme.ink,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        decoration: InputDecoration(
+                          hintText: '0',
+                          hintStyle: AppTypography.heroMoney.copyWith(
+                            fontSize: 52,
+                            color: theme.tertiary.withValues(alpha: 0.35),
+                            letterSpacing: -1.5,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
+                        onChanged: (_) => setState(() {}),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 2. Description as single glass input
+            GlassSurface(
+              level: GlassLevel.level1,
+              borderRadius: 18,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _descriptionController,
+                style: AppTypography.bodyMedium.copyWith(color: theme.ink),
+                decoration: InputDecoration(
+                  hintText: 'What was this expense for?',
+                  hintStyle:
+                      AppTypography.body.copyWith(color: theme.tertiary),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // Categories: 4x2 grid of CategoryTiles with 11px labels (no clipping!)
+            Text(
+              'CATEGORY',
+              style: AppTypography.sectionLabel.copyWith(
+                color: theme.secondary,
+                letterSpacing: 0.8,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildCategoryGrid(),
+            const SizedBox(height: 20),
+
+            // 3. Compact Group selector + Date & Paid by tiles
+            Text(
+              'GROUP',
+              style: AppTypography.sectionLabel.copyWith(
+                color: theme.secondary,
+                letterSpacing: 0.8,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GlassSegmented<String>(
+              values: groups.map((g) => g.id).toList(),
+              labels: groups.map((g) => g.name).toList(),
+              selectedValue: _selectedGroupId,
+              onValueChanged: (newId) {
+                if (_selectedGroupId != newId) {
+                  setState(() {
+                    _selectedGroupId = newId;
+                    _initMembersForGroup();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 14),
+
+            // Date & Paid by Row
+            Row(
+              children: [
+                // Date Tile
+                Expanded(
+                  child: GlassSurface(
+                    level: GlassLevel.level1,
+                    borderRadius: 16,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    onTap: () => _openDatePickerSheet(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DATE',
+                          style: AppTypography.sectionLabel.copyWith(
+                            color: theme.secondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormatter.formatShort(_selectedDate),
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: theme.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Paid by Card
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _openPaidBySheet(people, currentGroup),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: theme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: theme.hairline),
+                ),
+                const SizedBox(width: 10),
+                // Paid By Tile
+                Expanded(
+                  child: GlassSurface(
+                    level: GlassLevel.level1,
+                    borderRadius: 16,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    onTap: () => _openPaidBySheet(people, currentGroup),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PAID BY',
+                          style: AppTypography.sectionLabel.copyWith(
+                            color: theme.secondary,
+                            fontSize: 10,
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 4),
+                        Row(
                           children: [
-                            Text(
-                              'Paid by',
-                              style: AppTypography.caption.copyWith(
-                                color: theme.secondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                PersonAvatar(person: payer, size: 20),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    payer.id == 'person_arjun' ? 'You' : payer.name,
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      color: theme.ink,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                            PersonAvatar(person: payer, size: 20),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                payer.id == 'person_arjun'
+                                    ? 'You'
+                                    : payer.name,
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: theme.ink,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
 
-              // 5. "Split with" section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Split with: ${_selectedMemberIds.length} members',
-                    style: AppTypography.sectionHeader.copyWith(
-                      color: theme.ink,
-                      fontSize: 15,
-                    ),
+            // "Split between" header with quiet "Clear" / "All" toggle
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'SPLIT BETWEEN (${_selectedMemberIds.length} PEOPLE)',
+                  style: AppTypography.sectionLabel.copyWith(
+                    color: theme.secondary,
+                    letterSpacing: 0.8,
+                    fontSize: 11,
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_selectedMemberIds.length == currentGroup.memberIds.length) {
-                          _selectedMemberIds = {'person_arjun'};
-                        } else {
-                          _selectedMemberIds = currentGroup.memberIds.toSet();
-                        }
-                        _rebuildSplitControllers();
-                      });
-                    },
+                ),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      if (_selectedMemberIds.length ==
+                          currentGroup.memberIds.length) {
+                        _selectedMemberIds = {'person_arjun'};
+                      } else {
+                        _selectedMemberIds = currentGroup.memberIds.toSet();
+                      }
+                      _rebuildSplitControllers();
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
                     child: Text(
                       _selectedMemberIds.length == currentGroup.memberIds.length
-                          ? 'Select none'
-                          : 'Select all',
+                          ? 'Clear'
+                          : 'All',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.cobaltGlow,
+                        color: AppColors.sapphire,
                         fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final memberId in currentGroup.memberIds) ...[
-                    Builder(builder: (context) {
-                      final p = people.firstWhere((m) => m.id == memberId);
-                      final isSelected = _selectedMemberIds.contains(memberId);
-                      return MemberChip(
-                        person: p,
-                        isSelected: isSelected,
-                        onSelected: (val) {
-                          setState(() {
-                            if (val) {
-                              _selectedMemberIds.add(memberId);
-                            } else {
-                              if (_selectedMemberIds.length > 1) {
-                                _selectedMemberIds.remove(memberId);
-                              }
-                            }
-                            _rebuildSplitControllers();
-                          });
-                        },
-                      );
-                    }),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // 6. Split mode selector: Equal / Exact / Percent
-              SegmentedTabs(
-                labels: const ['Equal', 'Exact', 'Percent'],
-                selectedIndex: _splitMode.index,
-                onTabSelected: (idx) {
-                  setState(() => _splitMode = SplitMode.values[idx]);
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Per-person split inputs / breakdown
-              _buildSplitModeContent(people, amountPaise),
-
-              const SizedBox(height: 20),
-              // Scan a receipt coming soon tag
-              Center(
-                child: ComingSoonTag(
-                  label: 'Scan a receipt · full app',
-                  featureDescription:
-                      'OCR receipt scanning automatically extracts items, tax, tip and assigns them to flatmates.',
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final memberId in currentGroup.memberIds) ...[
+                  Builder(builder: (context) {
+                    final p = people.firstWhere((m) => m.id == memberId);
+                    final isSelected = _selectedMemberIds.contains(memberId);
+                    return MemberChip(
+                      person: p,
+                      isSelected: isSelected,
+                      onSelected: (val) {
+                        setState(() {
+                          if (val) {
+                            _selectedMemberIds.add(memberId);
+                          } else {
+                            if (_selectedMemberIds.length > 1) {
+                              _selectedMemberIds.remove(memberId);
+                            }
+                          }
+                          _rebuildSplitControllers();
+                        });
+                      },
+                    );
+                  }),
+                ],
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Equal / Exact / Percent Segmented Control
+            GlassSegmented<int>(
+              values: const [0, 1, 2],
+              labels: const ['Equal', 'Exact', 'Percent'],
+              selectedValue: _splitMode.index,
+              onValueChanged: (idx) {
+                setState(() => _splitMode = SplitMode.values[idx]);
+              },
+            ),
+            const SizedBox(height: 14),
+
+            // Live per-person list in a glass card beneath
+            _buildSplitModeContent(people, amountPaise),
+            const SizedBox(height: 20),
+
+            // Receipt scanning ComingSoonTag
+            const Center(
+              child: ComingSoonTag(
+                label: 'Scan receipt · full app',
+                featureDescription:
+                    'Automated OCR scans receipt items, calculates GST/tip, and splits shares among flatmates.',
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
 
-        // 7. Sticky bottom action bar
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-          decoration: BoxDecoration(
-            color: theme.surface,
-            border: Border(top: BorderSide(color: theme.hairline)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (validation.errorMessage != null) ...[
-                Text(
-                  validation.errorMessage!,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.coral,
-                    fontWeight: FontWeight.w600,
+        // Sticky GLASS bottom bar
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: GlassSurface(
+            level: GlassLevel.level3,
+            borderRadius: 0,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (validation.errorMessage != null) ...[
+                  Text(
+                    validation.errorMessage!,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.coral,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                ],
+                GradientPrimaryButton(
+                  label: _showSavedSuccess ? 'Saved!' : buttonLabel,
+                  isLoading: _isSaving && !_showSavedSuccess,
+                  icon: _showSavedSuccess
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 20)
+                      : null,
+                  onPressed: (validation.isValid && !_isSaving)
+                      ? () {
+                          final shares = _computeFinalShares(amountPaise);
+                          final newExp = Expense(
+                            id: widget.initialExpense?.id ??
+                                'exp_${DateTime.now().millisecondsSinceEpoch}',
+                            groupId: _selectedGroupId,
+                            title: _descriptionController.text.trim().isEmpty
+                                ? _selectedCategory.label
+                                : _descriptionController.text.trim(),
+                            category: _selectedCategory,
+                            amount: amountPaise,
+                            date: _selectedDate,
+                            paidBy: _paidById,
+                            splitMode: _splitMode,
+                            shares: shares,
+                          );
+                          _saveExpense(newExp);
+                        }
+                      : null,
                 ),
-                const SizedBox(height: 8),
               ],
-              PrimaryButton(
-                label: _showSavedSuccess ? 'Saved!' : buttonLabel,
-                variant: _showSavedSuccess
-                    ? PrimaryButtonVariant.emeraldConfirm
-                    : PrimaryButtonVariant.navy,
-                isLoading: _isSaving && !_showSavedSuccess,
-                leading: _showSavedSuccess
-                    ? const Icon(Icons.check_circle_rounded, color: Colors.white)
-                    : null,
-                onPressed: (validation.isValid && !_isSaving)
-                    ? () {
-                        final shares = _computeFinalShares(amountPaise);
-                        final newExp = Expense(
-                          id: widget.initialExpense?.id ??
-                              'exp_${DateTime.now().millisecondsSinceEpoch}',
-                          groupId: _selectedGroupId,
-                          title: _descriptionController.text.trim().isEmpty
-                              ? _selectedCategory.label
-                              : _descriptionController.text.trim(),
-                          category: _selectedCategory,
-                          amount: amountPaise,
-                          date: _selectedDate,
-                          paidBy: _paidById,
-                          splitMode: _splitMode,
-                          shares: shares,
-                        );
-                        _saveExpense(newExp);
-                      }
-                    : null,
-              ),
-            ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCategoryChip(ExpenseCategory category) {
+  Widget _buildCategoryGrid() {
     final theme = context.settliv;
-    final isSelected = _selectedCategory == category;
+    final categories = ExpenseCategory.values;
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: category.label,
-      child: InkWell(
-        onTap: () => setState(() => _selectedCategory = category),
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.midnightNavy : theme.raised,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? Colors.transparent : theme.hairline,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+    return GlassSurface(
+      level: GlassLevel.level1,
+      borderRadius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Column(
+        children: [
+          // Row 1: Food, Rent, Travel, Stay
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              CategoryBadge(
-                category: category,
-                size: 26,
-                iconSize: 14,
-                borderRadius: 8,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                category.label,
-                style: AppTypography.chip.copyWith(
-                  color: isSelected ? Colors.white : theme.ink,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                ),
-              ),
+              for (int i = 0; i < 4; i++)
+                _buildCategoryGridItem(categories[i], theme),
             ],
           ),
+          const SizedBox(height: 12),
+          // Row 2: Groceries, Bills, Fun, Other
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              for (int i = 4; i < 8; i++)
+                _buildCategoryGridItem(categories[i], theme),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryGridItem(ExpenseCategory cat, SettlivThemeExtension theme) {
+    final isSelected = _selectedCategory == cat;
+
+    return InkWell(
+      onTap: () => setState(() => _selectedCategory = cat),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.sapphireGradient.colors.first.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected
+              ? Border.all(color: AppColors.sapphire, width: 1.5)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CategoryTile(
+              category: cat,
+              size: 38,
+              iconSize: 18,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              cat.label,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? theme.ink : theme.secondary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -956,13 +1153,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (_splitMode == SplitMode.equal) {
       final int count = _selectedMemberIds.length;
       final int perPersonPaise = count > 0 ? totalPaise ~/ count : 0;
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.raised,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.hairline),
-        ),
+      return GlassSurface(
+        level: GlassLevel.level1,
+        borderRadius: 18,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -992,26 +1186,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       }
       final remainingPaise = totalPaise - assignedPaise;
 
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.hairline),
-        ),
+      return GlassSurface(
+        level: GlassLevel.level1,
+        borderRadius: 20,
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Assign amounts in ₹',
-                  style: AppTypography.caption.copyWith(color: theme.secondary),
+                  'EXACT AMOUNTS IN ₹',
+                  style: AppTypography.sectionLabel.copyWith(
+                    color: theme.secondary,
+                    fontSize: 11,
+                  ),
                 ),
                 Text(
                   remainingPaise == 0
-                      ? 'All assigned'
-                      : '${CurrencyFormatter.formatPaise(remainingPaise.abs(), absolute: true)} ${remainingPaise > 0 ? "left" : "over"}',
+                      ? '₹0 left to assign'
+                      : '${CurrencyFormatter.formatPaise(remainingPaise.abs(), absolute: true)} ${remainingPaise > 0 ? "left to assign" : "over assigned"}',
                   style: AppTypography.caption.copyWith(
                     color: remainingPaise == 0
                         ? AppColors.emerald
@@ -1035,16 +1229,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       Expanded(
                         child: Text(
                           p.name,
-                          style: AppTypography.bodyMedium.copyWith(color: theme.ink),
+                          style: AppTypography.bodyMedium
+                              .copyWith(color: theme.ink),
                         ),
                       ),
                       SizedBox(
-                        width: 100,
+                        width: 110,
                         height: 40,
                         child: TextField(
                           controller: controller,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           textAlign: TextAlign.right,
                           style: AppTypography.bodyMedium.copyWith(
                             color: theme.ink,
@@ -1082,24 +1277,25 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       totalPct += int.tryParse(text) ?? 0;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.hairline),
-      ),
+    return GlassSurface(
+      level: GlassLevel.level1,
+      borderRadius: 20,
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Assign % shares',
-                style: AppTypography.caption.copyWith(color: theme.secondary),
+                'PERCENTAGE SHARES',
+                style: AppTypography.sectionLabel.copyWith(
+                  color: theme.secondary,
+                  fontSize: 11,
+                ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: totalPct == 100
                       ? AppColors.emeraldTint
@@ -1107,12 +1303,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$totalPct% of 100%',
+                  totalPct == 100
+                      ? '100% assigned'
+                      : '${100 - totalPct}% left to assign',
                   style: AppTypography.caption.copyWith(
                     color: totalPct == 100
                         ? AppColors.emerald
                         : AppColors.coral,
                     fontWeight: FontWeight.w700,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -1138,11 +1337,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         children: [
                           Text(
                             p.name,
-                            style: AppTypography.bodyMedium.copyWith(color: theme.ink),
+                            style: AppTypography.bodyMedium
+                                .copyWith(color: theme.ink),
                           ),
                           Text(
-                            CurrencyFormatter.formatPaise(approxPaise, absolute: true),
-                            style: AppTypography.caption.copyWith(color: theme.secondary),
+                            CurrencyFormatter.formatPaise(approxPaise,
+                                absolute: true),
+                            style: AppTypography.caption
+                                .copyWith(color: theme.secondary),
                           ),
                         ],
                       ),
@@ -1189,20 +1391,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   ({bool isValid, String? errorMessage}) _validateManualSplit(int totalPaise) {
     if (totalPaise <= 0) {
-      return (isValid: false, errorMessage: 'Add an amount');
+      return (isValid: false, errorMessage: 'Add an amount to continue');
     }
     if (_selectedMemberIds.isEmpty) {
-      return (isValid: false, errorMessage: 'Select at least one person to split with');
+      return (
+        isValid: false,
+        errorMessage: 'Select at least one person to split with'
+      );
     }
 
     if (_splitMode == SplitMode.exact) {
       int assigned = 0;
       for (final id in _selectedMemberIds) {
-        assigned += CurrencyFormatter.parseToPaise(_exactControllers[id]?.text ?? '') ?? 0;
+        assigned +=
+            CurrencyFormatter.parseToPaise(_exactControllers[id]?.text ?? '') ??
+                0;
       }
       final diff = totalPaise - assigned;
       if (diff != 0) {
-        final formatted = CurrencyFormatter.formatPaise(diff.abs(), absolute: true);
+        final formatted =
+            CurrencyFormatter.formatPaise(diff.abs(), absolute: true);
         return (
           isValid: false,
           errorMessage: diff > 0 ? '$formatted left to assign' : '$formatted over assigned'
@@ -1249,7 +1457,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     } else if (_splitMode == SplitMode.exact) {
       for (final id in _selectedMemberIds) {
         result[id] =
-            CurrencyFormatter.parseToPaise(_exactControllers[id]?.text ?? '') ?? 0;
+            CurrencyFormatter.parseToPaise(_exactControllers[id]?.text ?? '') ??
+                0;
       }
     } else if (_splitMode == SplitMode.percent) {
       int remaining = totalPaise;
@@ -1271,7 +1480,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Date and Paid By Pickers
+  // Date and Paid By Pickers (GlassSheetScaffold)
   // ---------------------------------------------------------------------------
 
   void _openDatePickerSheet() {
@@ -1281,81 +1490,74 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       (i) => DateTime(now.year, now.month, now.day).subtract(Duration(days: i)),
     );
 
-    SheetScaffold.show(
+    GlassSheetScaffold.show(
       context: context,
-      isScrollControlled: false,
-      builder: (ctx) {
-        final theme = ctx.settliv;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final d in dates) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    DateFormatter.formatDayHeader(d),
-                    style: AppTypography.bodyMedium.copyWith(color: theme.ink),
-                  ),
-                  subtitle: Text(
-                    DateFormatter.formatFull(d),
-                    style: AppTypography.caption.copyWith(color: theme.secondary),
-                  ),
-                  trailing: d.day == _selectedDate.day &&
-                          d.month == _selectedDate.month &&
-                          d.year == _selectedDate.year
-                      ? const Icon(Icons.check_rounded, color: AppColors.emerald)
-                      : null,
-                  onTap: () {
-                    setState(() => _selectedDate = d);
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-                if (d != dates.last) const Divider(height: 1),
-              ],
-            ],
-          ),
-        );
-      },
+      title: 'Select Date',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final d in dates) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                DateFormatter.formatDayHeader(d),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: context.settliv.ink),
+              ),
+              subtitle: Text(
+                DateFormatter.formatFull(d),
+                style: AppTypography.caption
+                    .copyWith(color: context.settliv.secondary),
+              ),
+              trailing: d.day == _selectedDate.day &&
+                      d.month == _selectedDate.month &&
+                      d.year == _selectedDate.year
+                  ? const Icon(Icons.check_rounded, color: AppColors.emerald)
+                  : null,
+              onTap: () {
+                setState(() => _selectedDate = d);
+                Navigator.of(context).pop();
+              },
+            ),
+            if (d != dates.last) Divider(height: 1, color: context.settliv.hairline),
+          ],
+        ],
+      ),
     );
   }
 
   void _openPaidBySheet(List<Person> people, Group group) {
-    final groupMembers = people.where((p) => group.memberIds.contains(p.id)).toList();
+    final groupMembers =
+        people.where((p) => group.memberIds.contains(p.id)).toList();
 
-    SheetScaffold.show(
+    GlassSheetScaffold.show(
       context: context,
-      isScrollControlled: false,
-      builder: (ctx) {
-        final theme = ctx.settliv;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final m in groupMembers) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: PersonAvatar(person: m, size: 36),
-                  title: Text(
-                    m.id == 'person_arjun' ? 'You (${m.name})' : m.name,
-                    style: AppTypography.bodyMedium.copyWith(color: theme.ink),
-                  ),
-                  trailing: m.id == _paidById
-                      ? const Icon(Icons.check_rounded, color: AppColors.emerald)
-                      : null,
-                  onTap: () {
-                    setState(() => _paidById = m.id);
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-                if (m != groupMembers.last) const Divider(height: 1),
-              ],
-            ],
-          ),
-        );
-      },
+      title: 'Paid By',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final m in groupMembers) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: PersonAvatar(person: m, size: 36),
+              title: Text(
+                m.id == 'person_arjun' ? 'You (${m.name})' : m.name,
+                style: AppTypography.bodyMedium
+                    .copyWith(color: context.settliv.ink),
+              ),
+              trailing: m.id == _paidById
+                  ? const Icon(Icons.check_rounded, color: AppColors.emerald)
+                  : null,
+              onTap: () {
+                setState(() => _paidById = m.id);
+                Navigator.of(context).pop();
+              },
+            ),
+            if (m != groupMembers.last)
+              Divider(height: 1, color: context.settliv.hairline),
+          ],
+        ],
+      ),
     );
   }
 }

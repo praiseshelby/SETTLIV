@@ -5,8 +5,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/coming_soon_tag.dart';
+import '../../../../core/widgets/glass_sheet_scaffold.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
-import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../data/models/person.dart';
 
 class UserProfileSheet extends ConsumerWidget {
@@ -15,10 +16,10 @@ class UserProfileSheet extends ConsumerWidget {
   const UserProfileSheet({super.key, required this.user});
 
   static void show(BuildContext context, Person user) {
-    SheetScaffold.show(
+    GlassSheetScaffold.show(
       context: context,
-      isScrollControlled: false,
-      builder: (ctx) => UserProfileSheet(user: user),
+      title: 'Profile & Settings',
+      child: UserProfileSheet(user: user),
     );
   }
 
@@ -27,17 +28,21 @@ class UserProfileSheet extends ConsumerWidget {
     final theme = context.settliv;
     final currentThemeMode = ref.watch(themeModeProvider);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // User profile tile in a glass card
+        GlassSurface(
+          level: GlassLevel.level1,
+          padding: const EdgeInsets.all(16),
+          borderRadius: 20,
+          child: Row(
             children: [
               PersonAvatar(
                 person: user,
                 size: 52,
+                showRing: true,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -46,91 +51,114 @@ class UserProfileSheet extends ConsumerWidget {
                   children: [
                     Text(
                       user.name,
-                      style: AppTypography.titleLarge.copyWith(color: theme.ink),
+                      style: AppTypography.titleLarge.copyWith(
+                        color: theme.ink,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Primary account',
-                      style: AppTypography.caption.copyWith(color: theme.secondary),
+                      'Primary account · UPI verified',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.secondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Appearance',
-            style: AppTypography.caption.copyWith(
-              color: theme.secondary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+        ),
+        const SizedBox(height: 24),
+
+        // Appearance section
+        Text(
+          'APPEARANCE',
+          style: AppTypography.sectionLabel.copyWith(
+            color: theme.secondary,
+            letterSpacing: 0.8,
+            fontSize: 12,
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: theme.raised,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.hairline),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _buildThemeOption(
+              context: context,
+              label: 'Light',
+              icon: Icons.light_mode_rounded,
+              isSelected: currentThemeMode == ThemeMode.light,
+              onTap: () => ref
+                  .read(themeModeProvider.notifier)
+                  .setThemeMode(ThemeMode.light),
             ),
-            child: Row(
-              children: [
-                _buildThemeOption(
-                  context: context,
-                  label: 'System',
-                  icon: Icons.brightness_auto_rounded,
-                  isSelected: currentThemeMode == ThemeMode.system,
-                  onTap: () => ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(ThemeMode.system),
-                ),
-                _buildThemeOption(
-                  context: context,
-                  label: 'Light',
-                  icon: Icons.light_mode_rounded,
-                  isSelected: currentThemeMode == ThemeMode.light,
-                  onTap: () => ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(ThemeMode.light),
-                ),
-                _buildThemeOption(
-                  context: context,
-                  label: 'Dark',
-                  icon: Icons.dark_mode_rounded,
-                  isSelected: currentThemeMode == ThemeMode.dark,
-                  onTap: () => ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(ThemeMode.dark),
-                ),
-              ],
+            const SizedBox(width: 8),
+            _buildThemeOption(
+              context: context,
+              label: 'Dark',
+              icon: Icons.dark_mode_rounded,
+              isSelected: currentThemeMode == ThemeMode.dark,
+              onTap: () => ref
+                  .read(themeModeProvider.notifier)
+                  .setThemeMode(ThemeMode.dark),
             ),
-          ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          Row(
+            const SizedBox(width: 8),
+            _buildThemeOption(
+              context: context,
+              label: 'System',
+              icon: Icons.brightness_auto_rounded,
+              isSelected: currentThemeMode == ThemeMode.system,
+              onTap: () => ref
+                  .read(themeModeProvider.notifier)
+                  .setThemeMode(ThemeMode.system),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Cloud sync & backup item
+        GlassSurface(
+          level: GlassLevel.level1,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          borderRadius: 18,
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sync & Backup',
-                    style: AppTypography.bodyMedium.copyWith(color: theme.ink),
-                  ),
-                  Text(
-                    'Cloud storage & family export',
-                    style: AppTypography.caption.copyWith(color: theme.secondary),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cloud Sync & Backup',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: theme.ink,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Automated Google Drive & WhatsApp backup',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.secondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const ComingSoonTag(label: 'Back up & more · full app'),
+              const SizedBox(width: 8),
+              const ComingSoonTag(
+                label: 'Full app',
+                featureDescription:
+                    'Automated cloud synchronization and export features will be available in the full release.',
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -142,7 +170,6 @@ class UserProfileSheet extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     return Expanded(
       child: GestureDetector(
@@ -150,12 +177,32 @@ class UserProfileSheet extends ConsumerWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
+            gradient: isSelected ? AppColors.sapphireGradient : null,
             color: isSelected
-                ? (isDark ? const Color(0xFF263760) : AppColors.midnightNavy)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+                ? null
+                : (context.isDarkMode
+                    ? const Color(0x1AFFFFFF)
+                    : const Color(0x66FFFFFF)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.sapphireStart
+                  : (context.isDarkMode
+                      ? const Color(0x26FFFFFF)
+                      : const Color(0x4DFFFFFF)),
+              width: 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.sapphireEnd.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -168,10 +215,10 @@ class UserProfileSheet extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: AppTypography.chip.copyWith(
-                  color: isSelected ? Colors.white : theme.secondary,
+                style: AppTypography.caption.copyWith(
+                  color: isSelected ? Colors.white : theme.ink,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 12.5,
+                  fontSize: 13,
                 ),
               ),
             ],

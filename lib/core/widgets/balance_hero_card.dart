@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
+import 'glass_surface.dart';
 
 class BalanceHeroCard extends StatefulWidget {
   final int netPaise;
@@ -21,262 +23,297 @@ class BalanceHeroCard extends StatefulWidget {
 }
 
 class _BalanceHeroCardState extends State<BalanceHeroCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  int _lastPaise = 0;
+    with TickerProviderStateMixin {
+  late AnimationController _countUpController;
+  late Animation<double> _countUpAnimation;
+
+  late AnimationController _sheenController;
+  late Animation<double> _sheenAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _countUpController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 900),
     );
-    _animation = Tween<double>(
-      begin: 0,
-      end: widget.netPaise.toDouble(),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _controller.forward();
-    _lastPaise = widget.netPaise;
+    _countUpAnimation = CurvedAnimation(
+      parent: _countUpController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _sheenController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _sheenAnimation = CurvedAnimation(
+      parent: _sheenController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _countUpController.forward();
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) _sheenController.forward();
+    });
   }
 
   @override
   void didUpdateWidget(covariant BalanceHeroCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.netPaise != widget.netPaise) {
-      _animation = Tween<double>(
-        begin: _lastPaise.toDouble(),
-        end: widget.netPaise.toDouble(),
-      ).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-      _lastPaise = widget.netPaise;
-      _controller.forward(from: 0);
+      _countUpController.forward(from: 0.0);
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _countUpController.dispose();
+    _sheenController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.settliv;
     final isDark = context.isDarkMode;
 
-    final String stateWord;
+    final String subLine;
     if (widget.netPaise > 0) {
-      stateWord = 'You are owed in total';
+      subLine = "Overall, you're owed";
     } else if (widget.netPaise < 0) {
-      stateWord = 'You owe in total';
+      subLine = "Overall, you owe";
     } else {
-      stateWord = 'All balances settled';
+      subLine = "All settled up";
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF142144),
-                  const Color(0xFF192955),
-                  const Color(0xFF101934),
-                ]
-              : [
-                  AppColors.midnightNavy,
-                  AppColors.navy600,
-                  const Color(0xFF111D3C),
-                ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.midnightNavy.withValues(alpha: isDark ? 0.4 : 0.22),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-            spreadRadius: -4,
-          ),
-        ],
-      ),
+    final int total = widget.totalOwedToUserPaise + widget.totalUserOwesPaise;
+    final double owedRatio = total > 0
+        ? (widget.totalOwedToUserPaise / total).clamp(0.05, 0.95)
+        : 0.5;
+
+    return GlassSurface(
+      level: GlassLevel.level3,
+      borderRadius: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       child: Stack(
+        clipBehavior: Clip.antiAlias,
         children: [
-          // Subtle corner glow bloom (teal/emerald)
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.teal.withValues(alpha: 0.18),
-                    AppColors.emerald.withValues(alpha: 0.0),
-                  ],
+          // Content
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Label
+              Text(
+                'YOUR BALANCE',
+                style: AppTypography.sectionLabel.copyWith(
+                  color: theme.secondary,
+                  letterSpacing: 1.0,
+                  fontSize: 12,
                 ),
               ),
-            ),
-          ),
-          // Inner hairline highlight border
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-                width: 1.0,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Net balance',
-                      style: AppTypography.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          stateWord,
-                          style: AppTypography.caption.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                AnimatedBuilder(
-                  animation: _animation,
-                  builder: (context, child) {
-                    final int animatedPaise = _animation.value.round();
-                    final formatted = CurrencyFormatter.formatPaise(
+              const SizedBox(height: 8),
+
+              // 2. 52/700 count-up number
+              AnimatedBuilder(
+                animation: _countUpAnimation,
+                builder: (context, _) {
+                  final animatedPaise =
+                      (widget.netPaise * _countUpAnimation.value).round();
+                  return Text(
+                    CurrencyFormatter.formatPaise(
                       animatedPaise,
-                      absolute: true,
-                    );
-                    return Text(
-                      formatted,
-                      style: AppTypography.displayMoney.copyWith(
-                        color: Colors.white,
-                      ),
-                    );
-                  },
+                      showSign: widget.netPaise != 0,
+                      absolute: false,
+                    ),
+                    style: AppTypography.heroMoney.copyWith(
+                      color: widget.netPaise > 0
+                          ? AppColors.emerald
+                          : (widget.netPaise < 0 ? AppColors.coral : theme.ink),
+                      letterSpacing: -1.8,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 2),
+
+              // 3. Sub line
+              Text(
+                subLine,
+                style: AppTypography.body.copyWith(
+                  color: theme.secondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 18),
-                // Stat chips row
-                Row(
-                  children: [
-                    // Owed to you (emerald chip)
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.emerald.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.emeraldBright.withValues(alpha: 0.25),
-                            width: 1,
+              ),
+              const SizedBox(height: 20),
+
+              // 4. Slim two-segment proportional split bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: SizedBox(
+                  height: 6,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        flex: (owedRatio * 100).round(),
+                        child: Container(
+                          color: AppColors.emerald,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        flex: ((1.0 - owedRatio) * 100).round(),
+                        child: Container(
+                          color: AppColors.coral,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // 5. Two stat columns with colour dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Owed to you
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.emerald,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Owed to you',
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text.rich(
+                            TextSpan(
+                              text: 'Owed to you ',
                               style: AppTypography.caption.copyWith(
-                                color: AppColors.emeraldBright,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                color: theme.secondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
                               ),
+                              children: [
+                                TextSpan(
+                                  text: CurrencyFormatter.formatPaise(
+                                    widget.totalOwedToUserPaise,
+                                    absolute: true,
+                                  ),
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              CurrencyFormatter.formatPaise(
-                                widget.totalOwedToUserPaise,
-                                absolute: true,
-                              ),
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // You owe (coral chip)
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.coral.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.coralBright.withValues(alpha: 0.25),
-                            width: 1,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'You owe',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.coralBright,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              CurrencyFormatter.formatPaise(
-                                widget.totalUserOwesPaise,
-                                absolute: true,
-                              ),
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(width: 8),
+                  // You owe
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.coral,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text.rich(
+                            TextSpan(
+                              text: 'You owe ',
+                              style: AppTypography.caption.copyWith(
+                                color: theme.secondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: CurrencyFormatter.formatPaise(
+                                    widget.totalUserOwesPaise,
+                                    absolute: true,
+                                  ),
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Sheen sweep on load
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _sheenAnimation,
+                builder: (context, _) {
+                  if (_sheenAnimation.value <= 0.0 ||
+                      _sheenAnimation.value >= 1.0) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double left =
+                          (constraints.maxWidth + 120) * _sheenAnimation.value -
+                              120;
+                      return Transform.translate(
+                        offset: Offset(left, 0),
+                        child: Container(
+                          width: 80,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.0),
+                                Colors.white.withValues(
+                                    alpha: isDark ? 0.08 : 0.25),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
+                              transform: const GradientRotation(math.pi / 4),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

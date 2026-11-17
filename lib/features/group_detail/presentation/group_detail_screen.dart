@@ -6,15 +6,17 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/avatar_stack.dart';
 import '../../../core/widgets/balance_pill.dart';
 import '../../../core/widgets/coming_soon_tag.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
+import '../../../core/widgets/glass_segmented.dart';
+import '../../../core/widgets/glass_surface.dart';
+import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/group_cover_art.dart';
 import '../../../core/widgets/person_avatar.dart';
-import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/segmented_tabs.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/group.dart';
@@ -79,36 +81,38 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
 
     // Designed "Group not found" state
     if (group == null) {
-      return Scaffold(
-        backgroundColor: theme.canvas,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.search_off_rounded,
-                  size: 56,
-                  color: AppColors.coral,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Group not found',
-                  style: AppTypography.titleLarge.copyWith(color: theme.ink),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'The group you requested does not exist or has been removed.',
-                  style: AppTypography.body.copyWith(color: theme.secondary),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  label: 'Back to Home',
-                  onPressed: () => context.go('/'),
-                ),
-              ],
+      return AuroraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.search_off_rounded,
+                    size: 56,
+                    color: AppColors.coral,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Group not found',
+                    style: AppTypography.titleLarge.copyWith(color: theme.ink),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'The group you requested does not exist or has been removed.',
+                    style: AppTypography.body.copyWith(color: theme.secondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  GradientPrimaryButton(
+                    label: 'Back to Home',
+                    onPressed: () => context.go('/'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -122,288 +126,333 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final groupMembers =
         allPeople.where((p) => group.memberIds.contains(p.id)).toList();
 
-    return Scaffold(
-      backgroundColor: theme.canvas,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // Collapsing SliverAppBar
-              SliverAppBar(
-                expandedHeight: 200,
-                pinned: true,
-                elevation: 0,
-                backgroundColor: theme.surface,
-                leading: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black.withValues(alpha: 0.35),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white, size: 20),
-                      onPressed: () => context.pop(),
+    return AuroraBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // Collapsing SliverAppBar
+                SliverAppBar(
+                  expandedHeight: 200,
+                  pinned: true,
+                  elevation: 0,
+                  backgroundColor: theme.canvas.withValues(alpha: 0.85),
+                  leading: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Center(
+                      child: Semantics(
+                        button: true,
+                        label: 'Back to Home',
+                        child: InkWell(
+                          onTap: () => context.pop(),
+                          borderRadius: BorderRadius.circular(999),
+                          child: GlassSurface(
+                            level: GlassLevel.level1,
+                            borderRadius: 999,
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.arrow_back_rounded,
+                              color: theme.ink,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                title: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  opacity: _isCollapsed ? 1.0 : 0.0,
-                  child: Text(
-                    group.name,
-                    style: AppTypography.titleLarge
-                        .copyWith(color: theme.ink, fontSize: 18),
-                  ),
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      GroupCoverArt(
-                        coverType: group.coverType,
-                        borderRadius: 0,
-                        heroTag: 'group-cover-${group.id}',
-                        height: 200,
+                  title: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: _isCollapsed ? 1.0 : 0.0,
+                    child: Text(
+                      group.name,
+                      style: AppTypography.titleLarge.copyWith(
+                        color: theme.ink,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
-                      // Scrim overlay
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.65),
+                    ),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        GroupCoverArt(
+                          group: group,
+                          coverType: group.coverType,
+                          borderRadius: 0,
+                          heroTag: 'group-cover-${group.id}',
+                          height: 200,
+                        ),
+                        // Gradient scrim overlay
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.65),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 20,
+                          bottom: 16,
+                          right: 20,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.22),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      group.type == GroupType.home
+                                          ? 'Home group'
+                                          : 'Trip',
+                                      style: AppTypography.caption.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      group.name,
+                                      style: AppTypography.titleLarge.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  AvatarStack(
+                                    people: groupMembers,
+                                    size: 28,
+                                    overlap: 8,
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 20,
-                        bottom: 16,
-                        right: 20,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.22),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    group.type == GroupType.home
-                                        ? 'Home group'
-                                        : 'Trip',
-                                    style: AppTypography.caption.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    group.name,
-                                    style: AppTypography.titleLarge.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                AvatarStack(
-                                  people: groupMembers,
-                                  size: 28,
-                                  overlap: 8,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Group Header Summary Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(child: BalancePill(paise: userNetPaise)),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${groupMembers.length} members',
-                            style: AppTypography.caption.copyWith(
-                              color: theme.secondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Trip Progress Bar (Trip groups only)
-                      if (group.type == GroupType.trip) ...[
-                        const SizedBox(height: 14),
-                        Builder(builder: (context) {
-                          final progress = _calculateTripProgress(group);
-                          final double ratio = progress.totalDays > 0
-                              ? progress.currentDay / progress.totalDays
-                              : 1.0;
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: theme.hairline),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Day ${progress.currentDay} of ${progress.totalDays} · ${group.name}',
-                                      style: AppTypography.bodyMedium.copyWith(
-                                        color: theme.ink,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(ratio * 100).round()}%',
-                                      style: AppTypography.caption.copyWith(
-                                        color: AppColors.saffron,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: SizedBox(
-                                    height: 6,
-                                    child: LinearProgressIndicator(
-                                      value: ratio,
-                                      backgroundColor: theme.raised,
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                        AppColors.saffron,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
                       ],
-                      const SizedBox(height: 12),
-                      // Two quiet ComingSoonTag chips: Nudge reminders & Invite link
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: const [
-                          ComingSoonTag(
-                            label: 'Nudge reminders',
-                            featureDescription:
-                                'Send polite WhatsApp or push reminders for pending debts.',
-                          ),
-                          ComingSoonTag(
-                            label: 'Invite link',
-                            featureDescription:
-                                'Share a join link via WhatsApp with other roommates or trip buddies.',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // SegmentedTabs: Expenses / Balances
-                      SegmentedTabs(
-                        labels: const ['Expenses', 'Balances'],
-                        selectedIndex: _selectedTabIndex,
-                        onTabSelected: (idx) =>
-                            setState(() => _selectedTabIndex = idx),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Content: Expenses tab OR Balances tab
-              if (_selectedTabIndex == 0) ...[
-                _buildExpensesTab(expenses, repo),
-              ] else ...[
-                _buildBalancesTab(summary, groupMembers, repo, currentUserId),
-              ],
+                // Group Header Summary Section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Glass Summary Card
+                        GlassSurface(
+                          level: GlassLevel.level2,
+                          borderRadius: 22,
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(child: BalancePill(paise: userNetPaise)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${groupMembers.length} members',
+                                    style: AppTypography.caption.copyWith(
+                                      color: theme.secondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Trip Progress Bar (Trip groups only)
+                              if (group.type == GroupType.trip) ...[
+                                const SizedBox(height: 14),
+                                Builder(builder: (context) {
+                                  final progress = _calculateTripProgress(group);
+                                  final double ratio = progress.totalDays > 0
+                                      ? progress.currentDay / progress.totalDays
+                                      : 1.0;
 
-              // Bottom padding for sticky buttons
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 110),
-              ),
-            ],
-          ),
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Day ${progress.currentDay} of ${progress.totalDays} · ${group.name}',
+                                            style: AppTypography.bodyMedium.copyWith(
+                                              color: theme.ink,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${(ratio * 100).round()}%',
+                                            style: AppTypography.caption.copyWith(
+                                              color: AppColors.amber,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(999),
+                                        child: SizedBox(
+                                          height: 5,
+                                          child: LinearProgressIndicator(
+                                            value: ratio,
+                                            backgroundColor:
+                                                theme.raised.withValues(alpha: 0.6),
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<Color>(
+                                              AppColors.amber,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ],
+                              const SizedBox(height: 12),
+                              // Quiet feature chips: Nudge reminders & Invite link
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: const [
+                                  ComingSoonTag(
+                                    label: 'Nudge reminders',
+                                    featureDescription:
+                                        'Send polite WhatsApp or push reminders for pending debts.',
+                                  ),
+                                  ComingSoonTag(
+                                    label: 'Invite link',
+                                    featureDescription:
+                                        'Share a join link via WhatsApp with other roommates or trip buddies.',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
 
-          // Sticky Bottom Actions: Floating Add Button & Settle up Primary Button
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Floating Add Button positioned cleanly above bottom bar
-                FloatingActionButton.small(
-                  heroTag: 'group_add_expense_btn',
-                  backgroundColor: AppColors.midnightNavy,
-                  elevation: 6,
-                  shape: const CircleBorder(),
-                  onPressed: () {
-                    context.push(
-                      '/add',
-                      extra: {'preselectedGroupId': widget.groupId},
-                    );
-                  },
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                        const SizedBox(height: 16),
+                        // GlassSegmented: Expenses / Balances
+                        GlassSegmented<int>(
+                          values: const [0, 1],
+                          labels: const ['Expenses', 'Balances'],
+                          selectedValue: _selectedTabIndex,
+                          onValueChanged: (idx) =>
+                              setState(() => _selectedTabIndex = idx),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                // Full-width Settle Up primary button
-                PrimaryButton(
-                  label: userNetPaise < 0
-                      ? 'Settle up · ${CurrencyFormatter.formatPaise(userNetPaise.abs(), absolute: true)}'
-                      : 'Settle up',
-                  onPressed: () {
-                    SettleSheet.show(
-                      context: context,
-                      group: group,
-                    );
-                  },
+
+                // Content: Expenses tab OR Balances tab
+                if (_selectedTabIndex == 0) ...[
+                  _buildExpensesTab(expenses, repo),
+                ] else ...[
+                  _buildBalancesTab(summary, groupMembers, repo, currentUserId),
+                ],
+
+                // Bottom padding for sticky bottom actions
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 120),
                 ),
               ],
             ),
-          ),
-        ],
+
+            // Sticky Bottom Actions: Floating Add Button & Settle up CTA
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 20,
+              child: GlassSurface(
+                level: GlassLevel.level3,
+                borderRadius: 28,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    // Frosted circular add button
+                    Semantics(
+                      button: true,
+                      label: 'Add expense to group',
+                      child: InkWell(
+                        onTap: () {
+                          context.push(
+                            '/add',
+                            extra: {'preselectedGroupId': widget.groupId},
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: theme.surface.withValues(alpha: 0.8),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: theme.hairline),
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: theme.ink,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Settle up Primary Button
+                    Expanded(
+                      child: GradientPrimaryButton(
+                        label: userNetPaise < 0
+                            ? 'Settle up · ${CurrencyFormatter.formatPaise(userNetPaise.abs(), absolute: true)}'
+                            : 'Settle up',
+                        icon: const Icon(Icons.flash_on_rounded,
+                            color: Colors.white, size: 20),
+                        onPressed: () {
+                          SettleSheet.show(
+                            context: context,
+                            group: group,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -419,15 +468,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           child: EmptyState(
             title: 'No expenses in this group',
             subtitle: 'Add the first bill, grocery run or ticket to split.',
-            action: ElevatedButton.icon(
+            action: GradientPrimaryButton(
+              label: 'Add group expense',
+              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
               onPressed: () {
                 context.push(
                   '/add',
                   extra: {'preselectedGroupId': widget.groupId},
                 );
               },
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add group expense'),
             ),
           ),
         ),
@@ -447,49 +496,70 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final entry = grouped.entries.elementAt(index);
+            final dayExpenses = entry.value;
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 6),
+                  padding: const EdgeInsets.only(top: 14, bottom: 8, left: 4),
                   child: Text(
-                    entry.key,
-                    style: AppTypography.caption.copyWith(
+                    entry.key.toUpperCase(),
+                    style: AppTypography.sectionHeader.copyWith(
                       color: context.settliv.secondary,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 11.5,
                     ),
                   ),
                 ),
-                for (final exp in entry.value) ...[
-                  ExpenseTile(
-                    expense: exp,
-                    payer: repo.getPerson(exp.paidBy),
-                    group: repo.getGroup(exp.groupId),
-                    currentUserId: repo.currentUserId,
-                    onTap: () {
-                      ExpenseDetailSheet.show(
-                        context: context,
-                        expense: exp,
-                        onEdit: () {
-                          context.push(
-                            '/add',
-                            extra: {'initialExpense': exp},
-                          );
-                        },
-                        onDelete: () {
-                          final repoNotifier =
-                              ref.read(appStateProvider.notifier);
-                          repoNotifier.deleteExpense(exp.id);
-                          UndoSnackbar.show(
-                            context: context,
-                            message: 'Deleted ${exp.title}',
-                            onUndo: () => repoNotifier.restoreExpense(exp.id),
-                          );
-                        },
-                      );
-                    },
+                GlassSurface(
+                  level: GlassLevel.level2,
+                  borderRadius: 24,
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < dayExpenses.length; i++) ...[
+                        ExpenseTile(
+                          expense: dayExpenses[i],
+                          payer: repo.getPerson(dayExpenses[i].paidBy),
+                          group: repo.getGroup(dayExpenses[i].groupId),
+                          currentUserId: repo.currentUserId,
+                          onTap: () {
+                            ExpenseDetailSheet.show(
+                              context: context,
+                              expense: dayExpenses[i],
+                              onEdit: () {
+                                context.push(
+                                  '/add',
+                                  extra: {'initialExpense': dayExpenses[i]},
+                                );
+                              },
+                              onDelete: () {
+                                final repoNotifier =
+                                    ref.read(appStateProvider.notifier);
+                                repoNotifier.deleteExpense(dayExpenses[i].id);
+                                UndoSnackbar.show(
+                                  context: context,
+                                  message: 'Deleted ${dayExpenses[i].title}',
+                                  onUndo: () => repoNotifier
+                                      .restoreExpense(dayExpenses[i].id),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        if (i < dayExpenses.length - 1)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 68, right: 16),
+                            child: Divider(
+                              height: 1,
+                              thickness: 0.5,
+                              color: context.settliv.hairline,
+                            ),
+                          ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             );
           },
@@ -515,13 +585,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       sliver: SliverList(
         delegate: SliverChildListDelegate([
           // 1. "Who pays whom" section
-          Container(
+          GlassSurface(
+            level: GlassLevel.level2,
+            borderRadius: 24,
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.hairline),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -529,7 +596,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   'Who pays whom',
                   style: AppTypography.sectionHeader.copyWith(
                     color: theme.ink,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -560,8 +627,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                             const SizedBox(width: 6),
                             const Icon(
                               Icons.arrow_forward_rounded,
-                              size: 16,
-                              color: AppColors.teal,
+                              size: 15,
+                              color: AppColors.sapphire,
                             ),
                             const SizedBox(width: 6),
                             PersonAvatar(person: toPerson, size: 28),
@@ -575,6 +642,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                     style: AppTypography.bodyMedium.copyWith(
                                       color: theme.ink,
                                       fontSize: 13,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -597,28 +665,35 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                             ),
                             // Trailing action
                             if (isUserOwing) ...[
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.midnightNavy,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 6),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                onPressed: () {
-                                  SettleSheet.show(
-                                    context: context,
-                                    group: repo.getGroup(widget.groupId)!,
-                                    preselectedDebt: debt,
-                                  );
-                                },
-                                child: const Text('Settle',
-                                    style: TextStyle(
+                              Semantics(
+                                button: true,
+                                label: 'Settle debt',
+                                child: InkWell(
+                                  onTap: () {
+                                    SettleSheet.show(
+                                      context: context,
+                                      group: repo.getGroup(widget.groupId)!,
+                                      preselectedDebt: debt,
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 6),
+                                    decoration: const BoxDecoration(
+                                      gradient: AppColors.sapphireGradient,
+                                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                                    ),
+                                    child: const Text(
+                                      'Settle',
+                                      style: TextStyle(
+                                        color: Colors.white,
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700)),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ] else if (isUserOwed) ...[
                               ComingSoonTag(

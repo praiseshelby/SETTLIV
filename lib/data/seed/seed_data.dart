@@ -88,7 +88,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_1',
       groupId: 'group_flatmates',
-      title: 'October Apartment Rent',
+      title: 'Apartment rent',
       category: ExpenseCategory.rent,
       amount: 2700000, // ₹27,000
       date: now.subtract(const Duration(days: 16)),
@@ -103,7 +103,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_2',
       groupId: 'group_flatmates',
-      title: 'Airtel Xstream Fiber Wi-Fi',
+      title: 'Wi-Fi fiber',
       category: ExpenseCategory.bills,
       amount: 119900, // ₹1,199
       date: now.subtract(const Duration(days: 14)),
@@ -118,7 +118,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_3',
       groupId: 'group_flatmates',
-      title: 'House Cook & Maid Salary',
+      title: 'Cook & maid',
       category: ExpenseCategory.bills,
       amount: 450000, // ₹4,500
       date: now.subtract(const Duration(days: 13)),
@@ -133,7 +133,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_4',
       groupId: 'group_flatmates',
-      title: 'BigBasket Weekly Groceries',
+      title: 'Supermarket run',
       category: ExpenseCategory.groceries,
       amount: 246000, // ₹2,460
       date: now.subtract(const Duration(days: 11)),
@@ -148,7 +148,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_5',
       groupId: 'group_flatmates',
-      title: 'Indane LPG Cylinder Refill',
+      title: 'Gas cylinder',
       category: ExpenseCategory.bills,
       amount: 95000, // ₹950
       date: now.subtract(const Duration(days: 10)),
@@ -163,7 +163,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_6',
       groupId: 'group_flatmates',
-      title: 'BESCOM Electricity Bill',
+      title: 'Electricity bill',
       category: ExpenseCategory.bills,
       amount: 186000, // ₹1,860
       date: now.subtract(const Duration(days: 8)),
@@ -178,7 +178,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_7',
       groupId: 'group_flatmates',
-      title: 'Sunday Brunch at Third Wave',
+      title: 'Sunday brunch',
       category: ExpenseCategory.food,
       amount: 165000, // ₹1,650
       date: now.subtract(const Duration(days: 7)),
@@ -193,7 +193,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_8',
       groupId: 'group_flatmates',
-      title: 'Water Tanker (10,000L)',
+      title: 'Water tanker',
       category: ExpenseCategory.bills,
       amount: 120000, // ₹1,200
       date: now.subtract(const Duration(days: 6)),
@@ -208,7 +208,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_9',
       groupId: 'group_flatmates',
-      title: 'Swiggy Instamart Movie Snacks',
+      title: 'Swiggy snacks',
       category: ExpenseCategory.groceries,
       amount: 68000, // ₹680
       date: now.subtract(const Duration(days: 5)),
@@ -223,7 +223,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_10',
       groupId: 'group_flatmates',
-      title: 'Urban Company Kitchen Deep Clean',
+      title: 'Kitchen deep clean',
       category: ExpenseCategory.other,
       amount: 210000, // ₹2,100
       date: now.subtract(const Duration(days: 4)),
@@ -238,7 +238,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_11',
       groupId: 'group_flatmates',
-      title: 'Balcony Ceramic Pots & Plants',
+      title: 'Living room plants',
       category: ExpenseCategory.other,
       amount: 144000, // ₹1,440
       date: now.subtract(const Duration(days: 3)),
@@ -253,7 +253,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_12',
       groupId: 'group_flatmates',
-      title: 'Society Maintenance Charges',
+      title: 'Society charges',
       category: ExpenseCategory.bills,
       amount: 750000, // ₹7,500
       date: now.subtract(const Duration(days: 2)),
@@ -268,7 +268,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_13',
       groupId: 'group_flatmates',
-      title: 'House Party Craft Brews & Ice',
+      title: 'House party brew',
       category: ExpenseCategory.fun,
       amount: 282000, // ₹2,820
       date: now.subtract(const Duration(days: 1)),
@@ -283,7 +283,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_fm_14',
       groupId: 'group_flatmates',
-      title: 'Kitchen Essentials & Spice Organizers',
+      title: 'Kitchen essentials',
       category: ExpenseCategory.other,
       amount: 174000, // ₹1,740
       date: now,
@@ -302,7 +302,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_1',
       groupId: 'group_goa',
-      title: 'Vagator Heritage Villa (3 Nights)',
+      title: 'Vagator villa',
       category: ExpenseCategory.stay,
       amount: 2800000, // ₹28,000
       date: now.subtract(const Duration(days: 2, hours: 8)),
@@ -318,7 +318,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_2',
       groupId: 'group_goa',
-      title: '4 Activa Scooters for 3 Days',
+      title: 'Scooter rental',
       category: ExpenseCategory.travel,
       amount: 480000, // ₹4,800
       date: now.subtract(const Duration(days: 2, hours: 4)),
@@ -334,7 +334,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_3',
       groupId: 'group_goa',
-      title: 'Full Tank Petrol for Scooters',
+      title: 'Fuel & tolls',
       category: ExpenseCategory.travel,
       amount: 160000, // ₹1,600
       date: now.subtract(const Duration(days: 2, hours: 2)),
@@ -350,7 +350,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_4',
       groupId: 'group_goa',
-      title: "Fisherman's Wharf Seafood Feast",
+      title: 'Seafood feast',
       category: ExpenseCategory.food,
       amount: 640000, // ₹6,400
       date: now.subtract(const Duration(days: 1, hours: 14)),
@@ -366,7 +366,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_5',
       groupId: 'group_goa',
-      title: 'Thalassa Sunset Cocktails & Mezze',
+      title: 'Sunset dinner',
       category: ExpenseCategory.food,
       amount: 520000, // ₹5,200
       date: now.subtract(const Duration(days: 1, hours: 10)),
@@ -382,7 +382,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_6',
       groupId: 'group_goa',
-      title: "Club Hammerzz VIP Entry & Table",
+      title: 'VIP club entry',
       category: ExpenseCategory.fun,
       amount: 800000, // ₹8,000
       date: now.subtract(const Duration(days: 1, hours: 4)),
@@ -398,7 +398,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_7',
       groupId: 'group_goa',
-      title: 'Anjuna Beach Shack Breakfast & Juices',
+      title: 'Beach shack brunch',
       category: ExpenseCategory.food,
       amount: 188000, // ₹1,880
       date: now.subtract(const Duration(hours: 18)),
@@ -414,7 +414,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_8',
       groupId: 'group_goa',
-      title: 'Baga Beach Kayaking & Jet Ski',
+      title: 'Kayaking & snacks',
       category: ExpenseCategory.fun,
       amount: 440000, // ₹4,400
       date: now.subtract(const Duration(hours: 12)),
@@ -430,7 +430,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_9',
       groupId: 'group_goa',
-      title: 'Vinayak Family Restaurant Fish Thali',
+      title: 'Family dinner',
       category: ExpenseCategory.food,
       amount: 216000, // ₹2,160
       date: now.subtract(const Duration(hours: 6)),
@@ -446,7 +446,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_10',
       groupId: 'group_goa',
-      title: 'Supermarket Sunscreen, Water & Cold Brew',
+      title: 'Beach towels & snacks',
       category: ExpenseCategory.groceries,
       amount: 124000, // ₹1,240
       date: now.subtract(const Duration(hours: 3)),
@@ -462,7 +462,7 @@ abstract class SeedData {
     Expense(
       id: 'exp_goa_11',
       groupId: 'group_goa',
-      title: 'Mopa Airport Innova Taxi Transfers',
+      title: 'Mopa airport cab',
       category: ExpenseCategory.travel,
       amount: 400000, // ₹4,000
       date: now.subtract(const Duration(hours: 1)),

@@ -15,6 +15,7 @@ class ExpenseTile extends StatefulWidget {
   final String currentUserId;
   final VoidCallback onTap;
   final bool isHighlighted;
+  final bool showDivider;
 
   const ExpenseTile({
     super.key,
@@ -24,6 +25,7 @@ class ExpenseTile extends StatefulWidget {
     required this.currentUserId,
     required this.onTap,
     this.isHighlighted = false,
+    this.showDivider = false,
   });
 
   @override
@@ -31,12 +33,12 @@ class ExpenseTile extends StatefulWidget {
 }
 
 class _ExpenseTileState extends State<ExpenseTile> {
+  bool _isHovered = false;
   bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     final payerName = widget.payer?.name ?? 'Someone';
     final groupName = widget.group?.name ?? '';
@@ -56,119 +58,144 @@ class _ExpenseTileState extends State<ExpenseTile> {
       if (lentAmount > 0) {
         final formatted =
             CurrencyFormatter.formatPaise(lentAmount, absolute: true);
-        shareLabel = 'you lent $formatted';
-        shareColor = isDark ? AppColors.emeraldBright : AppColors.emerald;
+        shareLabel = 'You lent $formatted';
+        shareColor = AppColors.emerald;
       } else {
-        shareLabel = 'you paid for yourself';
+        shareLabel = 'Paid for self';
         shareColor = theme.secondary;
       }
     } else if (userShare > 0) {
       final formatted =
           CurrencyFormatter.formatPaise(userShare, absolute: true);
-      shareLabel = 'you owe $formatted';
-      shareColor = isDark ? AppColors.coralBright : AppColors.coral;
+      shareLabel = 'You owe $formatted';
+      shareColor = AppColors.coral;
     } else {
-      shareLabel = 'not involved';
+      shareLabel = 'Not involved';
       shareColor = theme.tertiary;
     }
 
     return Semantics(
       button: true,
       label: '${widget.expense.title}, $subtitle',
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 600),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _isPressed ? 0.98 : 1.0,
+            duration: const Duration(milliseconds: 120),
             curve: Curves.easeOutCubic,
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
+            child: Container(
               color: widget.isHighlighted
-                  ? (isDark
-                      ? AppColors.emerald.withValues(alpha: 0.18)
-                      : AppColors.emeraldTint)
-                  : theme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: widget.isHighlighted
-                    ? AppColors.emerald
-                    : theme.hairline,
-                width: widget.isHighlighted ? 1.5 : 1.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                CategoryBadge(
-                  category: widget.expense.category,
-                  size: 44,
-                  iconSize: 22,
-                  borderRadius: 12,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.expense.title,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: theme.ink,
-                          fontWeight: FontWeight.w600,
+                  ? AppColors.sapphire.withValues(alpha: 0.12)
+                  : (_isHovered
+                      ? (context.isDarkMode
+                          ? const Color(0x1AFFFFFF)
+                          : const Color(0x0F0F1633))
+                      : Colors.transparent),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 64,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                        // 1. CategoryTile
+                        CategoryTile(
+                          category: widget.expense.category,
+                          size: 40,
+                          iconSize: 20,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: AppTypography.caption.copyWith(
-                          color: theme.secondary,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
+                        const SizedBox(width: 14),
+
+                        // 2. Title and Payer/Group subtitle
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.expense.title,
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: theme.ink,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.secondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+
+                        // 3. Tabular total amount & Coloured share label
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              CurrencyFormatter.formatPaise(
+                                widget.expense.amount,
+                                absolute: true,
+                              ),
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: theme.ink,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures()
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              shareLabel,
+                              style: AppTypography.caption.copyWith(
+                                color: shareColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures()
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      CurrencyFormatter.formatPaise(widget.expense.amount,
-                          absolute: true),
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: theme.ink,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      shareLabel,
-                      style: AppTypography.caption.copyWith(
-                        color: shareColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11.5,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
+                if (widget.showDivider)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 68,
+                    endIndent: 16,
+                    color: theme.hairline,
+                  ),
               ],
             ),
           ),
+        ),
         ),
       ),
     );

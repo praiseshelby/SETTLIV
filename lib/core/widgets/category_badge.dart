@@ -14,59 +14,61 @@ class CategoryBadge extends StatelessWidget {
     required this.category,
     this.size = 40.0,
     this.iconSize = 20.0,
-    this.borderRadius = 12.0,
+    this.borderRadius = 14.0,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
 
-    final Color bgColor;
+    final Color tintColor;
     final Color iconColor;
     final IconData iconData;
 
     switch (category) {
       case ExpenseCategory.food:
-        bgColor = isDark ? const Color(0xFF322310) : AppColors.saffronTint;
-        iconColor = isDark ? AppColors.saffronBright : AppColors.saffron;
+        tintColor = AppColors.amber;
+        iconColor = isDark ? const Color(0xFFFFC566) : const Color(0xFFD98A11);
         iconData = Icons.restaurant_rounded;
         break;
       case ExpenseCategory.rent:
-        bgColor = isDark ? const Color(0xFF162544) : const Color(0xFFE8EEF9);
-        iconColor = isDark ? const Color(0xFF88A9FF) : AppColors.midnightNavy;
+        tintColor = AppColors.sapphire;
+        iconColor = isDark ? const Color(0xFF7A93FF) : AppColors.sapphire;
         iconData = Icons.roofing_rounded;
         break;
       case ExpenseCategory.travel:
-        bgColor = isDark ? const Color(0xFF102E34) : AppColors.tealTint;
-        iconColor = isDark ? AppColors.tealBright : AppColors.teal;
+        tintColor = AppColors.aqua;
+        iconColor = isDark ? const Color(0xFF5CE0ED) : const Color(0xFF0F94A6);
         iconData = Icons.directions_car_filled_rounded;
         break;
       case ExpenseCategory.stay:
-        bgColor = isDark ? const Color(0xFF281C3D) : AppColors.orchidTint;
-        iconColor = isDark ? AppColors.orchidBright : AppColors.orchid;
+        tintColor = AppColors.lilac;
+        iconColor = isDark ? const Color(0xFFB4A6FF) : const Color(0xFF6B56E8);
         iconData = Icons.hotel_rounded;
         break;
       case ExpenseCategory.groceries:
-        bgColor = isDark ? const Color(0xFF103126) : AppColors.emeraldTint;
-        iconColor = isDark ? AppColors.emeraldBright : AppColors.emerald;
+        tintColor = AppColors.emerald;
+        iconColor = isDark ? const Color(0xFF38E2B2) : const Color(0xFF0C9470);
         iconData = Icons.shopping_basket_rounded;
         break;
       case ExpenseCategory.bills:
-        bgColor = isDark ? const Color(0xFF381F15) : AppColors.coralTint;
-        iconColor = isDark ? AppColors.coralBright : AppColors.coral;
+        tintColor = AppColors.coral;
+        iconColor = isDark ? const Color(0xFFFF8273) : const Color(0xFFD64431);
         iconData = Icons.receipt_long_rounded;
         break;
       case ExpenseCategory.fun:
-        bgColor = isDark ? const Color(0xFF311736) : const Color(0xFFFBE4F2);
-        iconColor = isDark ? const Color(0xFFF67BC4) : const Color(0xFFD63384);
+        tintColor = AppColors.lilac;
+        iconColor = isDark ? const Color(0xFFE29BFF) : const Color(0xFF9E38DE);
         iconData = Icons.celebration_rounded;
         break;
       case ExpenseCategory.other:
-        bgColor = isDark ? const Color(0xFF1F2736) : const Color(0xFFEDEFF2);
-        iconColor = isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
+        tintColor = isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
+        iconColor = isDark ? Colors.white70 : const Color(0xFF4B5565);
         iconData = Icons.category_rounded;
         break;
     }
+
+    final Color bgColor = tintColor.withValues(alpha: isDark ? 0.22 : 0.14);
 
     return Container(
       width: size,
@@ -74,14 +76,20 @@ class CategoryBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: tintColor.withValues(alpha: isDark ? 0.28 : 0.2),
+          width: 1.0,
+        ),
       ),
       child: Center(
         child: Icon(
           iconData,
-          size: iconSize,
           color: iconColor,
+          size: iconSize,
         ),
       ),
     );
   }
 }
+
+typedef CategoryTile = CategoryBadge;

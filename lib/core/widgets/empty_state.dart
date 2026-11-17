@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
+import 'glass_surface.dart';
 
 class EmptyState extends StatelessWidget {
   final String title;
@@ -21,24 +22,18 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: theme.raised,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.hairline, width: 1.5),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.receipt_long_rounded,
-                  size: 36,
-                  color: AppColors.teal,
-                ),
+            GlassSurface(
+              level: GlassLevel.level2,
+              borderRadius: 28,
+              padding: const EdgeInsets.all(22),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                size: 36,
+                color: AppColors.sapphire,
               ),
             ),
             const SizedBox(height: 20),
@@ -47,6 +42,7 @@ class EmptyState extends StatelessWidget {
               style: AppTypography.titleLarge.copyWith(
                 color: theme.ink,
                 fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -56,11 +52,12 @@ class EmptyState extends StatelessWidget {
               style: AppTypography.body.copyWith(
                 color: theme.secondary,
                 fontSize: 14,
+                height: 1.4,
               ),
               textAlign: TextAlign.center,
             ),
             if (action != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               action!,
             ],
           ],

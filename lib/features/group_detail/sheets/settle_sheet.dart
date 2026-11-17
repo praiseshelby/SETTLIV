@@ -7,10 +7,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/coming_soon_tag.dart';
+import '../../../core/widgets/glass_sheet_scaffold.dart';
+import '../../../core/widgets/glass_surface.dart';
+import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/person_avatar.dart';
-import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/text_action_button.dart';
-import '../../../core/widgets/sheet_scaffold.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/group.dart';
@@ -42,10 +43,11 @@ class SettleSheet extends ConsumerStatefulWidget {
     required Group group,
     SimplifiedDebt? preselectedDebt,
   }) {
-    SheetScaffold.show(
+    GlassSheetScaffold.show(
       context: context,
+      title: 'Settle balance',
       isScrollControlled: true,
-      builder: (ctx) => SettleSheet(
+      child: SettleSheet(
         group: group,
         preselectedDebt: preselectedDebt,
       ),
@@ -227,8 +229,12 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           width: 68,
           height: 68,
           decoration: BoxDecoration(
-            color: AppColors.emeraldTint,
+            color: AppColors.emerald.withValues(alpha: 0.14),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.emerald.withValues(alpha: 0.28),
+              width: 1.5,
+            ),
           ),
           child: const Center(
             child: Icon(
@@ -241,7 +247,10 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         const SizedBox(height: 18),
         Text(
           'All settled up!',
-          style: AppTypography.titleLarge.copyWith(color: theme.ink),
+          style: AppTypography.titleLarge.copyWith(
+            color: theme.ink,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
@@ -250,7 +259,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        PrimaryButton(
+        GradientPrimaryButton(
           label: 'Done',
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -267,26 +276,37 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            PersonAvatar(person: _payee, size: 44),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Settling with ${_payee?.name ?? 'payee'}',
-                    style: AppTypography.bodyMedium.copyWith(color: theme.ink),
-                  ),
-                  Text(
-                    '${widget.group.name} plan',
-                    style: AppTypography.caption.copyWith(color: theme.secondary),
-                  ),
-                ],
+        GlassSurface(
+          level: GlassLevel.level1,
+          borderRadius: 18,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              PersonAvatar(person: _payee, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settling with ${_payee?.name ?? 'payee'}',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: theme.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '${widget.group.name} group',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.secondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 20),
         Center(
@@ -301,13 +321,14 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
               ],
               style: AppTypography.displayMoney.copyWith(
                 color: theme.ink,
-                fontSize: 40,
+                fontSize: 42,
+                fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 prefixText: '₹ ',
                 prefixStyle: AppTypography.displayMoney.copyWith(
                   color: theme.secondary,
-                  fontSize: 32,
+                  fontSize: 34,
                 ),
                 hintText: '0',
                 border: InputBorder.none,
@@ -318,11 +339,10 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         ),
         const SizedBox(height: 24),
         Text(
-          'Choose payment method',
-          style: AppTypography.caption.copyWith(
+          'CHOOSE PAYMENT METHOD',
+          style: AppTypography.sectionHeader.copyWith(
             color: theme.secondary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
+            fontSize: 12,
           ),
         ),
         const SizedBox(height: 10),
@@ -365,31 +385,40 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
     required VoidCallback? onTap,
   }) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
       label: title,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isPrimary
-                ? (isDark ? const Color(0xFF233664) : AppColors.midnightNavy)
-                : theme.surface,
-            borderRadius: BorderRadius.circular(16),
+            gradient: isPrimary ? AppColors.sapphireGradient : null,
+            color: isPrimary ? null : theme.surface.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isPrimary ? Colors.transparent : theme.hairline,
+              color: isPrimary
+                  ? Colors.white.withValues(alpha: 0.25)
+                  : theme.hairline,
             ),
+            boxShadow: isPrimary
+                ? [
+                    BoxShadow(
+                      color: AppColors.sapphire.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
                 icon,
-                color: isPrimary ? Colors.white : AppColors.teal,
+                color: isPrimary ? Colors.white : AppColors.sapphire,
                 size: 24,
               ),
               const SizedBox(height: 10),
@@ -441,14 +470,17 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           children: [
             Text(
               'Select UPI App',
-              style: AppTypography.sectionHeader.copyWith(color: theme.ink),
+              style: AppTypography.sectionHeader.copyWith(
+                color: theme.ink,
+                fontSize: 15,
+              ),
             ),
             GestureDetector(
               onTap: () => setState(() => _step = SettleStep.amount),
               child: Text(
                 'Change amount',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.cobaltGlow,
+                  color: AppColors.sapphire,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -467,16 +499,16 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 label: 'Pay via ${app.$1}',
                 child: InkWell(
                   onTap: () => _onSelectUpiApp(app.$1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   child: Container(
-                    width: 60,
-                    height: 60,
+                    width: 58,
+                    height: 58,
                     decoration: BoxDecoration(
-                      color: app.$2.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(16),
+                      color: app.$2.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: app.$2.withValues(alpha: 0.35),
-                        width: 1.5,
+                        color: app.$2.withValues(alpha: 0.3),
+                        width: 1.2,
                       ),
                     ),
                     child: Center(
@@ -485,7 +517,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                         style: AppTypography.bodyMedium.copyWith(
                           color: app.$2,
                           fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                     ),
@@ -497,13 +529,10 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         ),
         const SizedBox(height: 18),
         // Note preview card
-        Container(
+        GlassSurface(
+          level: GlassLevel.level1,
+          borderRadius: 18,
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: theme.raised,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.hairline),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -543,7 +572,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                       child: Text(
                         _copiedUpi ? 'Copied!' : 'Copy UPI ID',
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.cobaltGlow,
+                          color: _copiedUpi ? AppColors.emerald : AppColors.sapphire,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -572,23 +601,26 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   Widget _buildSimulationStep(SettlivThemeExtension theme) {
     return Padding(
       key: const ValueKey('simulation_step'),
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 28),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(
-              width: 54,
-              height: 54,
+              width: 52,
+              height: 52,
               child: CircularProgressIndicator(
-                strokeWidth: 3.5,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.sapphire),
               ),
             ),
             const SizedBox(height: 20),
             Text(
               'Opening $_selectedUpiApp…',
-              style: AppTypography.titleLarge.copyWith(color: theme.ink),
+              style: AppTypography.titleLarge.copyWith(
+                color: theme.ink,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -619,6 +651,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           style: AppTypography.titleLarge.copyWith(
             color: theme.ink,
             fontSize: 20,
+            fontWeight: FontWeight.w700,
           ),
           textAlign: TextAlign.center,
         ),
@@ -630,10 +663,9 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           style: AppTypography.caption.copyWith(color: theme.secondary),
         ),
         const SizedBox(height: 24),
-        PrimaryButton(
+        GradientPrimaryButton(
           label: 'Mark paid',
-          variant: PrimaryButtonVariant.emeraldConfirm,
-          leading: const Icon(Icons.check_rounded, color: Colors.white),
+          icon: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
           onPressed: _onMarkPaid,
         ),
         const SizedBox(height: 10),
@@ -664,7 +696,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 painter: _ConfettiPainter(progress: _celebrationController.value),
               ),
               Transform.scale(
-                scale: 0.8 + (0.3 * _celebrationController.value),
+                scale: 0.8 + (0.25 * _celebrationController.value),
                 child: Container(
                   width: 72,
                   height: 72,
@@ -673,7 +705,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.emerald.withValues(alpha: 0.4),
+                        color: AppColors.emerald.withValues(alpha: 0.35),
                         blurRadius: 24,
                         spreadRadius: 4,
                       ),
@@ -708,9 +740,10 @@ class _ConfettiPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final colors = [
       AppColors.emerald,
-      AppColors.saffron,
-      AppColors.teal,
-      AppColors.orchid,
+      AppColors.sapphire,
+      AppColors.amber,
+      AppColors.lilac,
+      AppColors.aqua,
       AppColors.coral,
     ];
 
@@ -725,7 +758,7 @@ class _ConfettiPainter extends CustomPainter {
             .withValues(alpha: (1.0 - progress).clamp(0.0, 1.0))
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(x, y), 3.5 * (1.0 - (progress * 0.5)), paint);
+      canvas.drawCircle(Offset(x, y), 3.2 * (1.0 - (progress * 0.5)), paint);
     }
   }
 

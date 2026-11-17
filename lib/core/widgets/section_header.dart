@@ -11,7 +11,7 @@ class SectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.trailing,
-    this.padding = const EdgeInsets.symmetric(vertical: 8),
+    this.padding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
   });
 
   @override
@@ -22,12 +22,12 @@ class SectionHeader extends StatelessWidget {
       padding: padding,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            title,
-            style: AppTypography.sectionHeader.copyWith(
-              color: theme.ink,
+            title.toUpperCase(),
+            style: AppTypography.sectionLabel.copyWith(
+              color: theme.secondary,
+              letterSpacing: 0.8,
             ),
           ),
           ?trailing,

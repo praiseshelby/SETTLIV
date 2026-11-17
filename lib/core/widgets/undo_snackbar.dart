@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'glass_surface.dart';
 
 class UndoSnackbar {
   UndoSnackbar._();
@@ -18,44 +19,57 @@ class UndoSnackbar {
       SnackBar(
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        backgroundColor: AppColors.midnightNavy,
-        content: Row(
-          children: [
-            Expanded(
-              child: Text(
-                message,
-                style: AppTypography.body.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        padding: EdgeInsets.zero,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: GlassSurface(
+          level: GlassLevel.level3,
+          borderRadius: 999,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                messenger.hideCurrentSnackBar();
-                onUndo();
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              const SizedBox(width: 10),
+              InkWell(
+                onTap: () {
+                  messenger.hideCurrentSnackBar();
+                  onUndo();
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.emeraldTint,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'Undo',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.emerald,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
-                backgroundColor: AppColors.emerald.withValues(alpha: 0.2),
               ),
-              child: Text(
-                'Undo',
-                style: AppTypography.button.copyWith(
-                  color: AppColors.emeraldBright,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

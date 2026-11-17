@@ -20,8 +20,12 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   final Color tealTint;
   final Color orchid;
   final Color orchidTint;
-  final Color heroCardBg;
-  final List<Color> heroGradient;
+  final Color sapphire;
+  final Color glassFillLevel1;
+  final Color glassFillLevel2;
+  final Color glassFillLevel3;
+  final Color glassBorder;
+  final bool isDark;
 
   const SettlivThemeExtension({
     required this.canvas,
@@ -41,15 +45,19 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     required this.tealTint,
     required this.orchid,
     required this.orchidTint,
-    required this.heroCardBg,
-    required this.heroGradient,
+    required this.sapphire,
+    required this.glassFillLevel1,
+    required this.glassFillLevel2,
+    required this.glassFillLevel3,
+    required this.glassBorder,
+    required this.isDark,
   });
 
   static const light = SettlivThemeExtension(
-    canvas: AppColors.lightCanvas,
-    surface: AppColors.lightSurface,
-    raised: AppColors.lightRaised,
-    hairline: AppColors.lightHairline,
+    canvas: AppColors.lightBase,
+    surface: Colors.white,
+    raised: Color(0xFFF8FAFD),
+    hairline: Color(0x1A0F1633),
     ink: AppColors.lightInk,
     secondary: AppColors.lightSecondary,
     tertiary: AppColors.lightTertiary,
@@ -57,40 +65,48 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     emeraldTint: AppColors.emeraldTint,
     coral: AppColors.coral,
     coralTint: AppColors.coralTint,
-    saffron: AppColors.saffron,
-    saffronTint: AppColors.saffronTint,
-    teal: AppColors.teal,
-    tealTint: AppColors.tealTint,
-    orchid: AppColors.orchid,
-    orchidTint: AppColors.orchidTint,
-    heroCardBg: AppColors.midnightNavy,
-    heroGradient: AppColors.heroGradientLight,
+    saffron: AppColors.amber,
+    saffronTint: AppColors.amberTint,
+    teal: AppColors.aqua,
+    tealTint: AppColors.aquaTint,
+    orchid: AppColors.lilac,
+    orchidTint: AppColors.lilacTint,
+    sapphire: AppColors.sapphire,
+    glassFillLevel1: Color(0x73FFFFFF), // 45%
+    glassFillLevel2: Color(0xA6FFFFFF), // 65%
+    glassFillLevel3: Color(0xCCFFFFFF), // 80%
+    glassBorder: Color(0x99FFFFFF),     // 60% white
+    isDark: false,
   );
 
   static const dark = SettlivThemeExtension(
-    canvas: AppColors.darkCanvas,
-    surface: AppColors.darkSurface,
-    raised: AppColors.darkRaised,
-    hairline: AppColors.darkHairline,
+    canvas: AppColors.darkBase,
+    surface: Color(0xFF10162A),
+    raised: Color(0xFF172038),
+    hairline: Color(0x2EFFFFFF),
     ink: AppColors.darkInk,
     secondary: AppColors.darkSecondary,
     tertiary: AppColors.darkTertiary,
-    emerald: AppColors.emeraldBright,
-    emeraldTint: Color(0xFF132F26),
-    coral: AppColors.coralBright,
-    coralTint: Color(0xFF381B19),
-    saffron: AppColors.saffronBright,
-    saffronTint: Color(0xFF382912),
-    teal: AppColors.tealBright,
-    tealTint: Color(0xFF132D33),
-    orchid: AppColors.orchidBright,
-    orchidTint: Color(0xFF271C3D),
-    heroCardBg: Color(0xFF142144),
-    heroGradient: AppColors.heroGradientDark,
+    emerald: AppColors.emerald,
+    emeraldTint: Color(0x3312B48A),
+    coral: AppColors.coral,
+    coralTint: Color(0x33F0614F),
+    saffron: AppColors.amber,
+    saffronTint: Color(0x33F5B544),
+    teal: AppColors.aqua,
+    tealTint: Color(0x3322C3D6),
+    orchid: AppColors.lilac,
+    orchidTint: Color(0x338B7CFF),
+    sapphire: AppColors.sapphire,
+    glassFillLevel1: Color(0x14FFFFFF), // 8%
+    glassFillLevel2: Color(0x1FFFFFFF), // 12%
+    glassFillLevel3: Color(0x29FFFFFF), // 16%
+    glassBorder: Color(0x38FFFFFF),     // 22% white
+    isDark: true,
   );
 
   @override
-  ThemeExtension<SettlivThemeExtension> copyWith({
+  SettlivThemeExtension copyWith({
     Color? canvas,
     Color? surface,
     Color? raised,
@@ -108,8 +124,12 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     Color? tealTint,
     Color? orchid,
     Color? orchidTint,
-    Color? heroCardBg,
-    List<Color>? heroGradient,
+    Color? sapphire,
+    Color? glassFillLevel1,
+    Color? glassFillLevel2,
+    Color? glassFillLevel3,
+    Color? glassBorder,
+    bool? isDark,
   }) {
     return SettlivThemeExtension(
       canvas: canvas ?? this.canvas,
@@ -129,16 +149,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       tealTint: tealTint ?? this.tealTint,
       orchid: orchid ?? this.orchid,
       orchidTint: orchidTint ?? this.orchidTint,
-      heroCardBg: heroCardBg ?? this.heroCardBg,
-      heroGradient: heroGradient ?? this.heroGradient,
+      sapphire: sapphire ?? this.sapphire,
+      glassFillLevel1: glassFillLevel1 ?? this.glassFillLevel1,
+      glassFillLevel2: glassFillLevel2 ?? this.glassFillLevel2,
+      glassFillLevel3: glassFillLevel3 ?? this.glassFillLevel3,
+      glassBorder: glassBorder ?? this.glassBorder,
+      isDark: isDark ?? this.isDark,
     );
   }
 
   @override
-  ThemeExtension<SettlivThemeExtension> lerp(
-    covariant ThemeExtension<SettlivThemeExtension>? other,
-    double t,
-  ) {
+  SettlivThemeExtension lerp(
+      ThemeExtension<SettlivThemeExtension>? other, double t) {
     if (other is! SettlivThemeExtension) return this;
     return SettlivThemeExtension(
       canvas: Color.lerp(canvas, other.canvas, t)!,
@@ -158,37 +180,34 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       tealTint: Color.lerp(tealTint, other.tealTint, t)!,
       orchid: Color.lerp(orchid, other.orchid, t)!,
       orchidTint: Color.lerp(orchidTint, other.orchidTint, t)!,
-      heroCardBg: Color.lerp(heroCardBg, other.heroCardBg, t)!,
-      heroGradient: List.generate(
-        heroGradient.length,
-        (i) => Color.lerp(heroGradient[i], other.heroGradient[i], t)!,
-      ),
+      sapphire: Color.lerp(sapphire, other.sapphire, t)!,
+      glassFillLevel1:
+          Color.lerp(glassFillLevel1, other.glassFillLevel1, t)!,
+      glassFillLevel2:
+          Color.lerp(glassFillLevel2, other.glassFillLevel2, t)!,
+      glassFillLevel3:
+          Color.lerp(glassFillLevel3, other.glassFillLevel3, t)!,
+      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+      isDark: t < 0.5 ? isDark : other.isDark,
     );
   }
 }
 
-extension BuildContextThemeExt on BuildContext {
-  SettlivThemeExtension get settliv =>
-      Theme.of(this).extension<SettlivThemeExtension>() ??
-      SettlivThemeExtension.light;
-  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
-}
-
-abstract class AppTheme {
+class AppTheme {
   static ThemeData light() {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.lightCanvas,
+      scaffoldBackgroundColor: AppColors.lightBase,
       fontFamily: AppTypography.fontFamily,
       fontFamilyFallback: AppTypography.fontFamilyFallback,
       colorScheme: const ColorScheme.light(
-        surface: AppColors.lightSurface,
-        primary: AppColors.midnightNavy,
-        secondary: AppColors.teal,
-        error: AppColors.coral,
-        onSurface: AppColors.lightInk,
+        primary: AppColors.sapphire,
         onPrimary: Colors.white,
+        surface: Colors.white,
+        onSurface: AppColors.lightInk,
+        error: AppColors.coral,
+        onError: Colors.white,
       ),
       extensions: const [SettlivThemeExtension.light],
     );
@@ -198,18 +217,26 @@ abstract class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.darkCanvas,
+      scaffoldBackgroundColor: AppColors.darkBase,
       fontFamily: AppTypography.fontFamily,
       fontFamilyFallback: AppTypography.fontFamilyFallback,
       colorScheme: const ColorScheme.dark(
-        surface: AppColors.darkSurface,
-        primary: AppColors.midnightNavy,
-        secondary: AppColors.tealBright,
-        error: AppColors.coralBright,
-        onSurface: AppColors.darkInk,
+        primary: AppColors.sapphire,
         onPrimary: Colors.white,
+        surface: Color(0xFF10162A),
+        onSurface: AppColors.darkInk,
+        error: AppColors.coral,
+        onError: Colors.white,
       ),
       extensions: const [SettlivThemeExtension.dark],
     );
   }
+}
+
+extension BuildContextThemeX on BuildContext {
+  SettlivThemeExtension get settliv =>
+      Theme.of(this).extension<SettlivThemeExtension>() ??
+      SettlivThemeExtension.light;
+
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 }

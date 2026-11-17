@@ -1,191 +1,188 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../data/models/group.dart';
-import '../theme/app_colors.dart';
 
 class GroupCoverArt extends StatelessWidget {
-  final GroupCoverType coverType;
-  final double width;
+  final Group? group;
+  final GroupCoverType? coverType;
   final double height;
-  final double borderRadius;
-  final String heroTag;
+  final double? width;
+  final dynamic borderRadius;
+  final String? heroTag;
 
   const GroupCoverArt({
     super.key,
-    required this.coverType,
-    this.width = double.infinity,
-    this.height = 120.0,
-    this.borderRadius = 20.0,
-    this.heroTag = '',
+    this.group,
+    this.coverType,
+    this.height = 84,
+    this.width,
+    this.borderRadius,
+    this.heroTag,
   });
 
   @override
   Widget build(BuildContext context) {
-    final artWidget = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+    final BorderRadius effectiveRadius;
+    if (borderRadius is BorderRadius) {
+      effectiveRadius = borderRadius as BorderRadius;
+    } else if (borderRadius is double) {
+      effectiveRadius = BorderRadius.circular(borderRadius as double);
+    } else if (borderRadius is int) {
+      effectiveRadius = BorderRadius.circular((borderRadius as int).toDouble());
+    } else {
+      effectiveRadius = BorderRadius.circular(20);
+    }
+
+    final effectiveCoverType =
+        coverType ?? group?.coverType ?? GroupCoverType.flatmates;
+
+    Widget content = ClipRRect(
+      borderRadius: effectiveRadius,
       child: SizedBox(
-        width: width,
         height: height,
+        width: width ?? double.infinity,
         child: CustomPaint(
-          size: Size(width, height),
-          painter: coverType == GroupCoverType.flatmates
+          painter: effectiveCoverType == GroupCoverType.flatmates
               ? _FlatmatesCoverPainter()
               : _GoaTripCoverPainter(),
+          size: Size(width ?? double.infinity, height),
         ),
       ),
     );
 
-    if (heroTag.isNotEmpty) {
-      return Hero(
-        tag: heroTag,
-        child: artWidget,
-      );
+    if (heroTag != null && heroTag!.isNotEmpty) {
+      content = Hero(tag: heroTag!, child: content);
     }
 
-    return artWidget;
+    return content;
   }
 }
 
+/// Flatmates: indigo to lilac aurora with fine concentric arcs
 class _FlatmatesCoverPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    // Base navy to deep teal gradient
+    // Calm indigo to lilac aurora gradient
     final bgPaint = Paint()
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color(0xFF0E1A3A),
-          Color(0xFF143048),
-          Color(0xFF164455),
+          Color(0xFF283675), // Muted deep indigo
+          Color(0xFF4C589E), // Soft indigo
+          Color(0xFF887EB8), // Calm lilac
         ],
       ).createShader(rect);
     canvas.drawRect(rect, bgPaint);
 
-    // Soft geometric arcs
-    final arcPaint1 = Paint()
-      ..color = AppColors.teal.withValues(alpha: 0.28)
+    // Fine concentric arcs
+    final center = Offset(size.width * 0.85, size.height * 0.5);
+    final arcPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 32.0;
+      ..strokeWidth = 1.2
+      ..color = Colors.white.withValues(alpha: 0.16);
 
-    canvas.drawArc(
-      Rect.fromCircle(
-        center: Offset(size.width * 0.85, size.height * 0.2),
-        radius: size.height * 0.8,
-      ),
-      math.pi * 0.4,
-      math.pi * 0.8,
-      false,
-      arcPaint1,
-    );
+    for (double r = 24; r < size.width * 0.9; r += 22) {
+      canvas.drawCircle(center, r, arcPaint);
+    }
 
-    final arcPaint2 = Paint()
-      ..color = AppColors.cobaltGlow.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 18.0;
-
-    canvas.drawArc(
-      Rect.fromCircle(
-        center: Offset(size.width * 0.2, size.height * 0.9),
-        radius: size.height * 0.65,
-      ),
-      math.pi * 1.2,
-      math.pi * 0.7,
-      false,
-      arcPaint2,
-    );
-
-    final arcPaint3 = Paint()
-      ..color = AppColors.emerald.withValues(alpha: 0.2)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(
-      Offset(size.width * 0.5, size.height * 0.15),
-      size.height * 0.35,
-      arcPaint3,
-    );
+    // Soft subtle ambient glow circle
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFA78BFA).withValues(alpha: 0.28),
+          const Color(0x00A78BFA),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 60));
+    canvas.drawCircle(center, 60, glowPaint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+/// Goa Trip: aqua to mint with a soft peach sun disk and gentle waves (no orange sunsets)
 class _GoaTripCoverPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    // Base coral to saffron to warm rose sunset gradient
+    // Calm aqua to mint gradient
     final bgPaint = Paint()
       ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
         colors: [
-          Color(0xFFDF4A3C),
-          Color(0xFFE66B40),
-          Color(0xFFF4A52C),
+          Color(0xFF136878), // Deep calm teal
+          Color(0xFF229AA8), // Aqua
+          Color(0xFF48C5B0), // Mint
         ],
       ).createShader(rect);
     canvas.drawRect(rect, bgPaint);
 
-    // Subtle sun disc
+    // Soft peach sun disk
+    final sunCenter = Offset(size.width * 0.72, size.height * 0.38);
     final sunPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.22)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      Offset(size.width * 0.78, size.height * 0.32),
-      size.height * 0.4,
-      sunPaint,
-    );
+      ..color = const Color(0xFFFFD1BA).withValues(alpha: 0.85);
+    canvas.drawCircle(sunCenter, 22, sunPaint);
 
-    // Layered wave shapes
-    final wave1 = Path();
-    wave1.moveTo(0, size.height * 0.55);
-    wave1.quadraticBezierTo(
-      size.width * 0.3,
-      size.height * 0.45,
-      size.width * 0.6,
-      size.height * 0.62,
-    );
-    wave1.quadraticBezierTo(
-      size.width * 0.85,
-      size.height * 0.75,
-      size.width,
-      size.height * 0.6,
-    );
-    wave1.lineTo(size.width, size.height);
-    wave1.lineTo(0, size.height);
-    wave1.close();
+    // Sun corona/glow
+    final sunGlow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFFFE0D0).withValues(alpha: 0.45),
+          const Color(0x00FFE0D0),
+        ],
+      ).createShader(Rect.fromCircle(center: sunCenter, radius: 46));
+    canvas.drawCircle(sunCenter, 46, sunGlow);
 
+    // Gentle wave shapes
     final wavePaint1 = Paint()
-      ..color = const Color(0xFFC7364E).withValues(alpha: 0.45)
+      ..color = Colors.white.withValues(alpha: 0.14)
       ..style = PaintingStyle.fill;
-    canvas.drawPath(wave1, wavePaint1);
 
-    final wave2 = Path();
-    wave2.moveTo(0, size.height * 0.75);
-    wave2.quadraticBezierTo(
-      size.width * 0.35,
-      size.height * 0.88,
-      size.width * 0.7,
-      size.height * 0.72,
+    final path1 = Path();
+    path1.moveTo(0, size.height * 0.65);
+    path1.quadraticBezierTo(
+      size.width * 0.28,
+      size.height * 0.52,
+      size.width * 0.55,
+      size.height * 0.66,
     );
-    wave2.quadraticBezierTo(
-      size.width * 0.9,
-      size.height * 0.65,
+    path1.quadraticBezierTo(
+      size.width * 0.82,
+      size.height * 0.80,
+      size.width,
+      size.height * 0.68,
+    );
+    path1.lineTo(size.width, size.height);
+    path1.lineTo(0, size.height);
+    path1.close();
+    canvas.drawPath(path1, wavePaint1);
+
+    final wavePaint2 = Paint()
+      ..color = Colors.white.withValues(alpha: 0.18)
+      ..style = PaintingStyle.fill;
+
+    final path2 = Path();
+    path2.moveTo(0, size.height * 0.82);
+    path2.quadraticBezierTo(
+      size.width * 0.35,
+      size.height * 0.72,
+      size.width * 0.70,
+      size.height * 0.84,
+    );
+    path2.quadraticBezierTo(
+      size.width * 0.88,
+      size.height * 0.90,
       size.width,
       size.height * 0.82,
     );
-    wave2.lineTo(size.width, size.height);
-    wave2.lineTo(0, size.height);
-    wave2.close();
-
-    final wavePaint2 = Paint()
-      ..color = const Color(0xFF8B1D45).withValues(alpha: 0.55)
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(wave2, wavePaint2);
+    path2.lineTo(size.width, size.height);
+    path2.lineTo(0, size.height);
+    path2.close();
+    canvas.drawPath(path2, wavePaint2);
   }
 
   @override

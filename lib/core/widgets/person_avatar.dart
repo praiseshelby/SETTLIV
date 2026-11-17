@@ -1,42 +1,30 @@
 import 'package:flutter/material.dart';
+import '../../data/models/person.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../theme/app_typography.dart';
-import '../../data/models/person.dart';
 
 class PersonAvatar extends StatelessWidget {
   final Person? person;
-  final String? initials;
-  final int gradientIndex;
+  final String? name;
   final double size;
-  final bool hasRing;
-  final Color? ringColor;
+  final bool showRing;
 
   const PersonAvatar({
     super.key,
     this.person,
-    this.initials,
-    this.gradientIndex = 0,
-    this.size = 36.0,
-    this.hasRing = false,
-    this.ringColor,
+    this.name,
+    this.size = 32,
+    this.showRing = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveInitials = initials ??
-        person?.avatarInitials ??
-        (person != null && person!.name.isNotEmpty
-            ? person!.name.substring(0, 1).toUpperCase()
-            : '?');
+    final displayName = person?.name ?? name ?? 'User';
+    final initials = _extractInitials(displayName);
+    final gradient = _getGradientForName(displayName);
+    final theme = context.settliv;
 
-    final effectiveIndex = (person?.avatarPairIndex ?? gradientIndex) %
-        AppColors.avatarGradients.length;
-    final gradientColors = AppColors.avatarGradients[effectiveIndex];
-
-    final surfaceColor = ringColor ?? context.settliv.surface;
-
-    final avatarCircle = Container(
+    return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -44,35 +32,59 @@ class PersonAvatar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: gradientColors,
+          colors: gradient,
         ),
+        border: showRing
+            ? Border.all(
+                color: theme.surface.withValues(alpha: 0.9),
+                width: 2.0,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Center(
-        child: Text(
-          effectiveInitials,
-          style: AppTypography.caption.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: size * 0.38,
-            letterSpacing: 0.2,
+        child: Padding(
+          padding: EdgeInsets.all(size * 0.15),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              initials,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: size * 0.44,
+                letterSpacing: -0.2,
+                height: 1.0,
+              ),
+            ),
           ),
         ),
       ),
     );
+  }
 
-    if (!hasRing) {
-      return avatarCircle;
+  String _extractInitials(String input) {
+    final parts = input.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts[0].isEmpty) return '?';
+    if (parts.length == 1) {
+      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
     }
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
 
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: surfaceColor,
-          width: 2.0,
-        ),
-      ),
-      child: avatarCircle,
-    );
+  List<Color> _getGradientForName(String input) {
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      hash = input.codeUnitAt(i) + ((hash << 5) - hash);
+    }
+    final index = hash.abs() % AppColors.avatarGradients.length;
+    return AppColors.avatarGradients[index];
   }
 }

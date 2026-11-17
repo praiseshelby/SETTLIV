@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
-import 'sheet_scaffold.dart';
-import 'primary_button.dart';
+import 'glass_sheet_scaffold.dart';
+import 'gradient_primary_button.dart';
 
 class ComingSoonTag extends StatelessWidget {
   final String label;
@@ -19,61 +19,66 @@ class ComingSoonTag extends StatelessWidget {
 
   static void showComingSoonSheet(BuildContext context, String featureName,
       [String? details]) {
-    SheetScaffold.show(
+    GlassSheetScaffold.show(
       context: context,
+      title: 'Coming in the full app',
       isScrollControlled: false,
-      builder: (ctx) {
-        final theme = ctx.settliv;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.saffronTint,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Coming in the full app',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.saffron,
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.saffron.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.saffron.withValues(alpha: 0.28),
+                  width: 1,
                 ),
               ),
-              const SizedBox(height: 14),
-              Text(
-                featureName,
-                style: AppTypography.titleLarge.copyWith(
-                  color: theme.ink,
+              child: Text(
+                'Coming in the full app',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.saffron,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                details ??
-                    'This feature is part of the Settliv native experience on Android & iOS. The prototype demonstrates core expense splitting, real-time balance resolution, and instant UPI settlement.',
-                style: AppTypography.body.copyWith(
-                  color: theme.secondary,
-                ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              featureName,
+              style: AppTypography.titleLarge.copyWith(
+                color: context.settliv.ink,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(height: 24),
-              PrimaryButton(
-                label: 'Got it',
-                onPressed: () => Navigator.of(ctx).pop(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              details ??
+                  'This feature is part of the Settliv native experience on Android & iOS. The prototype demonstrates core expense splitting, real-time balance resolution, and instant UPI settlement.',
+              style: AppTypography.body.copyWith(
+                color: context.settliv.secondary,
+                height: 1.45,
               ),
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 24),
+            GradientPrimaryButton(
+              label: 'Got it',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
+    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
@@ -85,9 +90,16 @@ class ComingSoonTag extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: theme.raised,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: theme.hairline, width: 1.0),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.08),
+              width: 1.0,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

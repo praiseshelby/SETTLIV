@@ -1,31 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/theme_provider.dart';
+import '../../core/widgets/aurora_background.dart';
+import '../../core/widgets/avatar_stack.dart';
 import '../../core/widgets/balance_hero_card.dart';
 import '../../core/widgets/balance_pill.dart';
 import '../../core/widgets/category_badge.dart';
-import '../../core/widgets/coming_soon_tag.dart';
-import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/expense_tile.dart';
-import '../../core/widgets/floating_add_button.dart';
-import '../../core/widgets/group_card.dart';
+import '../../core/widgets/floating_add_pill.dart';
+import '../../core/widgets/glass_chip.dart';
+import '../../core/widgets/glass_segmented.dart';
+import '../../core/widgets/glass_sheet_scaffold.dart';
+import '../../core/widgets/glass_surface.dart';
+import '../../core/widgets/gradient_primary_button.dart';
 import '../../core/widgets/group_cover_art.dart';
-import '../../core/widgets/member_chip.dart';
 import '../../core/widgets/money_text.dart';
 import '../../core/widgets/person_avatar.dart';
-import '../../core/widgets/avatar_stack.dart';
-import '../../core/widgets/primary_button.dart';
-import '../../core/widgets/secondary_button.dart';
 import '../../core/widgets/section_header.dart';
-import '../../core/widgets/segmented_tabs.dart';
-import '../../core/widgets/sheet_scaffold.dart';
-import '../../core/widgets/text_action_button.dart';
-import '../../core/widgets/undo_snackbar.dart';
 import '../../data/models/expense.dart';
-import '../../data/models/group.dart';
 import '../../data/seed/seed_data.dart';
 
 class ComponentGalleryScreen extends ConsumerStatefulWidget {
@@ -38,7 +31,7 @@ class ComponentGalleryScreen extends ConsumerStatefulWidget {
 
 class _ComponentGalleryScreenState
     extends ConsumerState<ComponentGalleryScreen> {
-  int _selectedTab = 0;
+  int _selectedSegment = 0;
   bool _chipSelected = true;
 
   @override
@@ -48,316 +41,194 @@ class _ComponentGalleryScreenState
     final currentThemeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
-      backgroundColor: theme.canvas,
-      appBar: AppBar(
-        title: Text(
-          'Component Gallery',
-          style: AppTypography.titleLarge.copyWith(color: theme.ink),
-        ),
-        backgroundColor: theme.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-              color: theme.ink,
-            ),
-            tooltip: 'Toggle Theme',
-            onPressed: () {
-              ref.read(themeModeProvider.notifier).setThemeMode(
-                    isDark ? ThemeMode.light : ThemeMode.dark,
-                  );
-            },
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        children: [
-          Text(
-            'Mode: ${currentThemeMode.name.toUpperCase()} (System / Light / Dark)',
-            style: AppTypography.caption.copyWith(color: theme.secondary),
-          ),
-          const SizedBox(height: 16),
-
-          // 1. MoneyText
-          const SectionHeader(title: '1. MoneyText'),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: const [
-              MoneyText(paise: 124000, colorRole: MoneyColorRole.emerald, showSign: true),
-              MoneyText(paise: -38000, colorRole: MoneyColorRole.coral, showSign: true),
-              MoneyText(paise: 1800000, colorRole: MoneyColorRole.ink),
-              MoneyText(paise: 0, colorRole: MoneyColorRole.secondary),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 2. BalanceHeroCard
-          const SectionHeader(title: '2. BalanceHeroCard'),
-          const BalanceHeroCard(
-            netPaise: 86000, // +₹860
-            totalOwedToUserPaise: 124000, // ₹1,240
-            totalUserOwesPaise: 38000, // ₹380
-          ),
-          const SizedBox(height: 24),
-
-          // 3. BalancePill
-          const SectionHeader(title: '3. BalancePill'),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: const [
-              BalancePill(paise: 124000),
-              BalancePill(paise: -38000),
-              BalancePill(paise: 0),
-              BalancePill(paise: 50000, compact: true),
-              BalancePill(paise: -25000, compact: true),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 4. PersonAvatar & AvatarStack
-          const SectionHeader(title: '4. Avatars & Duotones'),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+      backgroundColor: Colors.transparent,
+      body: AuroraBackground(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             children: [
-              for (int i = 0; i < AppColors.avatarGradients.length; i++)
-                PersonAvatar(
-                  initials: 'P$i',
-                  gradientIndex: i,
-                  size: 38,
+              // Top Bar with Theme Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Component Gallery v2',
+                    style: AppTypography.titleLarge.copyWith(color: theme.ink),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isDark
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
+                      color: theme.ink,
+                    ),
+                    tooltip: 'Toggle Theme',
+                    onPressed: () {
+                      ref.read(themeModeProvider.notifier).setThemeMode(
+                            isDark ? ThemeMode.light : ThemeMode.dark,
+                          );
+                    },
+                  ),
+                ],
+              ),
+              Text(
+                'Theme: ${currentThemeMode.name.toUpperCase()} (Pearl Glass / Midnight Glass)',
+                style: AppTypography.caption.copyWith(color: theme.secondary),
+              ),
+              const SizedBox(height: 24),
+
+              // 1. GlassSurface (3 levels)
+              const SectionHeader(title: '1. GlassSurface (Levels 1, 2, 3)'),
+              const SizedBox(height: 8),
+              GlassSurface(
+                level: GlassLevel.level1,
+                padding: const EdgeInsets.all(16),
+                child: Text('Level 1: Sub-card / Inner container',
+                    style: AppTypography.body.copyWith(color: theme.ink)),
+              ),
+              const SizedBox(height: 12),
+              GlassSurface(
+                level: GlassLevel.level2,
+                padding: const EdgeInsets.all(16),
+                child: Text('Level 2: Standard Card / Composer',
+                    style: AppTypography.body.copyWith(color: theme.ink)),
+              ),
+              const SizedBox(height: 12),
+              GlassSurface(
+                level: GlassLevel.level3,
+                padding: const EdgeInsets.all(16),
+                child: Text('Level 3: Hero / Sheet / Sticky bar',
+                    style: AppTypography.body.copyWith(color: theme.ink)),
+              ),
+              const SizedBox(height: 24),
+
+              // 2. Buttons & Pills
+              const SectionHeader(title: '2. Buttons & Pills'),
+              const SizedBox(height: 8),
+              GradientPrimaryButton(
+                label: 'Sapphire Primary CTA',
+                onPressed: () {},
+                icon: const Icon(Icons.bolt_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: FloatingAddPill(
+                  label: 'Add',
+                  onTap: () {},
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AvatarStack(
-            people: SeedData.people,
-            size: 32,
-            overlap: 10,
-          ),
-          const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 24),
 
-          // 5. GroupCoverArt
-          const SectionHeader(title: '5. GroupCoverArt (CustomPainter)'),
-          const Text('Flatmates Cover Art:'),
-          const SizedBox(height: 6),
-          const GroupCoverArt(
-            coverType: GroupCoverType.flatmates,
-            height: 90,
-          ),
-          const SizedBox(height: 12),
-          const Text('Goa Trip Cover Art:'),
-          const SizedBox(height: 6),
-          const GroupCoverArt(
-            coverType: GroupCoverType.goaTrip,
-            height: 90,
-          ),
-          const SizedBox(height: 24),
+              // 3. GlassSegmented (sliding thumb) & Chips
+              const SectionHeader(title: '3. GlassSegmented & GlassChip'),
+              const SizedBox(height: 8),
+              GlassSegmented<int>(
+                values: const [0, 1, 2],
+                labels: const ['Quick', 'Manual', 'Recent'],
+                selectedValue: _selectedSegment,
+                onValueChanged: (v) => setState(() => _selectedSegment = v),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  GlassChip(
+                    label: 'Rent 18,000',
+                    isSelected: _chipSelected,
+                    onTap: () =>
+                        setState(() => _chipSelected = !_chipSelected),
+                  ),
+                  GlassChip(
+                    label: 'Cab 240 with Kabir',
+                    isSelected: false,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-          // 6. GroupCard
-          const SectionHeader(title: '6. GroupCard'),
-          GroupCard(
-            group: SeedData.flatmates,
-            members: [SeedData.arjun, SeedData.meera, SeedData.kabir],
-            userNetPaise: 124000,
-            onTap: () {},
-          ),
-          const SizedBox(height: 12),
-          GroupCard(
-            group: SeedData.goaTrip,
-            members: [
-              SeedData.arjun,
-              SeedData.nisha,
-              SeedData.rohan,
-              SeedData.tara,
-            ],
-            userNetPaise: -38000,
-            onTap: () {},
-          ),
-          const SizedBox(height: 24),
+              // 4. MoneyText v2 & BalancePill
+              const SectionHeader(title: '4. MoneyText & BalancePill'),
+              const SizedBox(height: 8),
+              const MoneyText(paise: 86000, style: MoneyStyle.hero),
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  BalancePill(paise: 124000),
+                  SizedBox(width: 8),
+                  BalancePill(paise: -38000),
+                  SizedBox(width: 8),
+                  BalancePill(paise: 0),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-          // 7. CategoryBadge
-          const SectionHeader(title: '7. CategoryBadges (8 Categories)'),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final cat in ExpenseCategory.values)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CategoryBadge(category: cat, size: 44),
-                    const SizedBox(height: 4),
-                    Text(
-                      cat.label,
-                      style: AppTypography.caption.copyWith(
-                        color: theme.secondary,
-                        fontSize: 11,
+              // 5. Avatars & CategoryTiles
+              const SectionHeader(title: '5. PersonAvatar & CategoryTiles'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final p in SeedData.people.take(4)) ...[
+                    PersonAvatar(person: p, size: 36),
+                    const SizedBox(width: 8),
+                  ],
+                  const SizedBox(width: 12),
+                  AvatarStack(people: SeedData.people, avatarSize: 32),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final cat in ExpenseCategory.values)
+                    CategoryTile(category: cat, size: 40, iconSize: 20),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // 6. GroupCoverArt v2
+              const SectionHeader(title: '6. GroupCoverArt v2 (84px short banners)'),
+              const SizedBox(height: 8),
+              GroupCoverArt(group: SeedData.flatmates, height: 84),
+              const SizedBox(height: 12),
+              GroupCoverArt(group: SeedData.goaTrip, height: 84),
+              const SizedBox(height: 24),
+
+              // 7. BalanceHeroCard
+              const SectionHeader(title: '7. BalanceHeroCard (Level 3 Glass)'),
+              const SizedBox(height: 8),
+              const BalanceHeroCard(
+                netPaise: 86000,
+                totalOwedToUserPaise: 124000,
+                totalUserOwesPaise: 38000,
+              ),
+              const SizedBox(height: 24),
+
+              // 8. GlassSheetScaffold preview
+              const SectionHeader(title: '8. GlassSheetScaffold'),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  GlassSheetScaffold.show(
+                    context: context,
+                    title: 'Sample Glass Sheet',
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        'This is rendered inside a GlassSheetScaffold with 32px top radius and backdrop blur.',
+                        style: AppTypography.body.copyWith(color: theme.ink),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
+                child: const Text('Open Glass Sheet'),
+              ),
+              const SizedBox(height: 80),
             ],
           ),
-          const SizedBox(height: 24),
-
-          // 8. ExpenseTile
-          const SectionHeader(title: '8. ExpenseTile'),
-          ExpenseTile(
-            expense: SeedData.expenses.first,
-            payer: SeedData.meera,
-            group: SeedData.flatmates,
-            currentUserId: SeedData.currentUserId,
-            onTap: () {},
-          ),
-          ExpenseTile(
-            expense: SeedData.expenses[1],
-            payer: SeedData.arjun,
-            group: SeedData.flatmates,
-            currentUserId: SeedData.currentUserId,
-            onTap: () {},
-          ),
-          const SizedBox(height: 24),
-
-          // 9. MemberChip
-          const SectionHeader(title: '9. MemberChip'),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              MemberChip(
-                person: SeedData.arjun,
-                isSelected: _chipSelected,
-                onSelected: (val) => setState(() => _chipSelected = val),
-              ),
-              MemberChip(
-                person: SeedData.meera,
-                isSelected: !_chipSelected,
-                onSelected: (val) => setState(() => _chipSelected = !val),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 10. SegmentedTabs
-          const SectionHeader(title: '10. SegmentedTabs'),
-          SegmentedTabs(
-            labels: const ['Quick', 'Manual'],
-            selectedIndex: _selectedTab,
-            onTabSelected: (idx) => setState(() => _selectedTab = idx),
-          ),
-          const SizedBox(height: 24),
-
-          // 11. Buttons
-          const SectionHeader(title: '11. Buttons & Actions'),
-          PrimaryButton(
-            label: 'Primary Navy Button',
-            onPressed: () {},
-          ),
-          const SizedBox(height: 10),
-          PrimaryButton(
-            label: 'Mark Paid (Confirm Emerald)',
-            variant: PrimaryButtonVariant.emeraldConfirm,
-            onPressed: () {},
-          ),
-          const SizedBox(height: 10),
-          SecondaryButton(
-            label: 'Secondary Button',
-            onPressed: () {},
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              TextActionButton(
-                label: 'Cobalt Action',
-                onPressed: () {},
-              ),
-              const SizedBox(width: 12),
-              TextActionButton(
-                label: 'Delete (Destructive)',
-                variant: TextActionButtonVariant.destructive,
-                onPressed: () {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 12. ComingSoonTag
-          const SectionHeader(title: '12. ComingSoonTag & Sheet'),
-          Wrap(
-            spacing: 8,
-            children: const [
-              ComingSoonTag(label: 'Scan a receipt · full app'),
-              ComingSoonTag(label: 'Nudge reminders'),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 13. UndoSnackbar trigger
-          const SectionHeader(title: '13. UndoSnackbar'),
-          SecondaryButton(
-            label: 'Show UndoSnackbar',
-            onPressed: () {
-              UndoSnackbar.show(
-                context: context,
-                message: 'Added ₹800 · Undo',
-                onUndo: () {},
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-
-          // 14. SheetScaffold trigger
-          const SectionHeader(title: '14. SheetScaffold'),
-          SecondaryButton(
-            label: 'Open SheetScaffold Demo',
-            onPressed: () {
-              SheetScaffold.show(
-                context: context,
-                builder: (ctx) => Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'This is a SheetScaffold with 28px top corners, grab handle, and dismiss button.',
-                        style: AppTypography.body
-                            .copyWith(color: ctx.settliv.ink),
-                      ),
-                      const SizedBox(height: 20),
-                      PrimaryButton(
-                        label: 'Close Sheet',
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-
-          // 15. EmptyState
-          const SectionHeader(title: '15. EmptyState'),
-          const EmptyState(
-            title: 'No expenses yet',
-            subtitle: 'Expenses added to this group will appear here.',
-          ),
-          const SizedBox(height: 80),
-        ],
-      ),
-      floatingActionButton: FloatingAddButton(
-        onTap: () {
-          UndoSnackbar.show(
-            context: context,
-            message: 'FloatingAddButton tapped',
-            onUndo: () {},
-          );
-        },
+        ),
       ),
     );
   }

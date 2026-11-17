@@ -12,7 +12,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    expect(find.text("Here's where you stand"), findsOneWidget);
+    expect(find.text("YOUR BALANCE"), findsOneWidget);
     final flatmatesCard = find.widgetWithText(GroupCard, 'Flatmates');
     expect(flatmatesCard, findsOneWidget);
 
@@ -73,7 +73,7 @@ void main() {
     await tester.tap(rentChip);
     await tester.pumpAndSettle();
 
-    expect(find.text('Add expense'), findsOneWidget);
-    expect(find.text('Rent 18,000'), findsOneWidget);
+    expect(find.text('New expense'), findsOneWidget);
+    expect(find.text('Rent 18,000'), findsWidgets);
   });
 }

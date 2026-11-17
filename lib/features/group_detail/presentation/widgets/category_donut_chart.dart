@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/expense.dart';
 
 class CategoryDonutChart extends StatelessWidget {
@@ -19,19 +20,19 @@ class CategoryDonutChart extends StatelessWidget {
   static Color getCategoryColor(ExpenseCategory category, bool isDark) {
     switch (category) {
       case ExpenseCategory.food:
-        return isDark ? AppColors.saffronBright : AppColors.saffron;
+        return AppColors.amber;
       case ExpenseCategory.rent:
-        return isDark ? const Color(0xFF6B8EFF) : AppColors.midnightNavy;
+        return AppColors.sapphire;
       case ExpenseCategory.travel:
-        return isDark ? AppColors.tealBright : AppColors.teal;
+        return AppColors.aqua;
       case ExpenseCategory.stay:
-        return isDark ? AppColors.orchidBright : AppColors.orchid;
+        return AppColors.lilac;
       case ExpenseCategory.groceries:
-        return isDark ? AppColors.emeraldBright : AppColors.emerald;
+        return AppColors.emerald;
       case ExpenseCategory.bills:
-        return isDark ? AppColors.coralBright : AppColors.coral;
+        return AppColors.coral;
       case ExpenseCategory.fun:
-        return isDark ? const Color(0xFFF772BE) : const Color(0xFFD63384);
+        return AppColors.orchid;
       case ExpenseCategory.other:
         return isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
     }
@@ -43,13 +44,10 @@ class CategoryDonutChart extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     if (totalSpend <= 0) {
-      return Container(
+      return GlassSurface(
+        level: GlassLevel.level2,
+        borderRadius: 24,
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: theme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.hairline),
-        ),
         child: Center(
           child: Text(
             'No expenses recorded yet',
@@ -64,13 +62,10 @@ class CategoryDonutChart extends StatelessWidget {
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Container(
+    return GlassSurface(
+      level: GlassLevel.level2,
+      borderRadius: 24,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.hairline),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -78,7 +73,7 @@ class CategoryDonutChart extends StatelessWidget {
             'Spend by category',
             style: AppTypography.sectionHeader.copyWith(
               color: theme.ink,
-              fontSize: 15,
+              fontSize: 14,
             ),
           ),
           const SizedBox(height: 18),
@@ -94,7 +89,7 @@ class CategoryDonutChart extends StatelessWidget {
                       entries: activeEntries,
                       total: totalSpend,
                       isDark: isDark,
-                      strokeWidth: 26.0,
+                      strokeWidth: 22.0,
                     ),
                   ),
                   Center(
@@ -108,6 +103,7 @@ class CategoryDonutChart extends StatelessWidget {
                             fontSize: 11,
                           ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           CurrencyFormatter.formatPaise(totalSpend,
                               absolute: true),
@@ -138,8 +134,8 @@ class CategoryDonutChart extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 10,
-                        height: 10,
+                        width: 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
@@ -187,7 +183,7 @@ class _DonutChartPainter extends CustomPainter {
     final radius = (size.width - strokeWidth) / 2;
 
     double startAngle = -math.pi / 2;
-    const double gapAngle = 0.04; // Small gap between segments
+    const double gapAngle = 0.05; // Small gap between segments
 
     for (final entry in entries) {
       final sweepAngle = (entry.value / total) * (2 * math.pi) - gapAngle;

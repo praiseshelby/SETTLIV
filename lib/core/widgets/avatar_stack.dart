@@ -1,71 +1,73 @@
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
 import 'person_avatar.dart';
-import '../theme/app_theme.dart';
-import '../theme/app_typography.dart';
 
 class AvatarStack extends StatelessWidget {
   final List<Person> people;
-  final double size;
+  final int maxVisible;
+  final double? size;
+  final double avatarSize;
   final double overlap;
-  final int maxAvatars;
 
   const AvatarStack({
     super.key,
     required this.people,
-    this.size = 28.0,
-    this.overlap = 10.0,
-    this.maxAvatars = 4,
+    this.maxVisible = 3,
+    this.size,
+    this.avatarSize = 30,
+    this.overlap = 10,
   });
 
   @override
   Widget build(BuildContext context) {
     if (people.isEmpty) return const SizedBox.shrink();
 
-    final visiblePeople = people.take(maxAvatars).toList();
-    final remaining = people.length - visiblePeople.length;
-
-    final totalWidth = visiblePeople.length * (size - overlap) +
-        overlap +
-        (remaining > 0 ? (size - overlap) : 0);
+    final effectiveSize = size ?? avatarSize;
+    final visiblePeople = people.take(maxVisible).toList();
+    final remainingCount = people.length - visiblePeople.length;
+    final totalItems = visiblePeople.length + (remainingCount > 0 ? 1 : 0);
+    final totalWidth =
+        effectiveSize + (totalItems - 1) * (effectiveSize - overlap);
 
     return SizedBox(
       width: totalWidth,
-      height: size + 4,
+      height: effectiveSize,
       child: Stack(
         children: [
           for (int i = 0; i < visiblePeople.length; i++)
             Positioned(
-              left: i * (size - overlap),
-              top: 2,
+              left: i * (effectiveSize - overlap),
               child: PersonAvatar(
                 person: visiblePeople[i],
-                size: size,
-                hasRing: true,
+                size: effectiveSize,
+                showRing: true,
               ),
             ),
-          if (remaining > 0)
+          if (remainingCount > 0)
             Positioned(
-              left: visiblePeople.length * (size - overlap),
-              top: 2,
+              left: visiblePeople.length * (effectiveSize - overlap),
               child: Container(
-                width: size,
-                height: size,
+                width: effectiveSize,
+                height: effectiveSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: context.settliv.raised,
+                  color: const Color(0xFF6B7280),
                   border: Border.all(
-                    color: context.settliv.surface,
+                    color: Colors.white.withValues(alpha: 0.9),
                     width: 2.0,
                   ),
                 ),
                 child: Center(
-                  child: Text(
-                    '+$remaining',
-                    style: AppTypography.caption.copyWith(
-                      fontSize: size * 0.36,
-                      fontWeight: FontWeight.w700,
-                      color: context.settliv.secondary,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '+$remainingCount',
+                      style: TextStyle(
+                        fontFamily: 'Manrope',
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: effectiveSize * 0.4,
+                      ),
                     ),
                   ),
                 ),
