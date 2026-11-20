@@ -12,6 +12,9 @@ class QuickParseResult {
   final String? payerId;
   final bool isValid;
   final String? hint;
+  final bool isAmbiguousAmount;
+  final bool isOverCap;
+  final List<String> unknownPeople;
 
   const QuickParseResult({
     this.amountPaise,
@@ -22,6 +25,9 @@ class QuickParseResult {
     this.payerId,
     required this.isValid,
     this.hint,
+    this.isAmbiguousAmount = false,
+    this.isOverCap = false,
+    this.unknownPeople = const [],
   });
 }
 
@@ -59,39 +65,72 @@ class QuickExpenseParser {
       );
     }
 
-    // 1. Extract amount
-    int? amountPaise;
-    String textWithoutAmount = text;
-
-    // Matches formats: ₹800, 1,200, 1200, 1.2k, 1.5k, rs 500, rs. 500
+    // 1. Extract amount(s)
+    // Matches formats: ₹800, 1,200, 1200, 1.2k, 1.5L, 2 lakh, 1cr, 1.5 crore, rs 500, rs. 500
     final amountRegex = RegExp(
-      r'(?:₹|rs\.?\s*)?(\d+(?:,\d+)*(?:\.\d+)?\s*[kKlL]?)',
+      r'(?:₹|rs\.?\s*)?(\d+(?:,\d+)*(?:\.\d+)?\s*(?:cr|crore|lakh|lac|l|k)?)(?!\w)',
       caseSensitive: false,
     );
 
-    final match = amountRegex.firstMatch(text);
-    if (match != null) {
-      final matchedStr = match.group(1);
-      if (matchedStr != null) {
-        amountPaise = CurrencyFormatter.parseToPaise(matchedStr);
-        if (amountPaise != null && amountPaise > 0) {
-          textWithoutAmount = text.replaceRange(match.start, match.end, ' ');
-        }
+    final allMatches = amountRegex.allMatches(text).toList();
+    final List<({int paise, Match match})> candidateAmounts = [];
+
+    for (final m in allMatches) {
+      final matchedStr = m.group(1);
+      if (matchedStr == null || matchedStr.trim().isEmpty) continue;
+      // Skip pure small integers that could be quantities or counts (e.g. "split 4", "for 2")
+      final clean = matchedStr.trim();
+      final isPureSmallInt = RegExp(r'^\d+$').hasMatch(clean) &&
+          int.tryParse(clean) != null &&
+          int.parse(clean) < 10;
+      final isPrecededBySplitOrFor = text.substring(0, m.start).trim().toLowerCase().endsWith('split') ||
+          text.substring(0, m.start).trim().toLowerCase().endsWith('for');
+
+      if (isPureSmallInt && isPrecededBySplitOrFor) {
+        continue;
+      }
+
+      final parsed = CurrencyFormatter.parseToPaise(matchedStr);
+      if (parsed != null && parsed > 0) {
+        candidateAmounts.add((paise: parsed, match: m));
       }
     }
 
-    // 2. Identify mentioned people
+    int? amountPaise;
+    String textWithoutAmount = text;
+    bool isAmbiguous = false;
+
+    if (candidateAmounts.length == 1) {
+      amountPaise = candidateAmounts.first.paise;
+      final m = candidateAmounts.first.match;
+      textWithoutAmount = text.replaceRange(m.start, m.end, ' ');
+    } else if (candidateAmounts.length > 1) {
+      // If there are multiple distinct amounts
+      final uniqueAmounts = candidateAmounts.map((c) => c.paise).toSet();
+      if (uniqueAmounts.length > 1) {
+        isAmbiguous = true;
+      } else {
+        amountPaise = candidateAmounts.first.paise;
+        final m = candidateAmounts.first.match;
+        textWithoutAmount = text.replaceRange(m.start, m.end, ' ');
+      }
+    }
+
+    // Check cap
+    final bool isOverCap =
+        amountPaise != null && amountPaise > CurrencyFormatter.maxAmountPaise;
+
+    // 2. Identify mentioned people & unknown people
     final Set<String> matchedPersonIds = {currentUser.id};
+    final List<String> unknownPeople = [];
     final lowerText = text.toLowerCase();
 
     for (final person in availablePeople) {
       if (person.id == currentUser.id) continue;
       final nameLower = person.name.toLowerCase();
-      // Match whole word or preceded by with/and
       final nameRegex = RegExp('\\b$nameLower\\b', caseSensitive: false);
       if (nameRegex.hasMatch(lowerText)) {
         matchedPersonIds.add(person.id);
-        // Remove name from description text
         textWithoutAmount = textWithoutAmount.replaceAll(
           RegExp('\\b(?:with|and|for)?\\s*$nameLower\\b', caseSensitive: false),
           ' ',
@@ -99,10 +138,28 @@ class QuickExpenseParser {
       }
     }
 
+    // Check for unknown people after "with" or "and"
+    final withMatch = RegExp(r'\b(?:with|and)\s+([A-Za-z]+)\b', caseSensitive: false)
+        .allMatches(textWithoutAmount);
+    for (final m in withMatch) {
+      final potentialName = m.group(1);
+      if (potentialName != null) {
+        final lower = potentialName.toLowerCase();
+        final isKnown = availablePeople
+            .any((p) => p.name.toLowerCase() == lower);
+        final isCommonWord = const {
+          'me', 'all', 'everyone', 'us', 'the', 'split', 'cash', 'upi', 'two',
+          'three', 'four', 'five', 'six', 'each', 'both'
+        }.contains(lower);
+        if (!isKnown && !isCommonWord && !unknownPeople.contains(potentialName)) {
+          unknownPeople.add(potentialName);
+        }
+      }
+    }
+
     // 3. Infer Group
     Group? inferredGroup;
     if (matchedPersonIds.length > 1) {
-      // Find a group containing all matched members
       for (final g in availableGroups) {
         final containsAll =
             matchedPersonIds.every((id) => g.memberIds.contains(id));
@@ -116,7 +173,7 @@ class QuickExpenseParser {
     inferredGroup ??= _findGroup(defaultGroupId) ??
         (availableGroups.isNotEmpty ? availableGroups.first : null);
 
-    // If no specific members were named, split with all group members
+    // If no specific members named, split with all group members
     if (matchedPersonIds.length == 1 && inferredGroup != null) {
       matchedPersonIds.addAll(inferredGroup.memberIds);
     }
@@ -130,23 +187,34 @@ class QuickExpenseParser {
 
     // 5. Clean up description
     String description = textWithoutAmount
-        .replaceAll(RegExp(r'\b(with|and|for|split|in|at)\b', caseSensitive: false), ' ')
+        .replaceAll(
+            RegExp(r'\b(with|and|for|split|in|at)\b', caseSensitive: false), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 
     if (description.isEmpty) {
       description = category.label;
     } else {
-      // Capitalize first letter
       description = description[0].toUpperCase() + description.substring(1);
     }
 
-    final bool isValid = amountPaise != null && amountPaise > 0;
-    final String? hint = isValid
-        ? null
-        : (amountPaise == null
-            ? 'Add an amount to continue'
-            : 'Amount must be greater than zero');
+    final bool isValid = amountPaise != null &&
+        amountPaise > 0 &&
+        !isOverCap &&
+        !isAmbiguous;
+
+    final String? hint;
+    if (isOverCap) {
+      hint = 'Amount exceeds maximum limit of ₹10,00,00,000';
+    } else if (isAmbiguous) {
+      hint = 'Multiple amounts found. Please specify a single amount.';
+    } else if (amountPaise == null) {
+      hint = 'Add an amount to continue';
+    } else if (unknownPeople.isNotEmpty) {
+      hint = 'Note: "${unknownPeople.first}" was not found in your groups.';
+    } else {
+      hint = null;
+    }
 
     return QuickParseResult(
       amountPaise: amountPaise,
@@ -157,6 +225,9 @@ class QuickExpenseParser {
       payerId: currentUser.id,
       isValid: isValid,
       hint: hint,
+      isAmbiguousAmount: isAmbiguous,
+      isOverCap: isOverCap,
+      unknownPeople: unknownPeople,
     );
   }
 

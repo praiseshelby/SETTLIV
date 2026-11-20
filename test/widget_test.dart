@@ -63,17 +63,16 @@ void main() {
     expect(find.text('Mark as cash'), findsOneWidget);
   });
 
-  testWidgets('Tapping Quick Add suggestion chip navigates to /add prefilled',
+  testWidgets('Tapping Quick Add bar navigates to /add',
       (WidgetTester tester) async {
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    final rentChip = find.text('Rent 18,000');
-    expect(rentChip, findsOneWidget);
-    await tester.tap(rentChip);
+    final addBar = find.text('Add an expense');
+    expect(addBar, findsOneWidget);
+    await tester.tap(addBar);
     await tester.pumpAndSettle();
 
     expect(find.text('New expense'), findsOneWidget);
-    expect(find.text('Rent 18,000'), findsWidgets);
   });
 }

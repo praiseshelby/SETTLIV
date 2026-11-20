@@ -20,6 +20,8 @@ class DateFormatter {
     return _dayOfWeekAndDate.format(date);
   }
 
+  static String formatRelative(DateTime date) => formatDayHeader(date);
+
   static String formatShort(DateTime date) => _shortDate.format(date);
   static String formatFull(DateTime date) => _fullDate.format(date);
 }

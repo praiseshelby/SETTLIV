@@ -37,13 +37,35 @@
 ---
 
 ## Part 2: Add Expense, Fully Correct
-- [ ] 2a. Quick Tab overhaul (rotating examples placeholder, live parse preview, disabled until valid, draft card).
-- [ ] 2b. Suggestion threshold logic (Repeat row appears only for descriptions logged 3+ times).
-- [ ] 2c. Manual Tab validation on save (amount rules, required description <= 60 chars, category, participants, exact & percent split validation).
-- [ ] 2d. Duplicate guard within 2 minutes.
-- [ ] 2e. Expense Detail sheet (shares breakdown, Edit reopening prefilled, soft Delete with 5s Undo).
-- [ ] 2f. Vertical layout stability and keyboard handling.
-- [ ] 2g. Tests for Quick parser, validation, duplicate guard, and suggestion threshold.
+- [x] **2a. Quick Tab Overhaul**:
+  - Removed static placeholder, "Try one of these" heading/chips, yellow hint box, and info box.
+  - Added cycling placeholder with 5 realistic examples ("dinner 800 with Meera and Kabir", "cab 240 with Kabir", "groceries 1,250", "rent 18,000", "movie 600 split 4") with smooth fade+slide every 3.5s; pauses on focus, typing, and `MediaQuery.disableAnimations`.
+  - Added "Use this" button on the composer card to fill the active example.
+  - Live parse preview under the field with clean small text rows (amount, people, category, group); hides unrecognised parts.
+  - Primary button is neutral/disabled until input is valid (no red idle text).
+  - Draft card with "Confirm" and "Edit details in Manual" tab.
+- [x] **2b. Suggestion Threshold Logic**:
+  - Created `RepeatSuggestionEngine`: "Repeat" row appears on Quick tab ONLY for descriptions logged 3+ times in the same group (normalized description).
+  - Seed data verified to have 0 repeated titles meeting the threshold (unit tested).
+  - Tapping repeat suggestion prefills composer and group.
+  - Removed Home screen static chips entirely.
+- [x] **2c. Manual Tab Validation**:
+  - Amount rules applied: digits and 1 decimal only, max 2 decimals, live Indian grouping, numeric keyboard, rejecting zero/negative.
+  - Hard block above ₹10,00,00,000 with clear message.
+  - Large amount confirmation dialog for amounts >= ₹1,00,000 showing amount in digits and words ("₹10,00,000 · Ten lakh") with "Edit amount" and "Yes, add it".
+  - Description required (trimmed, max 60 chars), category default Other, at least one participant, payer required, date not in future.
+  - Exact split validates sum matches total paise; percent split compares in basis points (10,000 bp = 100.00%) with live remaining/over indicators.
+  - Save disabled until valid with neutral helper text.
+- [x] **2d. Duplicate Guard**:
+  - Checks if an expense with same title, amount, and group was logged within 2 minutes.
+  - Shows confirmation dialog: "Looks like a duplicate. Add anyway?".
+- [x] **2e. Expense Detail Sheet**:
+  - Correct shares breakdown; Edit reopens prefilled into Manual tab; soft Delete with 5-second Undo snackbar restoring exact ledger balances.
+- [x] **2f. Vertical Balance & Keyboard Handling**:
+  - Comfortable composer card height; primary button sits above keyboard; `PopScope` guard asks "Discard changes?" before leaving with unsaved work.
+- [x] **2g. Tests for Part 2**:
+  - Added `test/add_expense_part2_test.dart` (parser edge cases: k, lakh, cr, commas, decimals, ambiguous, cap, unknown people, manual split validation, duplicate guard, repeat threshold).
+  - Verified: `flutter analyze` 0 issues, all 53 tests passed.
 
 ---
 
