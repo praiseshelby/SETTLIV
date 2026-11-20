@@ -63,14 +63,14 @@ void main() {
     expect(find.text('Mark as cash'), findsOneWidget);
   });
 
-  testWidgets('Tapping Quick Add bar navigates to /add',
+  testWidgets('Tapping center + button in floating nav bar navigates to /add',
       (WidgetTester tester) async {
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    final addBar = find.text('Add an expense');
-    expect(addBar, findsOneWidget);
-    await tester.tap(addBar);
+    final addBtn = find.bySemanticsLabel('Add expense');
+    expect(addBtn, findsOneWidget);
+    await tester.tap(addBtn);
     await tester.pumpAndSettle();
 
     expect(find.text('New expense'), findsOneWidget);

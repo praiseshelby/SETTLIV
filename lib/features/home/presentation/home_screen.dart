@@ -9,7 +9,6 @@ import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/balance_hero_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
-import '../../../core/widgets/floating_add_pill.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/group_card.dart';
 import '../../../core/widgets/person_avatar.dart';
@@ -20,7 +19,6 @@ import '../../../data/models/expense.dart';
 import '../../../data/repositories/app_repository.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../group_detail/sheets/expense_detail_sheet.dart';
-import 'widgets/quick_add_bar.dart';
 import 'widgets/user_profile_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -33,7 +31,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _staggerController;
-  String? _highlightedExpenseId;
 
   @override
   void initState() {
@@ -59,15 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } else {
       return 'Good evening, $name';
     }
-  }
-
-  void _triggerHighlight(String id) {
-    setState(() => _highlightedExpenseId = id);
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        setState(() => _highlightedExpenseId = null);
-      }
-    });
   }
 
   @override
@@ -148,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
 
               // 2. Hero Card (Glass Level 3)
               BalanceHeroCard(
@@ -158,47 +146,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 32),
 
-              // 3. Quick-Add Button + Example Chips
-              QuickAddBar(
-                onQuickAddTapped: (initialText) async {
-                  final result = await context.push<String?>(
-                    '/add',
-                    extra: {'initialText': initialText},
-                  );
-                  if (result != null) {
-                    _triggerHighlight(result);
-                  }
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // 4. "Your groups" Section
+              // 3. "Your groups" Section
               const SectionHeader(title: 'Your groups'),
               const SizedBox(height: 12),
-              for (final group in groups) ...[
-                GroupCard(
-                  group: group,
-                  members: people
-                      .where((p) => group.memberIds.contains(p.id))
-                      .toList(),
-                  userNetPaise: repo
-                          .getGroupSummary(group.id)
-                          .netBalances[repo.currentUserId] ??
-                      0,
-                  onTap: () => context.push('/group/${group.id}'),
+              if (groups.isEmpty) ...[
+                EmptyState(
+                  title: 'No groups yet',
+                  subtitle:
+                      'Create a group for trips, housemates, or events to start tracking balances.',
+                  action: ElevatedButton.icon(
+                    onPressed: () => context.go('/groups'),
+                    icon: const Icon(Icons.group_add_rounded),
+                    label: const Text('View groups'),
+                  ),
                 ),
-                const SizedBox(height: 16),
+              ] else ...[
+                for (final group in groups) ...[
+                  GroupCard(
+                    group: group,
+                    members: people
+                        .where((p) => group.memberIds.contains(p.id))
+                        .toList(),
+                    userNetPaise: repo
+                            .getGroupSummary(group.id)
+                            .netBalances[repo.currentUserId] ??
+                        0,
+                    onTap: () => context.push('/group/${group.id}'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ],
               const SizedBox(height: 16),
 
-              // 5. "Recent activity" Section
+              // 4. "Recent activity" Section
               const SectionHeader(title: 'Recent activity'),
               const SizedBox(height: 12),
               if (recentExpenses.isEmpty) ...[
                 EmptyState(
                   title: 'No recent activity',
                   subtitle:
-                      'Split bills with flatmates or trips to track balances.',
+                      'All settled up! Split bills with flatmates or trips to track balances.',
                   action: ElevatedButton.icon(
                     onPressed: () => context.push('/add'),
                     icon: const Icon(Icons.add_rounded),
@@ -229,19 +216,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ],
             ],
           ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: FloatingAddPill(
-          label: 'Add',
-          onTap: () async {
-            final result = await context.push<String?>('/add');
-            if (result != null) {
-              _triggerHighlight(result);
-            }
-          },
         ),
       ),
     );
@@ -286,7 +260,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 payer: repo.getPerson(entry.value[i].paidBy),
                 group: repo.getGroup(entry.value[i].groupId),
                 currentUserId: repo.currentUserId,
-                isHighlighted: entry.value[i].id == _highlightedExpenseId,
+                isHighlighted: false,
                 showDivider: i < entry.value.length - 1,
                 onTap: () {
                   ExpenseDetailSheet.show(

@@ -6,7 +6,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../core/widgets/coming_soon_tag.dart';
 import '../../../core/widgets/glass_sheet_scaffold.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/gradient_primary_button.dart';
@@ -66,8 +65,35 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   SettlementMethod _method = SettlementMethod.upi;
   String _selectedUpiApp = 'GPay';
   bool _copiedUpi = false;
+  bool _isSubmitting = false;
 
   late AnimationController _celebrationController;
+
+  int get _maxOwedPaise {
+    final repo = ref.read(appRepositoryProvider);
+    final summary = repo.getGroupSummary(widget.group.id);
+    final currentUserId = repo.currentUserId;
+    final debt = summary.debts.cast<SimplifiedDebt?>().firstWhere(
+      (d) => d?.fromPersonId == currentUserId && d?.toPersonId == _payee?.id,
+      orElse: () => null,
+    );
+    if (debt != null) return debt.amount;
+    final net = summary.netBalances[currentUserId] ?? 0;
+    return net < 0 ? -net : 0;
+  }
+
+  String? get _amountValidationError {
+    final paise = _enteredAmountPaise;
+    if (paise <= 0) return 'Amount cannot be ₹0';
+    if (paise < 100) return 'Minimum settlement is ₹1';
+    final max = _maxOwedPaise;
+    if (max > 0 && paise > max) {
+      return 'Cannot exceed ${CurrencyFormatter.formatPaise(max, absolute: true)} (what you owe)';
+    }
+    return null;
+  }
+
+  bool get _isAmountValid => _amountValidationError == null;
 
   @override
   void initState() {
@@ -153,7 +179,11 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   }
 
   Future<void> _onMarkPaid() async {
-    setState(() => _step = SettleStep.celebration);
+    if (_isSubmitting) return;
+    setState(() {
+      _isSubmitting = true;
+      _step = SettleStep.celebration;
+    });
     _celebrationController.forward(from: 0);
 
     final repoNotifier = ref.read(appStateProvider.notifier);
@@ -337,7 +367,21 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        if (_amountValidationError != null) ...[
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              _amountValidationError!,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.coral,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         Text(
           'CHOOSE PAYMENT METHOD',
           style: AppTypography.sectionHeader.copyWith(
@@ -354,7 +398,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 subtitle: 'Simulated GPay, PhonePe, BHIM',
                 icon: Icons.qr_code_rounded,
                 isPrimary: true,
-                onTap: _enteredAmountPaise > 0
+                onTap: _isAmountValid
                     ? () => _onChooseMethod(SettlementMethod.upi)
                     : null,
               ),
@@ -366,7 +410,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 subtitle: 'Handed over in person',
                 icon: Icons.payments_rounded,
                 isPrimary: false,
-                onTap: _enteredAmountPaise > 0
+                onTap: _isAmountValid
                     ? () => _onChooseMethod(SettlementMethod.cash)
                     : null,
               ),
@@ -585,10 +629,35 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         ),
         const SizedBox(height: 16),
         Center(
-          child: ComingSoonTag(
-            label: 'Real UPI app launch comes in the full app',
-            featureDescription:
-                'On iOS and Android, tapping launches GPay/PhonePe directly using UPI deep links.',
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.sapphire.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: AppColors.sapphire.withValues(alpha: 0.25),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: AppColors.sapphire,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Simulated in prototype',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.sapphire,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

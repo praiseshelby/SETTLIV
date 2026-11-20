@@ -94,7 +94,7 @@ class CurrencyFormatter {
       return null;
     }
 
-    if (parsedVal < 0) return null;
+    if (parsedVal <= 0) return null;
 
     final result = (parsedVal * multiplier * 100).round();
     return result;

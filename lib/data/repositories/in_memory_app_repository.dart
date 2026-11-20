@@ -45,6 +45,13 @@ class InMemoryAppRepository implements AppRepository {
   }
 
   @override
+  void addPerson(Person person) {
+    if (!_people.any((p) => p.id == person.id)) {
+      _people.add(person);
+    }
+  }
+
+  @override
   List<Group> getGroups() => List.unmodifiable(_groups);
 
   @override
@@ -53,6 +60,13 @@ class InMemoryAppRepository implements AppRepository {
       return _groups.firstWhere((g) => g.id == id);
     } catch (_) {
       return null;
+    }
+  }
+
+  @override
+  void addGroup(Group group) {
+    if (!_groups.any((g) => g.id == group.id)) {
+      _groups.add(group);
     }
   }
 
@@ -199,6 +213,16 @@ class AppStateNotifier extends Notifier<int> {
 
   void deleteSettlement(String id) {
     repository.deleteSettlement(id);
+    notifyChange();
+  }
+
+  void addGroup(Group group) {
+    repository.addGroup(group);
+    notifyChange();
+  }
+
+  void addPerson(Person person) {
+    repository.addPerson(person);
     notifyChange();
   }
 }

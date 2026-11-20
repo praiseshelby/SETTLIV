@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-enum GroupType { home, trip }
+enum GroupType { home, trip, other }
 
-enum GroupCoverType { flatmates, goaTrip }
+enum GroupCoverType { flatmates, goaTrip, generic }
 
 @immutable
 class Group {

@@ -9,9 +9,11 @@ abstract class AppRepository {
   Person? get currentUser;
   List<Person> getPeople();
   Person? getPerson(String id);
+  void addPerson(Person person);
 
   List<Group> getGroups();
   Group? getGroup(String id);
+  void addGroup(Group group);
 
   List<Expense> getAllExpenses();
   List<Expense> getExpensesForGroup(String groupId);

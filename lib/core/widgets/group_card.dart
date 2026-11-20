@@ -98,9 +98,11 @@ class _GroupCardState extends State<GroupCard> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            BalancePill(
-                              paise: widget.userNetPaise,
-                              compact: false,
+                            Flexible(
+                              child: BalancePill(
+                                paise: widget.userNetPaise,
+                                compact: false,
+                              ),
                             ),
                           ],
                         ),
@@ -109,17 +111,24 @@ class _GroupCardState extends State<GroupCard> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            AvatarStack(
-                              people: widget.members,
-                              avatarSize: 28,
-                              overlap: 10,
+                            Flexible(
+                              child: AvatarStack(
+                                people: widget.members,
+                                avatarSize: 28,
+                                overlap: 10,
+                              ),
                             ),
-                            Text(
-                              metaText,
-                              style: AppTypography.caption.copyWith(
-                                color: theme.secondary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                metaText,
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.secondary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

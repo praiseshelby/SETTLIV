@@ -70,10 +70,34 @@
 ---
 
 ## Part 3: Floating Bar, New Screens, Settle Flow, Final QA
-- [ ] 3a. Floating bottom bar (pill shape, frosted layer, slots: Home, Groups, [+], Activity, You).
-- [ ] 3b. Home screen refinement (greeting, hero balance, groups, recent activity, empty/all-settled states).
-- [ ] 3c. Groups screen with in-memory "New group".
-- [ ] 3d. Activity screen with search and "All groups" filter.
-- [ ] 3e. Settle flow polish (partial settle, simulated UPI label, double-tap guard, Undo).
-- [ ] 3f. Nudge sheet polish and clipboard copy.
-- [ ] 3g. Final QA pass in light/dark at 360x640, 390x844, and desktop; release web build.
+- [x] **3a. Floating Bottom Bar**:
+  - Implemented pill-shaped floating bar (~64px tall, 16px side margins, frosted glass with hairline border, inside phone frame on desktop).
+  - Slots: Home, Groups, [+], Activity, You.
+  - Active item shows icon + short label with a soft pill; center 52px Sapphire-gradient circle sits proud, scales to 0.94 on press, and opens Add Expense.
+  - "You" slot opens existing profile sheet without changing selected tab.
+  - Bar hides on `/add`, `/group/:id`, and when the keyboard is open.
+  - All scrollable views padded by 120px at bottom so no content is obscured.
+- [x] **3b. Home Screen Polish**:
+  - Removed "Add an expense" card and example chips.
+  - Final section order: greeting -> (32px) -> hero balance -> (32px) -> groups -> (32px) -> recent activity.
+  - Handled empty/one-group/zero-balance states ("All settled up").
+- [x] **3c. Groups Screen & In-Memory New Group**:
+  - Displays list of groups with cover art, member avatars (`AvatarStack`), and balance indicators.
+  - Dynamic in-memory "New group" creation with unique name validation, trip/home/other type selector, min 2 members, and duplicate member name detection.
+- [x] **3d. Activity Screen**:
+  - Chronological list of all expenses across groups grouped by date header.
+  - Live search by description or payer name, with "All groups" and per-group filter chips.
+  - Reuses `ExpenseTile` and `ExpenseDetailSheet` with full edit and 5-second soft delete with Undo.
+- [x] **3e. Settle Flow Polish**:
+  - Amount validated: cannot be ₹0, cannot exceed amount owed, partial settle allowed (min ₹1, paise handled).
+  - Prominent "Simulated in prototype" badge on UPI picker.
+  - "Did you pay ₹X to NAME?" confirmation step with double-tap guard (`_isSubmitting`).
+  - "Mark as cash" records settlement; Undo restores exact balances; instant ledger and donut chart reactivity.
+- [x] **3f. Nudge Sheet**:
+  - Functional reminder copying to clipboard with debtor name and formatted amount.
+- [x] **3g. Final QA Pass**:
+  - Responsive verification across 320x568, 360x640, 390x844, and desktop frame with text scale 1.3 in light and dark modes.
+  - Tested edge cases: 0, 0.5, 1e18, pasted junk, 3-way ₹100 splits, rapid double taps, back button during sheets.
+  - Fixed `GroupCard` and `FloatingNavBar` layout constraints for small screens.
+  - Comprehensive report and honest list of known limitations documented in `NOTES.md`.
+  - Rebuilt release web build and verified all 67 tests passing.
