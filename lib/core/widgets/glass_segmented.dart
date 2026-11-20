@@ -20,7 +20,6 @@ class GlassSegmented<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
     final theme = context.settliv;
     final selectedIndex = values.indexOf(selectedValue);
 
@@ -28,10 +27,10 @@ class GlassSegmented<T> extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0x1FFFFFFF) : const Color(0x66E7ECF5),
+        color: theme.raised,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isDark ? const Color(0x26FFFFFF) : const Color(0x4DFFFFFF),
+          color: theme.hairline,
           width: 1,
         ),
       ),
@@ -51,21 +50,19 @@ class GlassSegmented<T> extends StatelessWidget {
                 width: segmentWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF232D4B) : Colors.white,
+                    color: theme.surface,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: isDark
-                          ? const Color(0x38FFFFFF)
-                          : const Color(0x80FFFFFF),
+                      color: theme.hairline,
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.35 : 0.08,
+                        color: theme.shadow.withValues(
+                          alpha: theme.isDark ? 0.35 : 0.08,
                         ),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -83,17 +80,12 @@ class GlassSegmented<T> extends StatelessWidget {
                       child: Center(
                         child: AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 180),
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: isSelected ? theme.ink : theme.secondary,
+                          style: AppTypography.body.copyWith(
+                            color: isSelected ? theme.ink : theme.muted,
                             fontSize: 14,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           ),
-                          child: Text(
-                            labels[index],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text(labels[index]),
                         ),
                       ),
                     ),

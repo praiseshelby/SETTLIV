@@ -1,6 +1,4 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -88,14 +86,17 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                   );
 
                   final int paise = entry.value;
-                  final double ratio =
-                      (paise.abs() / maxAbsPaise) * _animation.value;
+                  final double ratio = (paise.abs() / maxAbsPaise) * _animation.value;
                   final bool isOwed = paise > 0;
                   final bool isZero = paise == 0;
 
                   final Color barColor = isZero
-                      ? theme.tertiary.withValues(alpha: 0.3)
-                      : (isOwed ? AppColors.emerald : AppColors.coral);
+                      ? theme.hairline
+                      : (isOwed ? theme.emerald : theme.coral);
+
+                  final Color textColor = isZero
+                      ? theme.muted
+                      : (isOwed ? theme.textEmerald : theme.textCoral);
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 7),
@@ -106,14 +107,10 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              person.id == 'person_arjun'
-                                  ? 'You (${person.name})'
-                                  : person.name,
-                              style: AppTypography.bodyMedium.copyWith(
+                              person.id == 'person_arjun' ? 'You (${person.name})' : person.name,
+                              style: AppTypography.body.copyWith(
                                 color: theme.ink,
-                                fontWeight: person.id == 'person_arjun'
-                                    ? FontWeight.w700
-                                    : FontWeight.w600,
+                                fontWeight: person.id == 'person_arjun' ? FontWeight.w700 : FontWeight.w600,
                                 fontSize: 13,
                               ),
                             ),
@@ -126,11 +123,9 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                                       absolute: false,
                                     ),
                               style: AppTypography.caption.copyWith(
-                                color: barColor,
+                                color: textColor,
                                 fontWeight: FontWeight.w700,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
+                                fontFeatures: const [FontFeature.tabularFigures()],
                               ),
                             ),
                           ],
@@ -146,7 +141,7 @@ class _BalanceBarsChartState extends State<BalanceBarsChart>
                               isOwed: isOwed,
                               isZero: isZero,
                               barColor: barColor,
-                              trackColor: theme.raised.withValues(alpha: 0.6),
+                              trackColor: theme.raised,
                               hairlineColor: theme.hairline,
                             ),
                           ),
@@ -183,23 +178,28 @@ class _BalanceBarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double midX = size.width / 2;
-    final double radius = size.height / 2;
-
-    // Draw background track
     final trackPaint = Paint()
       ..color = trackColor
       ..style = PaintingStyle.fill;
+
+    // Background track with rounded pill corners
     canvas.drawRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        const Radius.circular(3),
+      ),
       trackPaint,
     );
 
-    // Draw center zero line
-    final linePaint = Paint()
+    // Center divider tick
+    final centerTickPaint = Paint()
       ..color = hairlineColor
       ..strokeWidth = 1.0;
-    canvas.drawLine(Offset(midX, 0), Offset(midX, size.height), linePaint);
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      centerTickPaint,
+    );
 
     if (isZero || ratio <= 0.0) return;
 
@@ -207,24 +207,24 @@ class _BalanceBarPainter extends CustomPainter {
       ..color = barColor
       ..style = PaintingStyle.fill;
 
-    final double availableWidth = size.width / 2;
-    final double barWidth = math.max(radius * 2, availableWidth * ratio);
+    final halfWidth = size.width / 2;
+    final barLength = (halfWidth * ratio).clamp(0.0, halfWidth);
 
     if (isOwed) {
-      // Bar extends to the right from midX
+      // Positive/Owed: grows to the right from the center
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromLTWH(midX, 0, barWidth, size.height),
-          Radius.circular(radius),
+          Rect.fromLTWH(halfWidth, 0, barLength, size.height),
+          const Radius.circular(3),
         ),
         barPaint,
       );
     } else {
-      // Bar extends to the left from midX
+      // Negative/Owes: grows to the left from the center
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromLTWH(midX - barWidth, 0, barWidth, size.height),
-          Radius.circular(radius),
+          Rect.fromLTWH(halfWidth - barLength, 0, barLength, size.height),
+          const Radius.circular(3),
         ),
         barPaint,
       );
@@ -233,8 +233,9 @@ class _BalanceBarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BalanceBarPainter oldDelegate) {
-    return oldDelegate.ratio != ratio ||
-        oldDelegate.barColor != barColor ||
-        oldDelegate.trackColor != trackColor;
+    return ratio != oldDelegate.ratio ||
+        barColor != oldDelegate.barColor ||
+        trackColor != oldDelegate.trackColor ||
+        hairlineColor != oldDelegate.hairlineColor;
   }
 }

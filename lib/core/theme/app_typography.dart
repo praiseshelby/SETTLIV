@@ -13,16 +13,28 @@ abstract class AppTypography {
     'sans-serif',
   ];
 
-  /// Hero balance number: 52 / 700 with tight tabular figures
+  /// Screen and card titles: 22 / 700
+  static const TextStyle titleLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontFamilyFallback: fontFamilyFallback,
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.3,
+    height: 1.25,
+  );
+  static const TextStyle screenTitle = titleLarge;
+
+  /// Hero balance number: 44-52 / 800 with tight tabular figures
   static const TextStyle heroMoney = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
-    fontSize: 52,
-    fontWeight: FontWeight.w700,
+    fontSize: 44,
+    fontWeight: FontWeight.w800,
     letterSpacing: -1.5,
     height: 1.1,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+  static const TextStyle moneyHero = heroMoney;
 
   /// Standard display money: 40 / 700
   static const TextStyle displayMoney = TextStyle(
@@ -34,15 +46,28 @@ abstract class AppTypography {
     height: 1.15,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+  static const TextStyle moneyLarge = displayMoney;
 
-  /// Screen and card titles: 22 / 700
-  static const TextStyle titleLarge = TextStyle(
+  /// Medium money: 24 / 700
+  static const TextStyle moneyMedium = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
+    height: 1.2,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  /// Regular money: 16 / 700
+  static const TextStyle moneyRegular = TextStyle(
+    fontFamily: fontFamily,
+    fontFamilyFallback: fontFamilyFallback,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.2,
     height: 1.25,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 
   /// Medium title / card header: 18-20 / 700

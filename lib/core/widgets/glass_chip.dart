@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -29,30 +28,19 @@ class _GlassChipState extends State<GlassChip> {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     final Color bgColor = widget.isSelected
-        ? (isDark ? AppColors.sapphire : AppColors.sapphire)
-        : (isDark
-            ? (_isHovered ? const Color(0x33FFFFFF) : const Color(0x1AFFFFFF))
-            : (_isHovered ? const Color(0xE6FFFFFF) : const Color(0xB3FFFFFF)));
+        ? theme.navy
+        : (_isHovered ? theme.raised : theme.surface);
 
-    final Color textColor = widget.isSelected
-        ? Colors.white
-        : theme.ink;
+    final Color textColor = widget.isSelected ? theme.onNavy : theme.ink;
 
-    final Color borderColor = widget.isSelected
-        ? AppColors.sapphireStart.withValues(alpha: 0.6)
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.6));
+    final Color borderColor = widget.isSelected ? theme.navy : theme.hairline;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
+      cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
@@ -65,11 +53,11 @@ class _GlassChipState extends State<GlassChip> {
             border: Border.all(color: borderColor, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: widget.isSelected ? 0.18 : (isDark ? 0.2 : 0.04),
+                color: theme.shadow.withValues(
+                  alpha: widget.isSelected ? 0.18 : (theme.isDark ? 0.2 : 0.04),
                 ),
-                blurRadius: widget.isSelected ? 10 : 6,
-                offset: const Offset(0, 3),
+                blurRadius: widget.isSelected ? 8 : 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -84,8 +72,7 @@ class _GlassChipState extends State<GlassChip> {
                 widget.label,
                 style: AppTypography.chip.copyWith(
                   color: textColor,
-                  fontWeight:
-                      widget.isSelected ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w600,
                   fontSize: 13,
                 ),
               ),

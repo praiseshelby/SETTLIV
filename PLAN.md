@@ -101,3 +101,49 @@
   - Fixed `GroupCard` and `FloatingNavBar` layout constraints for small screens.
   - Comprehensive report and honest list of known limitations documented in `NOTES.md`.
   - Rebuilt release web build and verified all 67 tests passing.
+
+---
+
+## Task 2: Design System, Core Rebuild & Ledger Features
+
+### Part 1: Theme, Shell, Data Layer, Settings (COMPLETED)
+- [x] **A) Theme Rebuild & Design System Tokens**:
+  - Implemented quiet, premium fintech design system (Linear / Revolut / Cash App).
+  - Defined unified `SettlivThemeExtension` with strict Light and Dark tokens:
+    - Light: canvas `#F5F3EE`, surface `#FFFFFF`, hairline `#E7E3DA`, ink `#121826`, muted ink AA-safe (`#5B6272`), anchor Navy `#0E1A3A`, Emerald `#0FA37F`, Coral `#EF5B48`, text-safe semantic shades (`#0A6E55` and `#BD3222`).
+    - Dark: canvas `#0B1020`, surface `#131A2E`, raised `#1A2340`, hairline `#26304D`, text `#ECEAE4`, muted `#A3A9BA`, primary button off-white with Navy text, lighter mesh and contrast-safe semantic text tokens.
+  - Type tokens in `AppTypography`: Manrope, tabular figures for all money texts, screen titles 22/700, body 15/500, captions 12/600.
+  - Zero raw `Color(0x...)` or `Colors.*` outside `lib/core/theme/` (enforced and verified by unit test `test/theme_token_scan_test.dart`).
+  - Unit test `test/wcag_contrast_test.dart` verifies all text/surface pairs achieve WCAG AA contrast (>= 4.5:1 body, >= 3:1 large).
+  - All custom painters (cover art, charts, hero mesh, split bar) take colors via constructor and compare dynamically in `shouldRepaint`.
+  - Dynamic live OS brightness detection and ThemeMode persistence (Light / Dark / System).
+  - Updated `/gallery` component gallery displaying side-by-side components in both themes.
+  - Updated prototype note text: "v0 prototype with local demo data. More screens and online features come in the full app."
+
+- [x] **B) Navigation Shell**:
+  - Implemented `DockedNavBar` via `StatefulShellRoute` with 4 main tabs: Home, Groups, Records, Insights.
+  - DOCKED full-width bar with 28px top corners, top hairline, blur BackdropFilter layer, upward diffused shadow, safe-area aware, hidden when keyboard is open.
+  - 5 equal slots: Home, Groups, [+], Records, Insights with active 3x18 sliding indicator line and bold label.
+  - Center + button: 52x52 rounded square (radius 18), Navy in light / off-white in dark, raised 14px above the bar with 4px canvas ring, crisp icon, 0.94 scale press animation, opens Add Expense.
+  - All pushed routes (`/add`, `/group/:id`, `/settings`, `/gallery`, modal sheets) use root navigator so the docked bar never overlays or is overlaid.
+  - Verified by `test/shell_routing_test.dart`.
+
+- [x] **C) Profile & Settings Screen**:
+  - Full-screen route (`/settings`) opened by Home avatar with back button and no docked nav bar.
+  - Profile card with editable name, own UPI ID with validation (`name@handle`), showing "UPI ID saved" (removed "verified" claims).
+  - Appearance selector: System / Light / Dark with live cross-fade switching and persistence.
+  - Privacy & Data: plain-language data explanations, "Delete all my data" with typed confirmation, "Start fresh" (empty app), and "Reset demo data".
+  - Clean empty states across all screens for empty app scenarios.
+
+- [x] **D) Full Domain Models & Persistence**:
+  - Implemented full domain models: `Person`, `Group` (with personal space excluded from shared balances), `Expense` (with split parameters and revisions list), `Settlement`, `RecurringTemplate`.
+  - Repository interface `AppRepository` backed by `PersistentAppRepository` using `shared_preferences` with debounced JSON serialization, versioning (`settliv_ledger_v1`), corrupt data recovery, and invariant validation.
+  - Extended seed data to ~6 months of history with past months fully settled by matching settlements, keeping headline numbers exact: Flatmates +₹1,240, Goa Trip -₹380, net +₹860.
+  - Verified by `test/persistence_test.dart` and `test/seed_test.dart`.
+
+- [x] **E) Defect Fixes & Visual QA**:
+  - Avatar initials measured and positioned to avoid overlap intersections.
+  - Group badges and money texts never truncated or ellipsized.
+  - Docked bar does not overlay content or sheets.
+  - All 88 automated tests passing, 0 analyzer issues.
+  - Visual QA verified across 390x844 and 360x640 in Light and Dark modes.

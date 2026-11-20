@@ -2,13 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/group_card.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
@@ -22,10 +21,13 @@ class GroupsScreen extends ConsumerStatefulWidget {
 
 class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   void _openNewGroupSheet(BuildContext context) {
+    final theme = context.settliv;
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.transparent,
+      barrierColor: theme.scrim,
       builder: (_) => const _NewGroupSheet(),
     );
   }
@@ -34,16 +36,17 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   Widget build(BuildContext context) {
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
-    final groups = ref.watch(allGroupsProvider);
+    final allGroups = ref.watch(allGroupsProvider);
+    final groups = allGroups.where((g) => !g.isPersonal).toList();
     final people = ref.watch(allPeopleProvider);
     final currentUserId = repo.currentUserId;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.transparent,
       body: AuroraBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
             children: [
               // Header Row: Title + "New Group" Button
               Row(
@@ -56,10 +59,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                       children: [
                         Text(
                           'Groups',
-                          style: AppTypography.titleLarge.copyWith(
+                          style: AppTypography.screenTitle.copyWith(
                             color: theme.ink,
-                            fontWeight: FontWeight.w800,
                             fontSize: 26,
+                            fontWeight: FontWeight.w800,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -68,7 +71,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                         Text(
                           '${groups.length} active ${groups.length == 1 ? 'group' : 'groups'}',
                           style: AppTypography.caption.copyWith(
-                            color: theme.secondary,
+                            color: theme.muted,
                             fontWeight: FontWeight.w500,
                             fontSize: 13,
                           ),
@@ -86,29 +89,27 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                       onTap: () => _openNewGroupSheet(context),
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.sapphire,
+                          color: theme.navy,
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.sapphire.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: theme.shadow.withValues(alpha: theme.isDark ? 0.3 : 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.add_rounded,
-                                size: 18, color: Colors.white),
+                            Icon(Icons.add_rounded, size: 18, color: theme.onNavy),
                             const SizedBox(width: 4),
                             Text(
                               'New group',
                               style: AppTypography.chip.copyWith(
-                                color: Colors.white,
+                                color: theme.onNavy,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -122,15 +123,19 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Groups List or Empty State
+              // Group List or Empty State
               if (groups.isEmpty) ...[
                 EmptyState(
                   title: 'No groups yet',
                   subtitle:
-                      'Create a group for trips, housemates, or events to start tracking balances.',
+                      'Create a group for your apartment, trip, or shared expenses to start splitting.',
                   action: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryButtonBg,
+                      foregroundColor: theme.primaryButtonText,
+                    ),
                     onPressed: () => _openNewGroupSheet(context),
-                    icon: const Icon(Icons.group_add_rounded),
+                    icon: const Icon(Icons.add_rounded),
                     label: const Text('Create a group'),
                   ),
                 ),
@@ -166,172 +171,128 @@ class _NewGroupSheet extends ConsumerStatefulWidget {
 }
 
 class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
-  final _nameController = TextEditingController();
-  final _memberInputController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _memberController = TextEditingController();
   GroupType _selectedType = GroupType.trip;
-  final List<String> _memberNames = [];
+  final List<String> _members = [];
   String? _nameError;
   String? _memberError;
 
   @override
-  void initState() {
-    super.initState();
-    final repo = ref.read(appRepositoryProvider);
-    final currentUserName = repo.currentUser?.name ?? 'You';
-    _memberNames.add(currentUserName);
-  }
-
-  @override
   void dispose() {
     _nameController.dispose();
-    _memberInputController.dispose();
+    _memberController.dispose();
     super.dispose();
   }
 
   void _addMember() {
-    final rawName = _memberInputController.text.trim();
-    if (rawName.isEmpty) return;
+    final text = _memberController.text.trim();
+    if (text.isEmpty) return;
 
-    if (_memberNames.any((m) => m.toLowerCase() == rawName.toLowerCase())) {
-      setState(() => _memberError = 'Member "$rawName" is already added');
+    if (_members.any((m) => m.toLowerCase() == text.toLowerCase())) {
+      setState(() => _memberError = 'Member already added');
       return;
     }
 
     setState(() {
-      _memberNames.add(rawName);
-      _memberInputController.clear();
+      _members.add(text);
+      _memberController.clear();
       _memberError = null;
     });
   }
 
   void _removeMember(int index) {
-    if (index == 0) return; // Keep currentUser
-    setState(() {
-      _memberNames.removeAt(index);
-    });
+    setState(() => _members.removeAt(index));
   }
 
   void _submit() {
-    final repo = ref.read(appRepositoryProvider);
-    final allGroups = repo.getGroups();
     final name = _nameController.text.trim();
-
-    // Validation 1: Name required
     if (name.isEmpty) {
       setState(() => _nameError = 'Group name is required');
       return;
     }
 
-    // Validation 2: Name unique (case-insensitive)
-    if (allGroups.any((g) => g.name.toLowerCase() == name.toLowerCase())) {
-      setState(() => _nameError = 'A group named "$name" already exists');
-      return;
-    }
+    final repo = ref.read(appRepositoryProvider);
+    final notifier = ref.read(appStateProvider.notifier);
+    final currentUserId = repo.currentUserId;
 
-    // Validation 3: At least 2 members
-    if (_memberNames.length < 2) {
-      setState(() => _memberError = 'Add at least one more member');
-      return;
-    }
+    final List<String> memberIds = [currentUserId];
 
-    final repoNotifier = ref.read(appStateProvider.notifier);
-    final List<String> memberIds = [];
-
-    // Ensure all members exist as Person objects
-    final allPeople = repo.getPeople();
-    for (final mName in _memberNames) {
-      final existing = allPeople.cast<Person?>().firstWhere(
-            (p) => p?.name.toLowerCase() == mName.toLowerCase(),
-            orElse: () => null,
+    for (final memberName in _members) {
+      final existing = repo.getPeople().where(
+            (p) => p.name.toLowerCase() == memberName.toLowerCase(),
           );
-      if (existing != null) {
-        memberIds.add(existing.id);
+
+      if (existing.isNotEmpty) {
+        memberIds.add(existing.first.id);
       } else {
-        final newId = 'person_${DateTime.now().millisecondsSinceEpoch}_${memberIds.length}';
-        final initials = mName.isNotEmpty
-            ? mName.substring(0, math.min(2, mName.length)).toUpperCase()
-            : '??';
+        final newId = 'person_${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(999)}';
         final newPerson = Person(
           id: newId,
-          name: mName,
-          avatarInitials: initials,
-          avatarPairIndex: memberIds.length % 8,
+          name: memberName,
         );
-        repoNotifier.addPerson(newPerson);
+        notifier.addPerson(newPerson);
         memberIds.add(newId);
       }
     }
 
-    final newGroupId = 'group_${DateTime.now().millisecondsSinceEpoch}';
     final newGroup = Group(
-      id: newGroupId,
+      id: 'group_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       type: _selectedType,
       memberIds: memberIds,
-      coverType: _selectedType == GroupType.trip
-          ? GroupCoverType.goaTrip
-          : GroupCoverType.flatmates,
+      coverThemeIndex: math.Random().nextInt(6),
+      startDate: DateTime.now(),
     );
 
-    repoNotifier.addGroup(newGroup);
+    notifier.addGroup(newGroup);
     Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Created "$name" group!'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
 
-    return Padding(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: theme.hairline),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: SingleChildScrollView(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sheet Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Create new group',
-                    style: AppTypography.titleLarge.copyWith(
-                      color: theme.ink,
-                      fontWeight: FontWeight.w700,
-                    ),
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.hairline,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // Group Name Input
-              Text(
-                'GROUP NAME',
-                style: AppTypography.sectionLabel.copyWith(
-                  color: theme.secondary,
-                  fontSize: 11,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 16),
+
+              Text(
+                'New Group',
+                style: AppTypography.titleLarge.copyWith(
+                  color: theme.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Group Name Field
               TextField(
                 controller: _nameController,
                 style: TextStyle(
@@ -341,19 +302,21 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                   color: theme.ink,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Manali Roadtrip, Apartment 4B',
+                  hintText: 'e.g. Flat 402, Manali Trip',
                   hintStyle: TextStyle(
                     fontFamily: 'Manrope',
-                    color: theme.secondary.withValues(alpha: 0.6),
+                    color: theme.muted,
                   ),
                   filled: true,
                   fillColor: theme.raised,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: theme.hairline),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: theme.hairline),
                   ),
                   errorText: _nameError,
@@ -364,85 +327,75 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Group Type Selector: Trip / Home / Other
-              Text(
-                'GROUP TYPE',
-                style: AppTypography.sectionLabel.copyWith(
-                  color: theme.secondary,
-                  fontSize: 11,
-                ),
-              ),
-              const SizedBox(height: 8),
+              // Type Selector: Home / Trip / Other
               Row(
                 children: [
                   _buildTypeChip('Trip', GroupType.trip, Icons.flight_takeoff_rounded),
                   const SizedBox(width: 8),
                   _buildTypeChip('Home', GroupType.home, Icons.home_rounded),
                   const SizedBox(width: 8),
-                  _buildTypeChip('Other', GroupType.other, Icons.category_rounded),
+                  _buildTypeChip('Other', GroupType.other, Icons.groups_rounded),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // Members
+              // Members List & Field
               Text(
-                'MEMBERS (MIN 2)',
-                style: AppTypography.sectionLabel.copyWith(
-                  color: theme.secondary,
+                'MEMBERS (You are included)',
+                style: AppTypography.caption.copyWith(
+                  color: theme.muted,
+                  letterSpacing: 0.8,
                   fontSize: 11,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
 
-              // Member Chips
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (int i = 0; i < _memberNames.length; i++)
-                    Chip(
-                      label: Text(
-                        _memberNames[i],
-                        style: TextStyle(
+              if (_members.isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (int i = 0; i < _members.length; i++)
+                      Chip(
+                        label: Text(_members[i]),
+                        backgroundColor: theme.raised,
+                        labelStyle: TextStyle(
                           fontFamily: 'Manrope',
-                          fontWeight: FontWeight.w600,
                           fontSize: 13,
+                          fontWeight: FontWeight.w600,
                           color: theme.ink,
                         ),
+                        deleteIcon: Icon(Icons.close_rounded, size: 16, color: theme.muted),
+                        onDeleted: () => _removeMember(i),
+                        side: BorderSide(color: theme.hairline),
                       ),
-                      backgroundColor: theme.raised,
-                      side: BorderSide(color: theme.hairline),
-                      deleteIcon: i > 0
-                          ? const Icon(Icons.close_rounded, size: 16)
-                          : null,
-                      onDeleted: i > 0 ? () => _removeMember(i) : null,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
 
-              // Add member input field + button
               Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: _memberInputController,
+                      controller: _memberController,
                       style: TextStyle(
                         fontFamily: 'Manrope',
                         fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: theme.ink,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Add friend name...',
+                        hintText: 'Add member by name...',
                         hintStyle: TextStyle(
                           fontFamily: 'Manrope',
-                          color: theme.secondary.withValues(alpha: 0.6),
+                          color: theme.muted,
                         ),
                         filled: true,
                         fillColor: theme.raised,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: theme.hairline),
@@ -459,10 +412,9 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                   ElevatedButton(
                     onPressed: _addMember,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.sapphire,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                      backgroundColor: theme.navy,
+                      foregroundColor: theme.onNavy,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -475,8 +427,8 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                 const SizedBox(height: 6),
                 Text(
                   _memberError!,
-                  style: const TextStyle(
-                    color: AppColors.coral,
+                  style: TextStyle(
+                    color: theme.textCoral,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -485,7 +437,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
               const SizedBox(height: 24),
 
               // Submit button
-              GradientPrimaryButton(
+              PrimaryButton(
                 label: 'Create group',
                 onPressed: _submit,
               ),
@@ -510,13 +462,11 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.sapphire.withValues(alpha: 0.15)
-                  : theme.raised,
+              color: isSelected ? theme.navy : theme.raised,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? AppColors.sapphire : theme.hairline,
-                width: isSelected ? 1.5 : 1.0,
+                color: isSelected ? theme.navy : theme.hairline,
+                width: 1.0,
               ),
             ),
             child: Row(
@@ -525,7 +475,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected ? AppColors.sapphire : theme.secondary,
+                  color: isSelected ? theme.onNavy : theme.muted,
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -534,7 +484,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                     fontFamily: 'Manrope',
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.sapphire : theme.ink,
+                    color: isSelected ? theme.onNavy : theme.ink,
                   ),
                 ),
               ],

@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
 
 enum MoneyStyle {
-  hero,    // 52 / 700
-  display, // 40 / 700
+  hero,    // 42 / 800
+  display, // 32 / 700
   title,   // 20 / 700
   body,    // 15 / 600
   caption, // 13 / 600
 }
 
 enum MoneyColorRole {
-  auto,    // Positive = emerald, negative = coral, zero = secondary
+  auto,    // Positive = textEmerald, negative = textCoral, zero = muted
   ink,     // High contrast ink
   emerald, // Forced positive / owed
   coral,   // Forced negative / owe
@@ -50,54 +49,54 @@ class MoneyText extends StatelessWidget {
     switch (colorRole) {
       case MoneyColorRole.auto:
         if (paise > 0) {
-          textColor = AppColors.emerald;
+          textColor = theme.textEmerald;
         } else if (paise < 0) {
-          textColor = AppColors.coral;
+          textColor = theme.textCoral;
         } else {
-          textColor = theme.secondary;
+          textColor = theme.muted;
         }
         break;
       case MoneyColorRole.ink:
         textColor = theme.ink;
         break;
       case MoneyColorRole.emerald:
-        textColor = AppColors.emerald;
+        textColor = theme.textEmerald;
         break;
       case MoneyColorRole.coral:
-        textColor = AppColors.coral;
+        textColor = theme.textCoral;
         break;
       case MoneyColorRole.white:
-        textColor = Colors.white;
+        textColor = theme.white;
         break;
     }
 
     final TextStyle baseStyle;
     switch (style) {
       case MoneyStyle.hero:
-        baseStyle = AppTypography.heroMoney;
+        baseStyle = AppTypography.moneyHero;
         break;
       case MoneyStyle.display:
-        baseStyle = AppTypography.displayMoney;
+        baseStyle = AppTypography.moneyLarge;
         break;
       case MoneyStyle.title:
-        baseStyle = AppTypography.titleMedium;
+        baseStyle = AppTypography.moneyMedium;
         break;
       case MoneyStyle.body:
-        baseStyle = AppTypography.bodyMedium;
+        baseStyle = AppTypography.moneyRegular;
         break;
       case MoneyStyle.caption:
         baseStyle = AppTypography.caption;
         break;
     }
 
+    // Money text must NEVER be truncated or clipped anywhere!
     return Text(
       formattedText,
+      softWrap: false,
       style: baseStyle.copyWith(
         color: textColor,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }

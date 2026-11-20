@@ -74,7 +74,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Activity'), findsWidgets);
+      expect(find.text('Records'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
   });

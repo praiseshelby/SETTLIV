@@ -1,30 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
+export 'app_colors.dart';
 
 class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
+  // Surfaces
   final Color canvas;
   final Color surface;
   final Color raised;
   final Color hairline;
+
+  // Text / Inks
   final Color ink;
-  final Color secondary;
+  final Color muted;
   final Color tertiary;
+
+  // Anchor & Primary Buttons
+  final Color navy;
+  final Color onNavy;
+  final Color primaryButtonBg;
+  final Color primaryButtonText;
+
+  // Semantic Money & State
   final Color emerald;
+  final Color textEmerald;
   final Color emeraldTint;
   final Color coral;
+  final Color textCoral;
   final Color coralTint;
+
+  // Accents (Categories & Charts ONLY)
   final Color saffron;
   final Color saffronTint;
   final Color teal;
   final Color tealTint;
   final Color orchid;
   final Color orchidTint;
-  final Color sapphire;
-  final Color glassFillLevel1;
-  final Color glassFillLevel2;
-  final Color glassFillLevel3;
-  final Color glassBorder;
+
+  // Overlays, Bars, Shadows & Scrims
+  final Color scrim;
+  final Color transparent;
+  final Color white;
+  final Color black;
+  final Color shadow;
+  final Color barSurface;
+
+  // Custom Painter Tokens
+  final Color heroMeshStart;
+  final Color heroMeshEnd;
+  final Color heroMeshAccent;
+  final List<List<Color>> avatarGradients;
+  final List<List<Color>> coverThemePalettes;
+
   final bool isDark;
 
   const SettlivThemeExtension({
@@ -33,11 +61,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     required this.raised,
     required this.hairline,
     required this.ink,
-    required this.secondary,
+    required this.muted,
     required this.tertiary,
+    required this.navy,
+    required this.onNavy,
+    required this.primaryButtonBg,
+    required this.primaryButtonText,
     required this.emerald,
+    required this.textEmerald,
     required this.emeraldTint,
     required this.coral,
+    required this.textCoral,
     required this.coralTint,
     required this.saffron,
     required this.saffronTint,
@@ -45,63 +79,96 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     required this.tealTint,
     required this.orchid,
     required this.orchidTint,
-    required this.sapphire,
-    required this.glassFillLevel1,
-    required this.glassFillLevel2,
-    required this.glassFillLevel3,
-    required this.glassBorder,
+    required this.scrim,
+    required this.transparent,
+    required this.white,
+    required this.black,
+    required this.shadow,
+    required this.barSurface,
+    required this.heroMeshStart,
+    required this.heroMeshEnd,
+    required this.heroMeshAccent,
+    required this.avatarGradients,
+    required this.coverThemePalettes,
     required this.isDark,
   });
 
+  // Convenience alias for existing secondary uses
+  Color get secondary => muted;
+
   static const light = SettlivThemeExtension(
-    canvas: AppColors.lightBase,
-    surface: Colors.white,
-    raised: Color(0xFFF8FAFD),
-    hairline: Color(0x1A0F1633),
+    canvas: AppColors.lightCanvas,
+    surface: AppColors.lightSurface,
+    raised: AppColors.lightRaised,
+    hairline: AppColors.lightHairline,
     ink: AppColors.lightInk,
-    secondary: AppColors.lightSecondary,
+    muted: AppColors.lightMuted,
     tertiary: AppColors.lightTertiary,
+    navy: AppColors.navy,
+    onNavy: Color(0xFFFFFFFF),
+    primaryButtonBg: AppColors.navy,
+    primaryButtonText: Color(0xFFFFFFFF),
     emerald: AppColors.emerald,
-    emeraldTint: AppColors.emeraldTint,
+    textEmerald: AppColors.textEmeraldLight,
+    emeraldTint: AppColors.emeraldTintLight,
     coral: AppColors.coral,
-    coralTint: AppColors.coralTint,
-    saffron: AppColors.amber,
-    saffronTint: AppColors.amberTint,
-    teal: AppColors.aqua,
-    tealTint: AppColors.aquaTint,
-    orchid: AppColors.lilac,
-    orchidTint: AppColors.lilacTint,
-    sapphire: AppColors.sapphire,
-    glassFillLevel1: Color(0x73FFFFFF), // 45%
-    glassFillLevel2: Color(0xA6FFFFFF), // 65%
-    glassFillLevel3: Color(0xCCFFFFFF), // 80%
-    glassBorder: Color(0x99FFFFFF),     // 60% white
+    textCoral: AppColors.textCoralLight,
+    coralTint: AppColors.coralTintLight,
+    saffron: AppColors.saffron,
+    saffronTint: AppColors.saffronTint,
+    teal: AppColors.teal,
+    tealTint: AppColors.tealTint,
+    orchid: AppColors.orchid,
+    orchidTint: AppColors.orchidTint,
+    scrim: Color(0x660E1A3A),
+    transparent: Color(0x00000000),
+    white: Color(0xFFFFFFFF),
+    black: Color(0xFF000000),
+    shadow: Color(0x1F0E1A3A),
+    barSurface: Color(0xE6FFFFFF), // ~90% white
+    heroMeshStart: AppColors.navy,
+    heroMeshEnd: Color(0xFF1B2E5E),
+    heroMeshAccent: Color(0xFF263F7C),
+    avatarGradients: AppColors.avatarGradients,
+    coverThemePalettes: AppColors.coverThemes,
     isDark: false,
   );
 
   static const dark = SettlivThemeExtension(
-    canvas: AppColors.darkBase,
-    surface: Color(0xFF10162A),
-    raised: Color(0xFF172038),
-    hairline: Color(0x2EFFFFFF),
+    canvas: AppColors.darkCanvas,
+    surface: AppColors.darkSurface,
+    raised: AppColors.darkRaised,
+    hairline: AppColors.darkHairline,
     ink: AppColors.darkInk,
-    secondary: AppColors.darkSecondary,
+    muted: AppColors.darkMuted,
     tertiary: AppColors.darkTertiary,
+    navy: AppColors.navy,
+    onNavy: AppColors.darkInk,
+    primaryButtonBg: AppColors.offWhite,
+    primaryButtonText: AppColors.navy,
     emerald: AppColors.emerald,
-    emeraldTint: Color(0x3312B48A),
+    textEmerald: AppColors.textEmeraldDark,
+    emeraldTint: AppColors.emeraldTintDark,
     coral: AppColors.coral,
-    coralTint: Color(0x33F0614F),
-    saffron: AppColors.amber,
-    saffronTint: Color(0x33F5B544),
-    teal: AppColors.aqua,
-    tealTint: Color(0x3322C3D6),
-    orchid: AppColors.lilac,
-    orchidTint: Color(0x338B7CFF),
-    sapphire: AppColors.sapphire,
-    glassFillLevel1: Color(0x14FFFFFF), // 8%
-    glassFillLevel2: Color(0x1FFFFFFF), // 12%
-    glassFillLevel3: Color(0x29FFFFFF), // 16%
-    glassBorder: Color(0x38FFFFFF),     // 22% white
+    textCoral: AppColors.textCoralDark,
+    coralTint: AppColors.coralTintDark,
+    saffron: AppColors.saffron,
+    saffronTint: AppColors.saffronTint,
+    teal: AppColors.teal,
+    tealTint: AppColors.tealTint,
+    orchid: AppColors.orchid,
+    orchidTint: AppColors.orchidTint,
+    scrim: Color(0x99000000),
+    transparent: Color(0x00000000),
+    white: Color(0xFFFFFFFF),
+    black: Color(0xFF000000),
+    shadow: Color(0x66000000),
+    barSurface: Color(0xE6131A2E), // ~90% dark surface
+    heroMeshStart: Color(0xFF0A1227),
+    heroMeshEnd: Color(0xFF131D3B),
+    heroMeshAccent: Color(0xFF1A274E),
+    avatarGradients: AppColors.avatarGradients,
+    coverThemePalettes: AppColors.coverThemes,
     isDark: true,
   );
 
@@ -112,11 +179,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     Color? raised,
     Color? hairline,
     Color? ink,
-    Color? secondary,
+    Color? muted,
     Color? tertiary,
+    Color? navy,
+    Color? onNavy,
+    Color? primaryButtonBg,
+    Color? primaryButtonText,
     Color? emerald,
+    Color? textEmerald,
     Color? emeraldTint,
     Color? coral,
+    Color? textCoral,
     Color? coralTint,
     Color? saffron,
     Color? saffronTint,
@@ -124,11 +197,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     Color? tealTint,
     Color? orchid,
     Color? orchidTint,
-    Color? sapphire,
-    Color? glassFillLevel1,
-    Color? glassFillLevel2,
-    Color? glassFillLevel3,
-    Color? glassBorder,
+    Color? scrim,
+    Color? transparent,
+    Color? white,
+    Color? black,
+    Color? shadow,
+    Color? barSurface,
+    Color? heroMeshStart,
+    Color? heroMeshEnd,
+    Color? heroMeshAccent,
+    List<List<Color>>? avatarGradients,
+    List<List<Color>>? coverThemePalettes,
     bool? isDark,
   }) {
     return SettlivThemeExtension(
@@ -137,11 +216,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       raised: raised ?? this.raised,
       hairline: hairline ?? this.hairline,
       ink: ink ?? this.ink,
-      secondary: secondary ?? this.secondary,
+      muted: muted ?? this.muted,
       tertiary: tertiary ?? this.tertiary,
+      navy: navy ?? this.navy,
+      onNavy: onNavy ?? this.onNavy,
+      primaryButtonBg: primaryButtonBg ?? this.primaryButtonBg,
+      primaryButtonText: primaryButtonText ?? this.primaryButtonText,
       emerald: emerald ?? this.emerald,
+      textEmerald: textEmerald ?? this.textEmerald,
       emeraldTint: emeraldTint ?? this.emeraldTint,
       coral: coral ?? this.coral,
+      textCoral: textCoral ?? this.textCoral,
       coralTint: coralTint ?? this.coralTint,
       saffron: saffron ?? this.saffron,
       saffronTint: saffronTint ?? this.saffronTint,
@@ -149,11 +234,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       tealTint: tealTint ?? this.tealTint,
       orchid: orchid ?? this.orchid,
       orchidTint: orchidTint ?? this.orchidTint,
-      sapphire: sapphire ?? this.sapphire,
-      glassFillLevel1: glassFillLevel1 ?? this.glassFillLevel1,
-      glassFillLevel2: glassFillLevel2 ?? this.glassFillLevel2,
-      glassFillLevel3: glassFillLevel3 ?? this.glassFillLevel3,
-      glassBorder: glassBorder ?? this.glassBorder,
+      scrim: scrim ?? this.scrim,
+      transparent: transparent ?? this.transparent,
+      white: white ?? this.white,
+      black: black ?? this.black,
+      shadow: shadow ?? this.shadow,
+      barSurface: barSurface ?? this.barSurface,
+      heroMeshStart: heroMeshStart ?? this.heroMeshStart,
+      heroMeshEnd: heroMeshEnd ?? this.heroMeshEnd,
+      heroMeshAccent: heroMeshAccent ?? this.heroMeshAccent,
+      avatarGradients: avatarGradients ?? this.avatarGradients,
+      coverThemePalettes: coverThemePalettes ?? this.coverThemePalettes,
       isDark: isDark ?? this.isDark,
     );
   }
@@ -168,11 +259,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       raised: Color.lerp(raised, other.raised, t)!,
       hairline: Color.lerp(hairline, other.hairline, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
-      secondary: Color.lerp(secondary, other.secondary, t)!,
+      muted: Color.lerp(muted, other.muted, t)!,
       tertiary: Color.lerp(tertiary, other.tertiary, t)!,
+      navy: Color.lerp(navy, other.navy, t)!,
+      onNavy: Color.lerp(onNavy, other.onNavy, t)!,
+      primaryButtonBg: Color.lerp(primaryButtonBg, other.primaryButtonBg, t)!,
+      primaryButtonText:
+          Color.lerp(primaryButtonText, other.primaryButtonText, t)!,
       emerald: Color.lerp(emerald, other.emerald, t)!,
+      textEmerald: Color.lerp(textEmerald, other.textEmerald, t)!,
       emeraldTint: Color.lerp(emeraldTint, other.emeraldTint, t)!,
       coral: Color.lerp(coral, other.coral, t)!,
+      textCoral: Color.lerp(textCoral, other.textCoral, t)!,
       coralTint: Color.lerp(coralTint, other.coralTint, t)!,
       saffron: Color.lerp(saffron, other.saffron, t)!,
       saffronTint: Color.lerp(saffronTint, other.saffronTint, t)!,
@@ -180,14 +278,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       tealTint: Color.lerp(tealTint, other.tealTint, t)!,
       orchid: Color.lerp(orchid, other.orchid, t)!,
       orchidTint: Color.lerp(orchidTint, other.orchidTint, t)!,
-      sapphire: Color.lerp(sapphire, other.sapphire, t)!,
-      glassFillLevel1:
-          Color.lerp(glassFillLevel1, other.glassFillLevel1, t)!,
-      glassFillLevel2:
-          Color.lerp(glassFillLevel2, other.glassFillLevel2, t)!,
-      glassFillLevel3:
-          Color.lerp(glassFillLevel3, other.glassFillLevel3, t)!,
-      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
+      transparent: transparent,
+      white: white,
+      black: black,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
+      barSurface: Color.lerp(barSurface, other.barSurface, t)!,
+      heroMeshStart: Color.lerp(heroMeshStart, other.heroMeshStart, t)!,
+      heroMeshEnd: Color.lerp(heroMeshEnd, other.heroMeshEnd, t)!,
+      heroMeshAccent: Color.lerp(heroMeshAccent, other.heroMeshAccent, t)!,
+      avatarGradients: t < 0.5 ? avatarGradients : other.avatarGradients,
+      coverThemePalettes:
+          t < 0.5 ? coverThemePalettes : other.coverThemePalettes,
       isDark: t < 0.5 ? isDark : other.isDark,
     );
   }
@@ -198,16 +300,53 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.lightBase,
+      scaffoldBackgroundColor: AppColors.lightCanvas,
+      canvasColor: AppColors.lightCanvas,
+      cardColor: AppColors.lightSurface,
+      dividerColor: AppColors.lightHairline,
       fontFamily: AppTypography.fontFamily,
       fontFamilyFallback: AppTypography.fontFamilyFallback,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
       colorScheme: const ColorScheme.light(
-        primary: AppColors.sapphire,
-        onPrimary: Colors.white,
-        surface: Colors.white,
+        primary: AppColors.navy,
+        onPrimary: Color(0xFFFFFFFF),
+        surface: AppColors.lightSurface,
         onSurface: AppColors.lightInk,
         error: AppColors.coral,
-        onError: Colors.white,
+        onError: Color(0xFFFFFFFF),
+      ),
+      dialogTheme: DialogTheme(
+        backgroundColor: AppColors.lightSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.lightHairline),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        modalBackgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.navy,
+        contentTextStyle: const TextStyle(
+          color: Color(0xFFFFFFFF),
+          fontFamily: AppTypography.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.navy,
+        selectionColor: AppColors.navy.withValues(alpha: 0.2),
+        selectionHandleColor: AppColors.navy,
       ),
       extensions: const [SettlivThemeExtension.light],
     );
@@ -217,16 +356,53 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.darkBase,
+      scaffoldBackgroundColor: AppColors.darkCanvas,
+      canvasColor: AppColors.darkCanvas,
+      cardColor: AppColors.darkSurface,
+      dividerColor: AppColors.darkHairline,
       fontFamily: AppTypography.fontFamily,
       fontFamilyFallback: AppTypography.fontFamilyFallback,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.sapphire,
-        onPrimary: Colors.white,
-        surface: Color(0xFF10162A),
+        primary: AppColors.offWhite,
+        onPrimary: AppColors.navy,
+        surface: AppColors.darkSurface,
         onSurface: AppColors.darkInk,
         error: AppColors.coral,
-        onError: Colors.white,
+        onError: Color(0xFFFFFFFF),
+      ),
+      dialogTheme: DialogTheme(
+        backgroundColor: AppColors.darkSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.darkHairline),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        modalBackgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.darkRaised,
+        contentTextStyle: const TextStyle(
+          color: AppColors.darkInk,
+          fontFamily: AppTypography.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.offWhite,
+        selectionColor: AppColors.offWhite.withValues(alpha: 0.25),
+        selectionHandleColor: AppColors.offWhite,
       ),
       extensions: const [SettlivThemeExtension.dark],
     );

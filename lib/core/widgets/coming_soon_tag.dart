@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import 'glass_sheet_scaffold.dart';
-import 'gradient_primary_button.dart';
+import 'primary_button.dart';
 
 class ComingSoonTag extends StatelessWidget {
   final String label;
@@ -19,6 +18,7 @@ class ComingSoonTag extends StatelessWidget {
 
   static void showComingSoonSheet(BuildContext context, String featureName,
       [String? details]) {
+    final theme = context.settliv;
     GlassSheetScaffold.show(
       context: context,
       title: 'Coming in the full app',
@@ -32,17 +32,17 @@ class ComingSoonTag extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.saffron.withValues(alpha: 0.14),
+                color: theme.saffronTint,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: AppColors.saffron.withValues(alpha: 0.28),
+                  color: theme.saffron.withValues(alpha: 0.28),
                   width: 1,
                 ),
               ),
               child: Text(
                 'Coming in the full app',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.saffron,
+                  color: theme.saffron,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -51,7 +51,7 @@ class ComingSoonTag extends StatelessWidget {
             Text(
               featureName,
               style: AppTypography.titleLarge.copyWith(
-                color: context.settliv.ink,
+                color: theme.ink,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -60,12 +60,12 @@ class ComingSoonTag extends StatelessWidget {
               details ??
                   'This feature is part of the Settliv native experience on Android & iOS. The prototype demonstrates core expense splitting, real-time balance resolution, and instant UPI settlement.',
               style: AppTypography.body.copyWith(
-                color: context.settliv.secondary,
+                color: theme.muted,
                 height: 1.45,
               ),
             ),
             const SizedBox(height: 24),
-            GradientPrimaryButton(
+            PrimaryButton(
               label: 'Got it',
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -78,7 +78,6 @@ class ComingSoonTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
@@ -90,14 +89,10 @@ class ComingSoonTag extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.55),
+            color: theme.raised,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.08),
+              color: theme.hairline,
               width: 1.0,
             ),
           ),
@@ -107,8 +102,8 @@ class ComingSoonTag extends StatelessWidget {
               Container(
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.saffron,
+                decoration: BoxDecoration(
+                  color: theme.saffron,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -116,7 +111,7 @@ class ComingSoonTag extends StatelessWidget {
               Text(
                 label,
                 style: AppTypography.caption.copyWith(
-                  color: theme.secondary,
+                  color: theme.muted,
                   fontWeight: FontWeight.w600,
                   fontSize: 11.5,
                 ),

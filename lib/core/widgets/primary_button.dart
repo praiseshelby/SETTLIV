@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -38,20 +37,17 @@ class _PrimaryButtonState extends State<PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isEnabled = widget.onPressed != null && !widget.isLoading;
-    final isDark = context.isDarkMode;
+    final theme = context.settliv;
 
     final Color bgColor;
     final Color textColor;
-    final Color shadowColor;
 
     if (widget.variant == PrimaryButtonVariant.emeraldConfirm) {
-      bgColor = isDark ? AppColors.emeraldBright : AppColors.emerald;
-      textColor = isDark ? const Color(0xFF042116) : Colors.white;
-      shadowColor = AppColors.emerald.withValues(alpha: 0.3);
+      bgColor = theme.emerald;
+      textColor = theme.isDark ? theme.navy : theme.white;
     } else {
-      bgColor = isDark ? const Color(0xFF223460) : AppColors.midnightNavy;
-      textColor = Colors.white;
-      shadowColor = AppColors.midnightNavy.withValues(alpha: 0.25);
+      bgColor = theme.primaryButtonBg;
+      textColor = theme.primaryButtonText;
     }
 
     final double effectiveOpacity = isEnabled ? 1.0 : 0.45;
@@ -80,14 +76,14 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 boxShadow: isEnabled
                     ? [
                         BoxShadow(
-                          color: shadowColor,
+                          color: theme.shadow.withValues(alpha: theme.isDark ? 0.35 : 0.15),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
                       ]
                     : null,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: theme.hairline,
                   width: 1.0,
                 ),
               ),
@@ -103,6 +99,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                       )
                     : Row(
                         mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (widget.leading != null) ...[
                             widget.leading!,
@@ -113,9 +110,11 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                               widget.label,
                               style: AppTypography.button.copyWith(
                                 color: textColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
                               ),
-                              overflow: TextOverflow.ellipsis,
                               maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (widget.trailing != null) ...[

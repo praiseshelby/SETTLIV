@@ -59,8 +59,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify SettleSheet opened
-    expect(find.text('Pay via UPI'), findsOneWidget);
-    expect(find.text('Mark as cash'), findsOneWidget);
+    expect(find.text('Pay with UPI'), findsOneWidget);
+    expect(find.text('Paid in Cash'), findsOneWidget);
   });
 
   testWidgets('Tapping center + button in floating nav bar navigates to /add',

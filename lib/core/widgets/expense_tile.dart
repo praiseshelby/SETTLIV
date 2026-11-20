@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../data/models/expense.dart';
 import '../../data/models/person.dart';
 import '../../data/models/group.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
@@ -58,19 +57,17 @@ class _ExpenseTileState extends State<ExpenseTile> {
     if (isPayer) {
       final int lentAmount = widget.expense.amount - userShare;
       if (lentAmount > 0) {
-        final formatted =
-            CurrencyFormatter.formatPaise(lentAmount, absolute: true);
+        final formatted = CurrencyFormatter.formatPaise(lentAmount, absolute: true);
         shareLabel = 'You lent $formatted';
-        shareColor = AppColors.emerald;
+        shareColor = theme.textEmerald;
       } else {
         shareLabel = 'Paid for self';
-        shareColor = theme.secondary;
+        shareColor = theme.muted;
       }
     } else if (userShare > 0) {
-      final formatted =
-          CurrencyFormatter.formatPaise(userShare, absolute: true);
+      final formatted = CurrencyFormatter.formatPaise(userShare, absolute: true);
       shareLabel = 'You owe $formatted';
-      shareColor = AppColors.coral;
+      shareColor = theme.textCoral;
     } else {
       shareLabel = 'Not involved';
       shareColor = theme.tertiary;
@@ -94,12 +91,8 @@ class _ExpenseTileState extends State<ExpenseTile> {
             curve: Curves.easeOutCubic,
             child: Container(
               color: widget.isHighlighted
-                  ? AppColors.sapphire.withValues(alpha: 0.12)
-                  : (_isHovered
-                      ? (context.isDarkMode
-                          ? const Color(0x1AFFFFFF)
-                          : const Color(0x0F0F1633))
-                      : Colors.transparent),
+                  ? theme.navy.withValues(alpha: 0.10)
+                  : (_isHovered ? theme.raised.withValues(alpha: 0.40) : theme.transparent),
               child: Column(
                 children: [
                   SizedBox(
@@ -109,95 +102,91 @@ class _ExpenseTileState extends State<ExpenseTile> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                        // 1. CategoryTile
-                        CategoryTile(
-                          category: widget.expense.category,
-                          size: 40,
-                          iconSize: 20,
-                        ),
-                        const SizedBox(width: 14),
+                          // 1. Category Badge
+                          CategoryBadge(
+                            category: widget.expense.category,
+                            size: 40,
+                            iconSize: 20,
+                          ),
+                          const SizedBox(width: 14),
 
-                        // 2. Title and Payer/Group subtitle
-                        Expanded(
-                          child: Column(
+                          // 2. Title and Payer/Group subtitle
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.expense.title,
+                                  style: AppTypography.body.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.muted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // 3. Tabular total amount & Coloured share label
+                          Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                widget.expense.title,
-                                style: AppTypography.bodyMedium.copyWith(
+                                CurrencyFormatter.formatPaise(
+                                  widget.expense.amount,
+                                  absolute: true,
+                                ),
+                                style: AppTypography.body.copyWith(
                                   color: theme.ink,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                subtitle,
+                                shareLabel,
                                 style: AppTypography.caption.copyWith(
-                                  color: theme.secondary,
+                                  color: shareColor,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // 3. Tabular total amount & Coloured share label
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              CurrencyFormatter.formatPaise(
-                                widget.expense.amount,
-                                absolute: true,
-                              ),
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: theme.ink,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              shareLabel,
-                              style: AppTypography.caption.copyWith(
-                                color: shareColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                if (widget.showDivider)
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    indent: 68,
-                    endIndent: 16,
-                    color: theme.hairline,
-                  ),
-              ],
+                  if (widget.showDivider)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 68,
+                      endIndent: 16,
+                      color: theme.hairline,
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -8,7 +7,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/category_badge.dart';
 import '../../../core/widgets/glass_sheet_scaffold.dart';
 import '../../../core/widgets/glass_surface.dart';
-import '../../../core/widgets/gradient_primary_button.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
@@ -61,18 +60,18 @@ class ExpenseDetailSheet extends ConsumerWidget {
       if (lent > 0) {
         userShareSummary =
             'You paid ${CurrencyFormatter.formatPaise(expense.amount, absolute: true)} and lent ${CurrencyFormatter.formatPaise(lent, absolute: true)}';
-        userShareColor = AppColors.emerald;
+        userShareColor = theme.textEmerald;
       } else {
         userShareSummary = 'You paid for yourself entirely';
-        userShareColor = theme.secondary;
+        userShareColor = theme.muted;
       }
     } else if (userShare > 0) {
       userShareSummary =
           'Your share is ${CurrencyFormatter.formatPaise(userShare, absolute: true)} (you owe ${payer?.name ?? 'payer'})';
-      userShareColor = AppColors.coral;
+      userShareColor = theme.textCoral;
     } else {
       userShareSummary = 'You are not involved in this expense';
-      userShareColor = theme.secondary;
+      userShareColor = theme.muted;
     }
 
     return Column(
@@ -83,7 +82,7 @@ class ExpenseDetailSheet extends ConsumerWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CategoryTile(
+            CategoryBadge(
               category: expense.category,
               size: 48,
               iconSize: 24,
@@ -309,9 +308,9 @@ class ExpenseDetailSheet extends ConsumerWidget {
                   onDelete();
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.coral,
+                  foregroundColor: theme.textCoral,
                   side: BorderSide(
-                    color: AppColors.coral.withValues(alpha: 0.35),
+                    color: theme.coral.withValues(alpha: 0.35),
                     width: 1,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -332,7 +331,7 @@ class ExpenseDetailSheet extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: GradientPrimaryButton(
+              child: PrimaryButton(
                 label: 'Edit details',
                 height: 48,
                 onPressed: () {

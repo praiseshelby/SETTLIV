@@ -2,13 +2,27 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
+import 'data/repositories/in_memory_app_repository.dart';
 import 'routes/app_router.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: SettlivApp()));
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (_) {}
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const SettlivApp(),
+    ),
+  );
 }
 
 /// Custom scroll behavior that hides scrollbars and overscroll glows app-wide,

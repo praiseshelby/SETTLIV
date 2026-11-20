@@ -29,12 +29,17 @@ void main() {
       expect(find.text('Groups'), findsWidgets);
       expect(find.text('New group'), findsOneWidget);
 
-      // Tap Activity slot in nav bar
-      await tester.tap(find.bySemanticsLabel('Activity'));
+      // Tap Records / Activity slot in nav bar
+      final recordsFinder = find.bySemanticsLabel('Records');
+      if (recordsFinder.evaluate().isNotEmpty) {
+        await tester.tap(recordsFinder);
+      } else {
+        await tester.tap(find.bySemanticsLabel('Activity'));
+      }
       await tester.pumpAndSettle();
 
-      // Should be on Activity screen
-      expect(find.text('Activity'), findsWidgets);
+      // Should be on Records screen
+      expect(find.text('Records'), findsWidgets);
       expect(find.text('All groups'), findsOneWidget);
 
       // Tap Home slot to return to Home

@@ -23,10 +23,13 @@ class SheetScaffold extends StatelessWidget {
     required WidgetBuilder builder,
     bool isScrollControlled = true,
   }) {
+    final theme = context.settliv;
     return showModalBottomSheet<T>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: isScrollControlled,
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.transparent,
+      barrierColor: theme.scrim,
       builder: builder,
     );
   }
@@ -56,15 +59,13 @@ class SheetScaffold extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.tertiary.withValues(alpha: 0.5),
+                  color: theme.hairline,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
               child: Row(
                 children: [
                   Expanded(
@@ -72,28 +73,21 @@ class SheetScaffold extends StatelessWidget {
                       title,
                       style: AppTypography.titleLarge.copyWith(
                         color: theme.ink,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  ?trailing,
+                  if (trailing != null) trailing!,
                   if (showCloseButton)
                     IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: theme.secondary,
-                        size: 22,
-                      ),
+                      icon: Icon(Icons.close_rounded, color: theme.muted),
                       onPressed: onClose ?? () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 44,
-                        minHeight: 44,
-                      ),
+                      splashRadius: 20,
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            Divider(height: 1, color: theme.hairline),
             Flexible(child: child),
           ],
         ),

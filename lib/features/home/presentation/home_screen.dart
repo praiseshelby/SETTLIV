@@ -19,7 +19,6 @@ import '../../../data/models/expense.dart';
 import '../../../data/repositories/app_repository.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../group_detail/sheets/expense_detail_sheet.dart';
-import 'widgets/user_profile_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,25 +27,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _staggerController;
-
-  @override
-  void initState() {
-    super.initState();
-    _staggerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _staggerController.dispose();
-    super.dispose();
-  }
-
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _getTimeGreeting(String name) {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -63,7 +44,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final overall = ref.watch(userOverallBalanceProvider);
-    final groups = ref.watch(allGroupsProvider);
+    final allGroups = ref.watch(allGroupsProvider);
+    final groups = allGroups.where((g) => !g.isPersonal).toList();
     final people = ref.watch(allPeopleProvider);
     final allExpenses = ref.watch(allExpensesProvider);
     final currentUser = repo.currentUser;
@@ -76,11 +58,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final dateLine = DateFormat('EEEE, d MMMM').format(DateTime.now());
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.transparent,
       body: AuroraBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 150),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
             children: [
               // 1. Header: Greeting + Date line + 44px Glass Avatar Button
               Row(
@@ -105,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         Text(
                           dateLine,
                           style: AppTypography.caption.copyWith(
-                            color: theme.secondary,
+                            color: theme.muted,
                             fontWeight: FontWeight.w500,
                             fontSize: 13,
                           ),
@@ -114,7 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // 44px glass avatar button
+                  // 44px glass avatar button opening Settings
                   Semantics(
                     button: true,
                     label: 'User profile and theme settings',
@@ -123,9 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       borderRadius: 999,
                       padding: const EdgeInsets.all(4),
                       onTap: () {
-                        if (currentUser != null) {
-                          UserProfileSheet.show(context, currentUser);
-                        }
+                        context.push('/settings');
                       },
                       child: PersonAvatar(
                         person: currentUser,
@@ -136,9 +116,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
-              // 2. Hero Card (Glass Level 3)
+              // 2. Hero Card
               BalanceHeroCard(
                 netPaise: overall.netBalance,
                 totalOwedToUserPaise: overall.totalOwedToUser,
@@ -155,6 +135,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   subtitle:
                       'Create a group for trips, housemates, or events to start tracking balances.',
                   action: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryButtonBg,
+                      foregroundColor: theme.primaryButtonText,
+                    ),
                     onPressed: () => context.go('/groups'),
                     icon: const Icon(Icons.group_add_rounded),
                     label: const Text('View groups'),
@@ -187,6 +171,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   subtitle:
                       'All settled up! Split bills with flatmates or trips to track balances.',
                   action: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryButtonBg,
+                      foregroundColor: theme.primaryButtonText,
+                    ),
                     onPressed: () => context.push('/add'),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Add an expense'),
@@ -206,7 +194,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     PhoneFrame.prototypeNote,
                     textAlign: TextAlign.center,
                     style: AppTypography.caption.copyWith(
-                      color: theme.secondary.withValues(alpha: 0.75),
+                      color: theme.muted.withValues(alpha: 0.75),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       height: 1.4,
@@ -246,8 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
               child: Text(
                 entry.key.toUpperCase(),
-                style: AppTypography.sectionLabel.copyWith(
-                  color: theme.secondary,
+                style: AppTypography.caption.copyWith(
+                  color: theme.muted,
                   fontSize: 11,
                   letterSpacing: 0.8,
                   fontWeight: FontWeight.w700,
@@ -270,14 +258,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       context.push('/add', extra: {'initialExpense': entry.value[i]});
                     },
                     onDelete: () {
-                      final repoNotifier =
-                          ref.read(appStateProvider.notifier);
+                      final repoNotifier = ref.read(appStateProvider.notifier);
                       repoNotifier.deleteExpense(entry.value[i].id);
                       UndoSnackbar.show(
                         context: context,
                         message: 'Deleted ${entry.value[i].title}',
-                        onUndo: () =>
-                            repoNotifier.restoreExpense(entry.value[i].id),
+                        onUndo: () => repoNotifier.restoreExpense(entry.value[i].id),
                       );
                     },
                   );

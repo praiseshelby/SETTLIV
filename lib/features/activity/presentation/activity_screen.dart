@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -37,7 +36,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final allExpenses = ref.watch(allExpensesProvider);
-    final groups = ref.watch(allGroupsProvider);
+    final allGroups = ref.watch(allGroupsProvider);
+    final groups = allGroups.where((g) => !g.isPersonal).toList();
     final currentUserId = repo.currentUserId;
 
     // Filter by group and search query
@@ -64,26 +64,26 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.transparent,
       body: AuroraBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
             children: [
               // Header
               Text(
-                'Activity',
-                style: AppTypography.titleLarge.copyWith(
+                'Records',
+                style: AppTypography.screenTitle.copyWith(
                   color: theme.ink,
-                  fontWeight: FontWeight.w800,
                   fontSize: 26,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                'All expenses across your groups',
+                'All transaction records across your groups',
                 style: AppTypography.caption.copyWith(
-                  color: theme.secondary,
+                  color: theme.muted,
                   fontWeight: FontWeight.w500,
                   fontSize: 13,
                 ),
@@ -103,17 +103,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   hintText: 'Search by description or person...',
                   hintStyle: TextStyle(
                     fontFamily: 'Manrope',
-                    color: theme.secondary.withValues(alpha: 0.6),
+                    color: theme.muted.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: theme.secondary,
+                    color: theme.muted,
                     size: 20,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          icon: Icon(Icons.clear_rounded, size: 18, color: theme.muted),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
@@ -123,8 +123,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   filled: true,
                   fillColor: theme.surface,
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(color: theme.hairline),
@@ -169,6 +168,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   title: 'No expenses yet',
                   subtitle: 'Expenses you add will show up here.',
                   action: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryButtonBg,
+                      foregroundColor: theme.primaryButtonText,
+                    ),
                     onPressed: () => context.push('/add'),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Add an expense'),
@@ -176,10 +179,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 ),
               ] else if (filteredExpenses.isEmpty) ...[
                 EmptyState(
-                  title: 'No matching expenses',
-                  subtitle:
-                      'No expenses matched "$_searchQuery". Try clearing your search or filter.',
+                  title: 'No matching records',
+                  subtitle: 'No records matched "$_searchQuery". Try clearing your search or filter.',
                   action: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryButtonBg,
+                      foregroundColor: theme.primaryButtonText,
+                    ),
                     onPressed: () {
                       _searchController.clear();
                       setState(() {
@@ -204,8 +210,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                           padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
                           child: Text(
                             entry.key.toUpperCase(),
-                            style: AppTypography.sectionLabel.copyWith(
-                              color: theme.secondary,
+                            style: AppTypography.caption.copyWith(
+                              color: theme.muted,
                               fontSize: 11,
                               letterSpacing: 0.8,
                               fontWeight: FontWeight.w700,
@@ -230,14 +236,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                                   );
                                 },
                                 onDelete: () {
-                                  final repoNotifier =
-                                      ref.read(appStateProvider.notifier);
+                                  final repoNotifier = ref.read(appStateProvider.notifier);
                                   repoNotifier.deleteExpense(entry.value[i].id);
                                   UndoSnackbar.show(
                                     context: context,
                                     message: 'Deleted ${entry.value[i].title}',
-                                    onUndo: () => repoNotifier
-                                        .restoreExpense(entry.value[i].id),
+                                    onUndo: () => repoNotifier.restoreExpense(entry.value[i].id),
                                   );
                                 },
                               );
@@ -273,12 +277,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.sapphire
-                : theme.surface.withValues(alpha: 0.8),
+            color: isSelected ? theme.navy : theme.surface,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isSelected ? Colors.transparent : theme.hairline,
+              color: isSelected ? theme.navy : theme.hairline,
             ),
           ),
           child: Text(
@@ -287,7 +289,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               fontFamily: 'Manrope',
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? Colors.white : theme.ink,
+              color: isSelected ? theme.onNavy : theme.ink,
             ),
           ),
         ),

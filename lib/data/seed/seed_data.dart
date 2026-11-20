@@ -64,8 +64,8 @@ abstract class SeedData {
     name: 'Flatmates',
     type: GroupType.home,
     memberIds: const ['person_arjun', 'person_meera', 'person_kabir'],
-    coverType: GroupCoverType.flatmates,
-    startDate: now.subtract(const Duration(days: 90)),
+    coverThemeIndex: 0,
+    startDate: now.subtract(const Duration(days: 180)),
   );
 
   static final Group goaTrip = Group(
@@ -73,13 +73,22 @@ abstract class SeedData {
     name: 'Goa Trip',
     type: GroupType.trip,
     memberIds: const ['person_arjun', 'person_nisha', 'person_rohan', 'person_tara'],
-    coverType: GroupCoverType.goaTrip,
+    coverThemeIndex: 1,
     // Spans today: started 2 days ago, ends in 2 days (Day 3 of 5)
     startDate: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 2)),
     endDate: DateTime(now.year, now.month, now.day).add(const Duration(days: 2)),
   );
 
-  static List<Group> get groups => [flatmates, goaTrip];
+  static final Group personal = Group(
+    id: 'group_personal',
+    name: 'Personal',
+    type: GroupType.other,
+    memberIds: const [currentUserId],
+    coverThemeIndex: 2,
+    createdAt: now.subtract(const Duration(days: 180)),
+  );
+
+  static List<Group> get groups => [flatmates, goaTrip, personal];
 
   static List<Expense> get expenses => [
     // ------------------------------------------------------------------------
@@ -475,7 +484,174 @@ abstract class SeedData {
         'person_tara': 100000,
       },
     ),
+    // Historical Flatmates expenses settled completely in each past month
+    Expense(
+      id: 'exp_fm_hist_1',
+      groupId: 'group_flatmates',
+      title: 'Electricity & water bill (M-1)',
+      category: ExpenseCategory.bills,
+      amount: 300000, // ₹3,000
+      date: now.subtract(const Duration(days: 35)),
+      paidBy: 'person_arjun',
+      splitMode: SplitMode.equal,
+      shares: const {
+        'person_arjun': 100000,
+        'person_meera': 100000,
+        'person_kabir': 100000,
+      },
+    ),
+    Expense(
+      id: 'exp_fm_hist_2',
+      groupId: 'group_flatmates',
+      title: 'Electricity & water bill (M-2)',
+      category: ExpenseCategory.bills,
+      amount: 300000, // ₹3,000
+      date: now.subtract(const Duration(days: 65)),
+      paidBy: 'person_arjun',
+      splitMode: SplitMode.equal,
+      shares: const {
+        'person_arjun': 100000,
+        'person_meera': 100000,
+        'person_kabir': 100000,
+      },
+    ),
+    Expense(
+      id: 'exp_fm_hist_3',
+      groupId: 'group_flatmates',
+      title: 'Electricity & water bill (M-3)',
+      category: ExpenseCategory.bills,
+      amount: 300000, // ₹3,000
+      date: now.subtract(const Duration(days: 95)),
+      paidBy: 'person_arjun',
+      splitMode: SplitMode.equal,
+      shares: const {
+        'person_arjun': 100000,
+        'person_meera': 100000,
+        'person_kabir': 100000,
+      },
+    ),
+    Expense(
+      id: 'exp_fm_hist_4',
+      groupId: 'group_flatmates',
+      title: 'Electricity & water bill (M-4)',
+      category: ExpenseCategory.bills,
+      amount: 300000, // ₹3,000
+      date: now.subtract(const Duration(days: 125)),
+      paidBy: 'person_arjun',
+      splitMode: SplitMode.equal,
+      shares: const {
+        'person_arjun': 100000,
+        'person_meera': 100000,
+        'person_kabir': 100000,
+      },
+    ),
+    Expense(
+      id: 'exp_fm_hist_5',
+      groupId: 'group_flatmates',
+      title: 'Electricity & water bill (M-5)',
+      category: ExpenseCategory.bills,
+      amount: 300000, // ₹3,000
+      date: now.subtract(const Duration(days: 155)),
+      paidBy: 'person_arjun',
+      splitMode: SplitMode.equal,
+      shares: const {
+        'person_arjun': 100000,
+        'person_meera': 100000,
+        'person_kabir': 100000,
+      },
+    ),
   ];
 
-  static List<Settlement> get settlements => const [];
+  static List<Settlement> get settlements => [
+    Settlement(
+      id: 'set_fm_m1_meera',
+      groupId: 'group_flatmates',
+      from: 'person_meera',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 34)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m1_kabir',
+      groupId: 'group_flatmates',
+      from: 'person_kabir',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 34)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m2_meera',
+      groupId: 'group_flatmates',
+      from: 'person_meera',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 64)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m2_kabir',
+      groupId: 'group_flatmates',
+      from: 'person_kabir',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 64)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m3_meera',
+      groupId: 'group_flatmates',
+      from: 'person_meera',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 94)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m3_kabir',
+      groupId: 'group_flatmates',
+      from: 'person_kabir',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 94)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m4_meera',
+      groupId: 'group_flatmates',
+      from: 'person_meera',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 124)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m4_kabir',
+      groupId: 'group_flatmates',
+      from: 'person_kabir',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 124)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m5_meera',
+      groupId: 'group_flatmates',
+      from: 'person_meera',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 154)),
+      method: SettlementMethod.upi,
+    ),
+    Settlement(
+      id: 'set_fm_m5_kabir',
+      groupId: 'group_flatmates',
+      from: 'person_kabir',
+      to: 'person_arjun',
+      paise: 100000,
+      date: now.subtract(const Duration(days: 154)),
+      method: SettlementMethod.upi,
+    ),
+  ];
 }

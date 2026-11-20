@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -18,7 +17,6 @@ class SegmentedTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     return Container(
       height: 46,
@@ -44,11 +42,11 @@ class SegmentedTabs extends StatelessWidget {
                 width: tabWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF263760) : AppColors.midnightNavy,
+                    color: theme.navy,
                     borderRadius: BorderRadius.circular(999),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
+                        color: theme.shadow.withValues(alpha: theme.isDark ? 0.3 : 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -68,12 +66,8 @@ class SegmentedTabs extends StatelessWidget {
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 200),
                             style: AppTypography.chip.copyWith(
-                              color: selectedIndex == i
-                                  ? Colors.white
-                                  : theme.secondary,
-                              fontWeight: selectedIndex == i
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
+                              color: selectedIndex == i ? theme.onNavy : theme.muted,
+                              fontWeight: selectedIndex == i ? FontWeight.w700 : FontWeight.w600,
                             ),
                             child: Text(labels[i]),
                           ),

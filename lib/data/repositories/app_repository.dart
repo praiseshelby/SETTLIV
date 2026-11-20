@@ -2,18 +2,23 @@ import '../models/person.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
+import '../models/recurring_template.dart';
 import '../engine/balance_engine.dart';
 
 abstract class AppRepository {
   String get currentUserId;
   Person? get currentUser;
+  void updateCurrentUser({String? name, String? upiId});
+
   List<Person> getPeople();
   Person? getPerson(String id);
   void addPerson(Person person);
+  void updatePerson(Person person);
 
   List<Group> getGroups();
   Group? getGroup(String id);
   void addGroup(Group group);
+  void updateGroup(Group group);
 
   List<Expense> getAllExpenses();
   List<Expense> getExpensesForGroup(String groupId);
@@ -29,6 +34,17 @@ abstract class AppRepository {
   void addSettlement(Settlement settlement);
   void deleteSettlement(String id); // for undo
 
+  List<RecurringTemplate> getRecurringTemplates();
+  void addRecurringTemplate(RecurringTemplate template);
+  void updateRecurringTemplate(RecurringTemplate template);
+  void deleteRecurringTemplate(String id);
+
   GroupBalanceSummary getGroupSummary(String groupId);
   UserOverallBalance getUserOverallBalance();
+
+  Future<void> startFresh();
+  Future<void> resetDemoData();
+  Future<void> deleteAllData();
+  bool get wasCorruptDataRecovered;
+  DateTime Function() get clock;
 }

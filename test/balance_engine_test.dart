@@ -8,7 +8,7 @@ void main() {
 
     test('Total seed expenses count is >= 20', () {
       expect(SeedData.expenses.length, greaterThanOrEqualTo(20));
-      expect(SeedData.expenses.length, equals(25));
+      expect(SeedData.expenses.length, equals(30));
     });
 
     test('All expenses have shares that sum exactly to total amount', () {

@@ -1,6 +1,6 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -17,31 +17,23 @@ class CategoryDonutChart extends StatelessWidget {
     required this.totalSpend,
   });
 
-  static Color getCategoryColor(ExpenseCategory category, bool isDark) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return AppColors.amber;
-      case ExpenseCategory.rent:
-        return AppColors.sapphire;
-      case ExpenseCategory.travel:
-        return AppColors.aqua;
-      case ExpenseCategory.stay:
-        return AppColors.lilac;
-      case ExpenseCategory.groceries:
-        return AppColors.emerald;
-      case ExpenseCategory.bills:
-        return AppColors.coral;
-      case ExpenseCategory.fun:
-        return AppColors.orchid;
-      case ExpenseCategory.other:
-        return isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
-    }
+  static Map<ExpenseCategory, Color> buildCategoryColors(SettlivThemeExtension theme) {
+    return {
+      ExpenseCategory.food: theme.saffron,
+      ExpenseCategory.rent: theme.navy,
+      ExpenseCategory.travel: theme.teal,
+      ExpenseCategory.stay: theme.orchid,
+      ExpenseCategory.groceries: theme.emerald,
+      ExpenseCategory.bills: theme.coral,
+      ExpenseCategory.fun: theme.orchid,
+      ExpenseCategory.other: theme.muted,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
+    final categoryColors = buildCategoryColors(theme);
 
     if (totalSpend <= 0) {
       return GlassSurface(
@@ -51,7 +43,7 @@ class CategoryDonutChart extends StatelessWidget {
         child: Center(
           child: Text(
             'No expenses recorded yet',
-            style: AppTypography.body.copyWith(color: theme.secondary),
+            style: AppTypography.body.copyWith(color: theme.muted),
           ),
         ),
       );
@@ -88,8 +80,9 @@ class CategoryDonutChart extends StatelessWidget {
                     painter: _DonutChartPainter(
                       entries: activeEntries,
                       total: totalSpend,
-                      isDark: isDark,
+                      categoryColors: categoryColors,
                       strokeWidth: 22.0,
+                      transparentColor: theme.transparent,
                     ),
                   ),
                   Center(
@@ -99,17 +92,17 @@ class CategoryDonutChart extends StatelessWidget {
                         Text(
                           'Total',
                           style: AppTypography.caption.copyWith(
-                            color: theme.secondary,
+                            color: theme.muted,
                             fontSize: 11,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          CurrencyFormatter.formatPaise(totalSpend,
-                              absolute: true),
-                          style: AppTypography.displayMoney.copyWith(
-                            fontSize: 18,
+                          CurrencyFormatter.formatPaise(totalSpend),
+                          style: AppTypography.moneyMedium.copyWith(
                             color: theme.ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -119,23 +112,22 @@ class CategoryDonutChart extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          // Legend grid
+          const SizedBox(height: 18),
+          // Legend
           Wrap(
             spacing: 12,
-            runSpacing: 10,
+            runSpacing: 8,
             children: [
               for (final entry in activeEntries) ...[
                 Builder(builder: (context) {
-                  final pct = ((entry.value / totalSpend) * 100).round();
-                  final color = getCategoryColor(entry.key, isDark);
-
+                  final pct = ((entry.value / totalSpend) * 100).toStringAsFixed(0);
+                  final color = categoryColors[entry.key] ?? theme.muted;
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
+                        width: 10,
+                        height: 10,
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
@@ -146,7 +138,6 @@ class CategoryDonutChart extends StatelessWidget {
                         '${entry.key.label} $pct%',
                         style: AppTypography.caption.copyWith(
                           color: theme.ink,
-                          fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
                       ),
@@ -165,14 +156,16 @@ class CategoryDonutChart extends StatelessWidget {
 class _DonutChartPainter extends CustomPainter {
   final List<MapEntry<ExpenseCategory, int>> entries;
   final int total;
-  final bool isDark;
+  final Map<ExpenseCategory, Color> categoryColors;
   final double strokeWidth;
+  final Color transparentColor;
 
   const _DonutChartPainter({
     required this.entries,
     required this.total,
-    required this.isDark,
+    required this.categoryColors,
     required this.strokeWidth,
+    required this.transparentColor,
   });
 
   @override
@@ -183,14 +176,14 @@ class _DonutChartPainter extends CustomPainter {
     final radius = (size.width - strokeWidth) / 2;
 
     double startAngle = -math.pi / 2;
-    const double gapAngle = 0.05; // Small gap between segments
+    const double gapAngle = 0.05;
 
     for (final entry in entries) {
       final sweepAngle = (entry.value / total) * (2 * math.pi) - gapAngle;
       if (sweepAngle <= 0) continue;
 
       final paint = Paint()
-        ..color = CategoryDonutChart.getCategoryColor(entry.key, isDark)
+        ..color = categoryColors[entry.key] ?? transparentColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
@@ -208,5 +201,11 @@ class _DonutChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
+    return total != oldDelegate.total ||
+        strokeWidth != oldDelegate.strokeWidth ||
+        transparentColor != oldDelegate.transparentColor ||
+        !listEquals(entries, oldDelegate.entries) ||
+        !mapEquals(categoryColors, oldDelegate.categoryColors);
+  }
 }

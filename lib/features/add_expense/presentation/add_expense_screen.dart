@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -237,6 +236,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   Future<bool> _onWillPop() async {
     if (!_hasUnsavedChanges()) return true;
+    final theme = context.settliv;
 
     final discard = await showDialog<bool>(
       context: context,
@@ -253,7 +253,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.coral,
+              backgroundColor: theme.textCoral,
             ),
             child: const Text('Discard'),
           ),
@@ -300,6 +300,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     // 2. Large amount confirmation (From ₹1,00,000 up to cap) (Global Rule 3)
     if (expense.amount >= CurrencyFormatter.largeAmountThresholdPaise) {
+      final theme = context.settliv;
       final confirmed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -317,7 +318,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.sapphire,
+                backgroundColor: theme.navy,
               ),
               child: const Text('Yes, add it'),
             ),
@@ -421,7 +422,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.transparent,
         resizeToAvoidBottomInset: true,
         body: AuroraBackground(
           child: SafeArea(
@@ -586,7 +587,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                   fontFamily: 'Manrope',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.sapphire,
+                                  color: theme.navy,
                                 ),
                               ),
                             ),
@@ -709,7 +710,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         color: hasValidExpense
                             ? theme.secondary
                             : (parseResult.isOverCap
-                                ? AppColors.coral
+                                ? theme.textCoral
                                 : theme.secondary),
                         fontWeight: FontWeight.w600,
                       ),
@@ -720,8 +721,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   label: _showSavedSuccess ? 'Saved!' : ctaLabel,
                   isLoading: _isSaving && !_showSavedSuccess,
                   icon: _showSavedSuccess
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Colors.white, size: 20)
+                      ? Icon(Icons.check_circle_rounded,
+                          color: theme.onNavy, size: 20)
                       : null,
                   onPressed: (!hasValidExpense || _isSaving)
                       ? null
@@ -809,7 +810,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: AppColors.sapphire),
+          Icon(icon, size: 14, color: theme.navy),
           const SizedBox(width: 6),
           Text(
             '$label: ',
@@ -870,8 +871,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   children: [
-                    const Icon(Icons.replay_rounded,
-                        size: 16, color: AppColors.sapphire),
+                    Icon(Icons.replay_rounded,
+                        size: 16, color: theme.navy),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -983,13 +984,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           Center(
             child: TextButton.icon(
               onPressed: () => _switchToManualPrefilled(result),
-              icon: const Icon(Icons.tune_rounded,
-                  size: 16, color: AppColors.sapphire),
-              label: const Text(
+              icon: Icon(Icons.tune_rounded,
+                  size: 16, color: theme.navy),
+              label: Text(
                 'Edit details in Manual',
                 style: TextStyle(
                   fontFamily: 'Manrope',
-                  color: AppColors.sapphire,
+                  color: theme.navy,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
@@ -1102,7 +1103,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       fontFamily: 'Manrope',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.coral,
+                      color: theme.textCoral,
                     ),
                   ),
                 ),
@@ -1147,7 +1148,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     fontFamily: 'Manrope',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.coral,
+                    color: theme.textCoral,
                   ),
                 ),
               ),
@@ -1204,8 +1205,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     onTap: _openDatePickerSheet,
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            size: 18, color: AppColors.sapphire),
+                        Icon(Icons.calendar_today_rounded,
+                            size: 18, color: theme.navy),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1316,7 +1317,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           : 'All',
                       style: TextStyle(
                         fontFamily: 'Manrope',
-                        color: AppColors.sapphire,
+                        color: theme.navy,
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -1403,8 +1404,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   label: _showSavedSuccess ? 'Saved!' : buttonLabel,
                   isLoading: _isSaving && !_showSavedSuccess,
                   icon: _showSavedSuccess
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Colors.white, size: 20)
+                      ? Icon(Icons.check_circle_rounded,
+                          color: theme.onNavy, size: 20)
                       : null,
                   onPressed: (!validation.isValid || _isSaving)
                       ? () {
@@ -1439,7 +1440,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   Widget _buildCategoryGrid() {
     final theme = context.settliv;
-    final categories = ExpenseCategory.values;
+    const categories = ExpenseCategory.values;
 
     return GlassSurface(
       level: GlassLevel.level1,
@@ -1478,11 +1479,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.sapphireGradient.colors.first.withValues(alpha: 0.15)
-              : Colors.transparent,
+              ? theme.navy.withValues(alpha: 0.15)
+              : theme.transparent,
           borderRadius: BorderRadius.circular(14),
           border: isSelected
-              ? Border.all(color: AppColors.sapphire, width: 1.5)
+              ? Border.all(color: theme.navy, width: 1.5)
               : null,
         ),
         child: Column(
@@ -1633,7 +1634,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     fontFamily: 'Manrope',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: diff == 0 ? AppColors.emerald : theme.secondary,
+                    color: diff == 0 ? theme.textEmerald : theme.secondary,
                   ),
                 ),
                 Text(
@@ -1756,7 +1757,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: (diffPct.abs() < 0.01)
-                      ? AppColors.emerald
+                      ? theme.textEmerald
                       : theme.secondary,
                 ),
               ),
@@ -1895,6 +1896,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   // ---------------------------------------------------------------------------
 
   void _openDatePickerSheet() {
+    final theme = context.settliv;
     final now = DateTime.now();
     final dates = List.generate(
       7,
@@ -1924,8 +1926,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               trailing: _selectedDate.day == d.day &&
                       _selectedDate.month == d.month &&
                       _selectedDate.year == d.year
-                  ? const Icon(Icons.check_circle_rounded,
-                      color: AppColors.sapphire)
+                  ? Icon(Icons.check_circle_rounded,
+                      color: theme.navy)
                   : null,
               onTap: () {
                 setState(() => _selectedDate = d);
@@ -1939,6 +1941,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   void _openPaidByPickerSheet(List<Person> people) {
+    final theme = context.settliv;
     GlassSheetScaffold.show(
       context: context,
       title: 'Who paid for this?',
@@ -1958,8 +1961,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 ),
               ),
               trailing: _paidById == p.id
-                  ? const Icon(Icons.check_circle_rounded,
-                      color: AppColors.sapphire)
+                  ? Icon(Icons.check_circle_rounded,
+                      color: theme.navy)
                   : null,
               onTap: () {
                 setState(() => _paidById = p.id);

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -13,7 +12,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/glass_segmented.dart';
 import '../../../core/widgets/glass_surface.dart';
-import '../../../core/widgets/gradient_primary_button.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/group_cover_art.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/undo_snackbar.dart';
@@ -83,17 +82,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     if (group == null) {
       return AuroraBackground(
         child: Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: theme.transparent,
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.search_off_rounded,
                     size: 56,
-                    color: AppColors.coral,
+                    color: theme.textCoral,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -107,7 +106,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  GradientPrimaryButton(
+                  PrimaryButton(
                     label: 'Back to Home',
                     onPressed: () => context.go('/'),
                   ),
@@ -128,7 +127,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
 
     return AuroraBackground(
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.transparent,
         body: Stack(
           children: [
             CustomScrollView(
@@ -193,8 +192,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.65),
+                                theme.transparent,
+                                theme.scrim,
                               ],
                             ),
                           ),
@@ -213,7 +212,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.22),
+                                      color: theme.white.withValues(alpha: 0.22),
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(
@@ -221,7 +220,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                           ? 'Home group'
                                           : 'Trip',
                                       style: AppTypography.caption.copyWith(
-                                        color: Colors.white,
+                                        color: theme.white,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 11,
                                       ),
@@ -237,7 +236,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                     child: Text(
                                       group.name,
                                       style: AppTypography.titleLarge.copyWith(
-                                        color: Colors.white,
+                                        color: theme.white,
                                         fontSize: 24,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -301,7 +300,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                           Text(
                                             '${(ratio * 100).round()}%',
                                             style: AppTypography.caption.copyWith(
-                                              color: AppColors.amber,
+                                              color: theme.saffron,
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),
@@ -317,8 +316,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                             backgroundColor:
                                                 theme.raised.withValues(alpha: 0.6),
                                             valueColor:
-                                                const AlwaysStoppedAnimation<Color>(
-                                              AppColors.amber,
+                                                AlwaysStoppedAnimation<Color>(
+                                              theme.saffron,
                                             ),
                                           ),
                                         ),
@@ -372,10 +371,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.notifications_none_rounded,
                                                 size: 16,
-                                                color: AppColors.sapphire,
+                                                color: theme.navy,
                                               ),
                                               const SizedBox(width: 4),
                                               Flexible(
@@ -424,10 +423,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.flash_on_rounded,
                                                 size: 16,
-                                                color: AppColors.sapphire,
+                                                color: theme.navy,
                                               ),
                                               const SizedBox(width: 4),
                                               Flexible(
@@ -524,12 +523,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     const SizedBox(width: 10),
                     // Settle up Primary Button
                     Expanded(
-                      child: GradientPrimaryButton(
+                      child: PrimaryButton(
                         label: userNetPaise < 0
                             ? 'Settle up · ${CurrencyFormatter.formatPaise(userNetPaise.abs(), absolute: true)}'
                             : 'Settle up',
-                        icon: const Icon(Icons.flash_on_rounded,
-                            color: Colors.white, size: 20),
+                        leading: Icon(Icons.flash_on_rounded,
+                            color: theme.primaryButtonText, size: 20),
                         onPressed: () {
                           SettleSheet.show(
                             context: context,
@@ -552,6 +551,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   // Tab 1: Expenses List
   // ---------------------------------------------------------------------------
   Widget _buildExpensesTab(List<Expense> expenses, AppRepository repo) {
+    final theme = context.settliv;
     if (expenses.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -559,9 +559,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           child: EmptyState(
             title: 'No expenses in this group',
             subtitle: 'Add the first bill, grocery run or ticket to split.',
-            action: GradientPrimaryButton(
+            action: PrimaryButton(
               label: 'Add group expense',
-              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+              leading: Icon(Icons.add_rounded, color: theme.primaryButtonText, size: 20),
               onPressed: () {
                 context.push(
                   '/add',
@@ -717,10 +717,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           children: [
                             PersonAvatar(person: fromPerson, size: 28),
                             const SizedBox(width: 6),
-                            const Icon(
+                            Icon(
                               Icons.arrow_forward_rounded,
                               size: 15,
-                              color: AppColors.sapphire,
+                              color: theme.navy,
                             ),
                             const SizedBox(width: 6),
                             PersonAvatar(person: toPerson, size: 28),
@@ -772,14 +772,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 6),
-                                    decoration: const BoxDecoration(
-                                      gradient: AppColors.sapphireGradient,
-                                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(colors: [theme.navy, theme.navy]),
+                                      borderRadius: const BorderRadius.all(Radius.circular(999)),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'Settle',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: theme.white,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -818,10 +818,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.notifications_none_rounded,
                                           size: 13,
-                                          color: AppColors.sapphire,
+                                          color: theme.navy,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(

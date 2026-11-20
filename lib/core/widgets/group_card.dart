@@ -13,6 +13,7 @@ class GroupCard extends StatefulWidget {
   final List<Person> members;
   final int userNetPaise;
   final VoidCallback onTap;
+  final String? heroTag;
 
   const GroupCard({
     super.key,
@@ -20,6 +21,7 @@ class GroupCard extends StatefulWidget {
     required this.members,
     required this.userNetPaise,
     required this.onTap,
+    this.heroTag,
   });
 
   @override
@@ -36,7 +38,9 @@ class _GroupCardState extends State<GroupCard> {
 
     final String metaText = widget.group.type == GroupType.home
         ? '${widget.members.length} people · Home'
-        : '${widget.members.length} people · Trip';
+        : (widget.group.type == GroupType.trip
+            ? '${widget.members.length} people · Trip'
+            : '${widget.members.length} people');
 
     final double scale = _isPressed ? 0.98 : 1.0;
     final double translateY = (_isHovered && !_isPressed) ? -2.0 : 0.0;
@@ -61,19 +65,17 @@ class _GroupCardState extends State<GroupCard> {
               ..translate(0.0, translateY),
             child: GlassSurface(
               level: GlassLevel.level2,
-              borderRadius: 28,
+              borderRadius: 24,
               padding: EdgeInsets.zero,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Hero(
-                    tag: 'group-cover-${widget.group.id}',
-                    child: GroupCoverArt(
-                      group: widget.group,
-                      height: 84,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(28),
-                      ),
+                  GroupCoverArt(
+                    group: widget.group,
+                    height: 84,
+                    heroTag: widget.heroTag,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
                     ),
                   ),
                   Padding(
@@ -98,11 +100,10 @@ class _GroupCardState extends State<GroupCard> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Flexible(
-                              child: BalancePill(
-                                paise: widget.userNetPaise,
-                                compact: false,
-                              ),
+                            // Badge never truncated: takes exact required width
+                            BalancePill(
+                              paise: widget.userNetPaise,
+                              compact: false,
                             ),
                           ],
                         ),
@@ -111,19 +112,17 @@ class _GroupCardState extends State<GroupCard> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Flexible(
-                              child: AvatarStack(
-                                people: widget.members,
-                                avatarSize: 28,
-                                overlap: 10,
-                              ),
+                            AvatarStack(
+                              people: widget.members,
+                              avatarSize: 28,
+                              overlap: 8,
                             ),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
                                 metaText,
                                 style: AppTypography.caption.copyWith(
-                                  color: theme.secondary,
+                                  color: theme.muted,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),

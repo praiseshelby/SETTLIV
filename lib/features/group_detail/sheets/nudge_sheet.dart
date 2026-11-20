@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/glass_sheet_scaffold.dart';
-import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/person_avatar.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
@@ -32,11 +31,13 @@ class NudgeSheet extends StatelessWidget {
     Person? debtor,
     int? amountPaise,
   }) {
+    final theme = context.settliv;
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
+      backgroundColor: theme.transparent,
+      barrierColor: theme.scrim,
       builder: (_) => NudgeSheet(
         group: group,
         debt: debt,
@@ -84,7 +85,7 @@ class NudgeSheet extends StatelessWidget {
                         Text(
                           'Owes $formattedAmount in ${group.name}',
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.coral,
+                            color: theme.textCoral,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -98,7 +99,7 @@ class NudgeSheet extends StatelessWidget {
           Text(
             'Message preview',
             style: AppTypography.sectionHeader.copyWith(
-              color: theme.secondary,
+              color: theme.muted,
               fontSize: 12,
             ),
           ),
@@ -107,7 +108,7 @@ class NudgeSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.surface.withValues(alpha: 0.6),
+              color: theme.raised,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: theme.hairline),
             ),
@@ -120,9 +121,9 @@ class NudgeSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          GradientPrimaryButton(
+          PrimaryButton(
             label: 'Copy reminder message',
-            icon: const Icon(Icons.copy_rounded, color: Colors.white, size: 18),
+            leading: Icon(Icons.copy_rounded, color: theme.primaryButtonText, size: 18),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: messageText));
               if (context.mounted) {
@@ -135,7 +136,7 @@ class NudgeSheet extends StatelessWidget {
                     ),
                     behavior: SnackBarBehavior.floating,
                     duration: const Duration(seconds: 3),
-                    backgroundColor: AppColors.lightInk,
+                    backgroundColor: theme.navy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

@@ -1,15 +1,15 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/glass_sheet_scaffold.dart';
 import '../../../core/widgets/glass_surface.dart';
-import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/person_avatar.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/text_action_button.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/engine/balance_engine.dart';
@@ -119,28 +119,16 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
 
     if (debt != null) {
       _payee = repo.getPerson(debt.toPersonId);
-      final r = debt.amount ~/ 100;
-      final f = debt.amount % 100;
-      final str = f > 0 ? '$r.${f.toString().padLeft(2, '0')}' : r.toString();
-      _amountController = TextEditingController(text: str);
+      final initialRupees = (debt.amount / 100).toStringAsFixed(
+        debt.amount % 100 == 0 ? 0 : 2,
+      );
+      _amountController = TextEditingController(text: initialRupees);
       _step = SettleStep.amount;
     } else {
-      final userNet = summary.netBalances[currentUserId] ?? 0;
-      if (userNet >= 0) {
-        _payee = null;
-        _amountController = TextEditingController(text: '0');
-        _step = SettleStep.allSettled;
-      } else {
-        // Fallback: pick any other member
-        final otherMembers = widget.group.memberIds
-            .where((id) => id != currentUserId)
-            .toList();
-        _payee = otherMembers.isNotEmpty
-            ? repo.getPerson(otherMembers.first)
-            : null;
-        _amountController = TextEditingController(text: '100');
-        _step = SettleStep.amount;
-      }
+      // User owes nothing in this group!
+      _payee = null;
+      _amountController = TextEditingController(text: '0');
+      _step = SettleStep.allSettled;
     }
   }
 
@@ -151,17 +139,13 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
     super.dispose();
   }
 
-  int get _enteredAmountPaise =>
-      CurrencyFormatter.parseToPaise(_amountController.text) ?? 0;
+  int get _enteredAmountPaise {
+    return CurrencyFormatter.parseToPaise(_amountController.text) ?? 0;
+  }
 
-  void _onChooseMethod(SettlementMethod method) {
-    setState(() => _method = method);
-    if (method == SettlementMethod.cash) {
-      // Mark as cash skips UPI picker directly to confirmation
-      setState(() => _step = SettleStep.confirmation);
-    } else {
-      setState(() => _step = SettleStep.upiPicker);
-    }
+  void _onPayViaUpi() {
+    if (!_isAmountValid) return;
+    setState(() => _step = SettleStep.upiPicker);
   }
 
   void _onSelectUpiApp(String appName) {
@@ -170,7 +154,6 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
       _step = SettleStep.simulation;
     });
 
-    // ~900ms simulation with progress ring
     Future.delayed(const Duration(milliseconds: 900), () {
       if (mounted) {
         setState(() => _step = SettleStep.confirmation);
@@ -178,59 +161,65 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
     });
   }
 
+  void _onMarkPaidInCash() {
+    if (!_isAmountValid) return;
+    setState(() {
+      _method = SettlementMethod.cash;
+      _step = SettleStep.confirmation;
+    });
+  }
+
   Future<void> _onMarkPaid() async {
     if (_isSubmitting) return;
-    setState(() {
-      _isSubmitting = true;
-      _step = SettleStep.celebration;
-    });
-    _celebrationController.forward(from: 0);
+    setState(() => _isSubmitting = true);
 
-    final repoNotifier = ref.read(appStateProvider.notifier);
+    final repo = ref.read(appRepositoryProvider);
+    final currentUserId = repo.currentUserId;
+    final paise = _enteredAmountPaise;
+
     final settlement = Settlement(
-      id: 'stl_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'settle_${DateTime.now().millisecondsSinceEpoch}',
       groupId: widget.group.id,
-      payerId: ref.read(appRepositoryProvider).currentUserId,
-      payeeId: _payee?.id ?? '',
-      amount: _enteredAmountPaise,
-      date: DateTime.now(),
+      from: currentUserId,
+      to: _payee?.id ?? '',
+      paise: paise,
       method: _method,
-      note: 'Settliv · ${widget.group.name}',
+      date: DateTime.now(),
     );
 
-    // Apply settlement in state
-    repoNotifier.addSettlement(settlement);
+    // Record settlement in repository
+    ref.read(appStateProvider.notifier).addSettlement(settlement);
 
-    // Celebration duration (<1.2s)
-    await Future.delayed(const Duration(milliseconds: 1100));
-    if (!mounted) return;
+    // Show celebration
+    setState(() => _step = SettleStep.celebration);
+    _celebrationController.forward(from: 0.0);
 
-    Navigator.of(context).pop();
+    await Future.delayed(const Duration(milliseconds: 1200));
 
-    UndoSnackbar.show(
-      context: context,
-      message:
-          'Settled ${CurrencyFormatter.formatPaise(settlement.amount, absolute: true)} with ${_payee?.name ?? "payee"}',
-      onUndo: () {
-        repoNotifier.deleteSettlement(settlement.id);
-      },
-    );
+    if (mounted) {
+      Navigator.of(context).pop();
+      UndoSnackbar.show(
+        context: context,
+        message:
+            'Settled ${CurrencyFormatter.formatPaise(paise, absolute: true)} with ${_payee?.name ?? "payee"}',
+        onUndo: () {
+          ref.read(appStateProvider.notifier).deleteSettlement(settlement.id);
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 240),
-        child: _buildCurrentStep(theme),
-      ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: _buildStepContent(theme),
     );
   }
 
-  Widget _buildCurrentStep(SettlivThemeExtension theme) {
+  Widget _buildStepContent(SettlivThemeExtension theme) {
     switch (_step) {
       case SettleStep.allSettled:
         return _buildAllSettledStep(theme);
@@ -248,171 +237,204 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   }
 
   // ---------------------------------------------------------------------------
-  // Step: All Settled
+  // Step 0: All Settled
   // ---------------------------------------------------------------------------
   Widget _buildAllSettledStep(SettlivThemeExtension theme) {
     return Column(
-      key: const ValueKey('all_settled'),
+      key: const ValueKey('all_settled_step'),
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 68,
-          height: 68,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            color: AppColors.emerald.withValues(alpha: 0.14),
+            color: theme.emeraldTint,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.emerald.withValues(alpha: 0.28),
-              width: 1.5,
-            ),
           ),
-          child: const Center(
-            child: Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.emerald,
-              size: 38,
-            ),
+          child: Icon(
+            Icons.done_all_rounded,
+            color: theme.emerald,
+            size: 28,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         Text(
-          'All settled up!',
+          'All settled up in ${widget.group.name}',
           style: AppTypography.titleLarge.copyWith(
             color: theme.ink,
             fontWeight: FontWeight.w700,
           ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
         Text(
-          'You don’t owe anyone in ${widget.group.name}. Everything is even.',
-          style: AppTypography.body.copyWith(color: theme.secondary),
+          'You don\'t owe any money to members of this group.',
+          style: AppTypography.body.copyWith(
+            color: theme.muted,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        GradientPrimaryButton(
+        PrimaryButton(
           label: 'Done',
           onPressed: () => Navigator.of(context).pop(),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Step 1: Amount & Payee Selection
+  // Step 1: Amount + Payee confirmation + 2 Method buttons
   // ---------------------------------------------------------------------------
   Widget _buildAmountStep(SettlivThemeExtension theme) {
+    final maxOwed = _maxOwedPaise;
+    final maxFormatted = CurrencyFormatter.formatPaise(maxOwed, absolute: true);
+
     return Column(
       key: const ValueKey('amount_step'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GlassSurface(
-          level: GlassLevel.level1,
-          borderRadius: 18,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              PersonAvatar(person: _payee, size: 40),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Settling with ${_payee?.name ?? 'payee'}',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: theme.ink,
-                        fontWeight: FontWeight.w600,
+        // Payee Card
+        if (_payee != null) ...[
+          GlassSurface(
+            level: GlassLevel.level1,
+            borderRadius: 18,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                PersonAvatar(person: _payee, size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Paying ${_payee!.name}',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: theme.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${widget.group.name} group',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.secondary,
-                        fontSize: 12,
+                      Text(
+                        'You owe $maxFormatted in ${widget.group.name}',
+                        style: AppTypography.caption.copyWith(
+                          color: theme.muted,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: SizedBox(
-            width: 240,
-            child: TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              textAlign: TextAlign.center,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
               ],
-              style: AppTypography.displayMoney.copyWith(
-                color: theme.ink,
-                fontSize: 42,
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                prefixText: '₹ ',
-                prefixStyle: AppTypography.displayMoney.copyWith(
-                  color: theme.secondary,
-                  fontSize: 34,
-                ),
-                hintText: '0',
-                border: InputBorder.none,
-              ),
-              onChanged: (_) => setState(() {}),
             ),
           ),
-        ),
-        if (_amountValidationError != null) ...[
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              _amountValidationError!,
-              style: const TextStyle(
-                fontFamily: 'Manrope',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.coral,
-              ),
-            ),
-          ),
+          const SizedBox(height: 16),
         ],
-        const SizedBox(height: 20),
+
+        // Amount Input Field
         Text(
-          'CHOOSE PAYMENT METHOD',
-          style: AppTypography.sectionHeader.copyWith(
-            color: theme.secondary,
-            fontSize: 12,
+          'SETTLEMENT AMOUNT (₹)',
+          style: AppTypography.caption.copyWith(
+            color: theme.muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _amountController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: AppTypography.heroMoney.copyWith(
+            color: theme.ink,
+            fontSize: 32,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          decoration: InputDecoration(
+            prefixText: '₹ ',
+            prefixStyle: AppTypography.heroMoney.copyWith(
+              color: theme.muted,
+              fontSize: 32,
+            ),
+            filled: true,
+            fillColor: theme.raised,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: theme.hairline),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: theme.hairline),
+            ),
+            errorText: _amountValidationError,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 8),
+
+        // Quick "Settle full amount" chip if partial
+        if (maxOwed > 0 && _enteredAmountPaise != maxOwed) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InkWell(
+              onTap: () {
+                final rupees = (maxOwed / 100).toStringAsFixed(
+                  maxOwed % 100 == 0 ? 0 : 2,
+                );
+                setState(() => _amountController.text = rupees);
+              },
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.emeraldTint,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: theme.emerald.withValues(alpha: 0.28),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'Set full balance ($maxFormatted)',
+                  style: AppTypography.caption.copyWith(
+                    color: theme.textEmerald,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ] else ...[
+          const SizedBox(height: 8),
+        ],
+
+        // 2 Primary Choice Cards: "Pay with UPI" & "Mark as Cash"
         Row(
           children: [
             Expanded(
               child: _buildMethodCard(
-                title: 'Pay via UPI',
-                subtitle: 'Simulated GPay, PhonePe, BHIM',
+                title: 'Pay with UPI',
+                subtitle: 'GPay, PhonePe, Paytm',
                 icon: Icons.qr_code_rounded,
                 isPrimary: true,
-                onTap: _isAmountValid
-                    ? () => _onChooseMethod(SettlementMethod.upi)
-                    : null,
+                onTap: _isAmountValid ? _onPayViaUpi : null,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildMethodCard(
-                title: 'Mark as cash',
-                subtitle: 'Handed over in person',
+                title: 'Paid in Cash',
+                subtitle: 'Record without UPI',
                 icon: Icons.payments_rounded,
                 isPrimary: false,
-                onTap: _isAmountValid
-                    ? () => _onChooseMethod(SettlementMethod.cash)
-                    : null,
+                onTap: _isAmountValid ? _onMarkPaidInCash : null,
               ),
             ),
           ],
@@ -439,20 +461,17 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: isPrimary ? AppColors.sapphireGradient : null,
-            color: isPrimary ? null : theme.surface.withValues(alpha: 0.6),
+            color: isPrimary ? theme.navy : theme.raised,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isPrimary
-                  ? Colors.white.withValues(alpha: 0.25)
-                  : theme.hairline,
+              color: isPrimary ? theme.navy : theme.hairline,
             ),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: AppColors.sapphire.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                      color: theme.shadow.withValues(alpha: theme.isDark ? 0.3 : 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : null,
@@ -462,14 +481,14 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
             children: [
               Icon(
                 icon,
-                color: isPrimary ? Colors.white : AppColors.sapphire,
+                color: isPrimary ? theme.onNavy : theme.ink,
                 size: 24,
               ),
               const SizedBox(height: 10),
               Text(
                 title,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isPrimary ? Colors.white : theme.ink,
+                style: AppTypography.body.copyWith(
+                  color: isPrimary ? theme.onNavy : theme.ink,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -478,8 +497,8 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 subtitle,
                 style: AppTypography.caption.copyWith(
                   color: isPrimary
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : theme.secondary,
+                      ? theme.onNavy.withValues(alpha: 0.75)
+                      : theme.muted,
                   fontSize: 11,
                 ),
               ),
@@ -497,11 +516,11 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
     final mockUpiId = '${_payee?.name.toLowerCase() ?? "user"}@okaxis';
 
     final upiApps = [
-      ('GPay', const Color(0xFF1A73E8), Icons.account_balance_wallet_rounded),
-      ('PhonePe', const Color(0xFF5F259F), Icons.phone_android_rounded),
-      ('Paytm', const Color(0xFF002970), Icons.wallet_rounded),
-      ('BHIM', const Color(0xFFE26126), Icons.assured_workload_rounded),
-      ('Other UPI', theme.secondary, Icons.apps_rounded),
+      ('GPay', theme.navy, Icons.account_balance_wallet_rounded),
+      ('PhonePe', theme.orchid, Icons.phone_android_rounded),
+      ('Paytm', theme.teal, Icons.wallet_rounded),
+      ('BHIM', theme.saffron, Icons.assured_workload_rounded),
+      ('Other UPI', theme.muted, Icons.apps_rounded),
     ];
 
     return Column(
@@ -524,82 +543,88 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
               child: Text(
                 'Change amount',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.sapphire,
+                  color: theme.isDark ? theme.ink : theme.navy,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // Grid of monogram tiles
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final app in upiApps) ...[
-              Semantics(
-                button: true,
-                label: 'Pay via ${app.$1}',
-                child: InkWell(
-                  onTap: () => _onSelectUpiApp(app.$1),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: app.$2.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: app.$2.withValues(alpha: 0.3),
-                        width: 1.2,
+        const SizedBox(height: 14),
+
+        for (final app in upiApps) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: () => _onSelectUpiApp(app.$1),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: theme.raised,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.hairline),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: app.$2.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      child: Icon(app.$3, color: app.$2, size: 20),
                     ),
-                    child: Center(
+                    const SizedBox(width: 14),
+                    Expanded(
                       child: Text(
-                        app.$1.substring(0, math.min(2, app.$1.length)),
+                        app.$1,
                         style: AppTypography.bodyMedium.copyWith(
-                          color: app.$2,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          color: theme.ink,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: theme.muted,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 18),
-        // Note preview card
-        GlassSurface(
-          level: GlassLevel.level1,
-          borderRadius: 18,
-          padding: const EdgeInsets.all(14),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 8),
+        // Fallback: Copy UPI ID
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.raised,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.hairline),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'UPI Note preview:',
-                style: AppTypography.caption.copyWith(color: theme.secondary),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Settliv · ${widget.group.name} · Split balance',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: theme.ink,
-                  fontWeight: FontWeight.w600,
+                'Direct Payment',
+                style: AppTypography.caption.copyWith(
+                  color: theme.muted,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'UPI ID: $mockUpiId',
                     style: AppTypography.caption.copyWith(
-                      color: theme.secondary,
+                      color: theme.muted,
                       fontSize: 12,
                     ),
                   ),
@@ -616,7 +641,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                       child: Text(
                         _copiedUpi ? 'Copied!' : 'Copy UPI ID',
                         style: AppTypography.caption.copyWith(
-                          color: _copiedUpi ? AppColors.emerald : AppColors.sapphire,
+                          color: _copiedUpi ? theme.textEmerald : theme.ink,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -632,26 +657,26 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.sapphire.withValues(alpha: 0.12),
+              color: theme.raised,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: AppColors.sapphire.withValues(alpha: 0.25),
+                color: theme.hairline,
                 width: 1.0,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline_rounded,
                   size: 14,
-                  color: AppColors.sapphire,
+                  color: theme.muted,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'Simulated in prototype',
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.sapphire,
+                    color: theme.muted,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
@@ -675,12 +700,12 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 52,
               height: 52,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.sapphire),
+                valueColor: AlwaysStoppedAnimation<Color>(theme.navy),
               ),
             ),
             const SizedBox(height: 20),
@@ -694,7 +719,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
             const SizedBox(height: 6),
             Text(
               'Simulating payment hand-off',
-              style: AppTypography.body.copyWith(color: theme.secondary),
+              style: AppTypography.body.copyWith(color: theme.muted),
             ),
           ],
         ),
@@ -729,12 +754,12 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           _method == SettlementMethod.cash
               ? 'Marked as paid in cash'
               : 'Paid via $_selectedUpiApp',
-          style: AppTypography.caption.copyWith(color: theme.secondary),
+          style: AppTypography.caption.copyWith(color: theme.muted),
         ),
         const SizedBox(height: 24),
-        GradientPrimaryButton(
+        PrimaryButton(
           label: 'Mark paid',
-          icon: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+          leading: Icon(Icons.check_rounded, color: theme.primaryButtonText, size: 20),
           onPressed: _onMarkPaid,
         ),
         const SizedBox(height: 10),
@@ -751,6 +776,15 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   // Step 5: Refined Celebration Moment (<1.2s)
   // ---------------------------------------------------------------------------
   Widget _buildCelebrationStep(SettlivThemeExtension theme) {
+    final confettiColors = [
+      theme.emerald,
+      theme.navy,
+      theme.saffron,
+      theme.orchid,
+      theme.teal,
+      theme.coral,
+    ];
+
     return AnimatedBuilder(
       key: const ValueKey('celebration_step'),
       animation: _celebrationController,
@@ -762,7 +796,10 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
             children: [
               CustomPaint(
                 size: const Size(200, 180),
-                painter: _ConfettiPainter(progress: _celebrationController.value),
+                painter: _ConfettiPainter(
+                  progress: _celebrationController.value,
+                  colors: confettiColors,
+                ),
               ),
               Transform.scale(
                 scale: 0.8 + (0.25 * _celebrationController.value),
@@ -770,20 +807,20 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: AppColors.emerald,
+                    color: theme.emerald,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.emerald.withValues(alpha: 0.35),
+                        color: theme.emerald.withValues(alpha: 0.35),
                         blurRadius: 24,
                         spreadRadius: 4,
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.check_rounded,
-                      color: Colors.white,
+                      color: theme.white,
                       size: 42,
                     ),
                   ),
@@ -799,23 +836,18 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
 
 class _ConfettiPainter extends CustomPainter {
   final double progress;
+  final List<Color> colors;
 
-  const _ConfettiPainter({required this.progress});
+  const _ConfettiPainter({
+    required this.progress,
+    required this.colors,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (progress <= 0.0) return;
+    if (progress <= 0.0 || colors.isEmpty) return;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final colors = [
-      AppColors.emerald,
-      AppColors.sapphire,
-      AppColors.amber,
-      AppColors.lilac,
-      AppColors.aqua,
-      AppColors.coral,
-    ];
-
     const count = 16;
     for (int i = 0; i < count; i++) {
       final angle = (i * (2 * math.pi / count));
@@ -833,5 +865,5 @@ class _ConfettiPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConfettiPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress || !listEquals(oldDelegate.colors, colors);
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/models/expense.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+
+typedef CategoryTile = CategoryBadge;
 
 class CategoryBadge extends StatelessWidget {
   final ExpenseCategory category;
@@ -19,7 +20,8 @@ class CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
+    final theme = context.settliv;
+    final isDark = theme.isDark;
 
     final Color tintColor;
     final Color iconColor;
@@ -27,43 +29,43 @@ class CategoryBadge extends StatelessWidget {
 
     switch (category) {
       case ExpenseCategory.food:
-        tintColor = AppColors.amber;
-        iconColor = isDark ? const Color(0xFFFFC566) : const Color(0xFFD98A11);
+        tintColor = theme.saffron;
+        iconColor = theme.saffron;
         iconData = Icons.restaurant_rounded;
         break;
       case ExpenseCategory.rent:
-        tintColor = AppColors.sapphire;
-        iconColor = isDark ? const Color(0xFF7A93FF) : AppColors.sapphire;
+        tintColor = theme.navy;
+        iconColor = isDark ? theme.ink : theme.navy;
         iconData = Icons.roofing_rounded;
         break;
       case ExpenseCategory.travel:
-        tintColor = AppColors.aqua;
-        iconColor = isDark ? const Color(0xFF5CE0ED) : const Color(0xFF0F94A6);
+        tintColor = theme.teal;
+        iconColor = theme.teal;
         iconData = Icons.directions_car_filled_rounded;
         break;
       case ExpenseCategory.stay:
-        tintColor = AppColors.lilac;
-        iconColor = isDark ? const Color(0xFFB4A6FF) : const Color(0xFF6B56E8);
+        tintColor = theme.orchid;
+        iconColor = theme.orchid;
         iconData = Icons.hotel_rounded;
         break;
       case ExpenseCategory.groceries:
-        tintColor = AppColors.emerald;
-        iconColor = isDark ? const Color(0xFF38E2B2) : const Color(0xFF0C9470);
+        tintColor = theme.emerald;
+        iconColor = theme.textEmerald;
         iconData = Icons.shopping_basket_rounded;
         break;
       case ExpenseCategory.bills:
-        tintColor = AppColors.coral;
-        iconColor = isDark ? const Color(0xFFFF8273) : const Color(0xFFD64431);
+        tintColor = theme.coral;
+        iconColor = theme.textCoral;
         iconData = Icons.receipt_long_rounded;
         break;
       case ExpenseCategory.fun:
-        tintColor = AppColors.lilac;
-        iconColor = isDark ? const Color(0xFFE29BFF) : const Color(0xFF9E38DE);
+        tintColor = theme.orchid;
+        iconColor = theme.orchid;
         iconData = Icons.celebration_rounded;
         break;
       case ExpenseCategory.other:
-        tintColor = isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
-        iconColor = isDark ? Colors.white70 : const Color(0xFF4B5565);
+        tintColor = theme.muted;
+        iconColor = theme.muted;
         iconData = Icons.category_rounded;
         break;
     }
@@ -84,12 +86,10 @@ class CategoryBadge extends StatelessWidget {
       child: Center(
         child: Icon(
           iconData,
-          color: iconColor,
           size: iconSize,
+          color: iconColor,
         ),
       ),
     );
   }
 }
-
-typedef CategoryTile = CategoryBadge;

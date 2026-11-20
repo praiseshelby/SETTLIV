@@ -1,0 +1,271 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import '../theme/app_theme.dart';
+import '../theme/app_typography.dart';
+
+class DockedNavBar extends StatefulWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTabSelected;
+
+  const DockedNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTabSelected,
+  });
+
+  @override
+  State<DockedNavBar> createState() => _DockedNavBarState();
+}
+
+class _DockedNavBarState extends State<DockedNavBar> {
+  bool _isAddPressed = false;
+
+  void _onTabTapped(int index) {
+    HapticFeedback.selectionClick();
+    widget.onTabSelected(index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.settliv;
+    final isDark = theme.isDark;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    const barBodyHeight = 64.0;
+    const plusProtrusion = 14.0;
+    final totalHeight = barBodyHeight + plusProtrusion + bottomPadding;
+
+    // Slot 0 (Home), 1 (Groups), 2 (Plus), 3 (Records), 4 (Insights)
+    // widget.currentIndex maps:
+    // 0 -> slot 0 (0.10)
+    // 1 -> slot 1 (0.30)
+    // 2 -> slot 3 (0.70)
+    // 3 -> slot 4 (0.90)
+    double targetFraction = 0.10;
+    if (widget.currentIndex == 1) targetFraction = 0.30;
+    if (widget.currentIndex == 2) targetFraction = 0.70;
+    if (widget.currentIndex == 3) targetFraction = 0.90;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barWidth = constraints.maxWidth;
+        final indicatorX = (barWidth * targetFraction) - 9.0; // 18px wide -> center - 9
+
+        return SizedBox(
+          height: totalHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Docked bar container at the bottom
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: barBodyHeight + bottomPadding,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: EdgeInsets.only(bottom: bottomPadding),
+                      decoration: BoxDecoration(
+                        color: theme.barSurface,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                        border: Border(
+                          top: BorderSide(color: theme.hairline, width: 1.0),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.shadow.withValues(alpha: isDark ? 0.35 : 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          // Sliding 3x18 active indicator line along top edge
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            left: indicatorX,
+                            top: 0,
+                            child: Container(
+                              width: 18,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: theme.ink,
+                                borderRadius: BorderRadius.circular(1.5),
+                              ),
+                            ),
+                          ),
+                          // 5 equal slots row
+                          Row(
+                            children: [
+                              // Slot 0: Home
+                              Expanded(
+                                child: _buildTabItem(
+                                  label: 'Home',
+                                  icon: Icons.home_outlined,
+                                  activeIcon: Icons.home_rounded,
+                                  isActive: widget.currentIndex == 0,
+                                  onTap: () => _onTabTapped(0),
+                                  theme: theme,
+                                ),
+                              ),
+                              // Slot 1: Groups
+                              Expanded(
+                                child: _buildTabItem(
+                                  label: 'Groups',
+                                  icon: Icons.people_outline_rounded,
+                                  activeIcon: Icons.people_rounded,
+                                  isActive: widget.currentIndex == 1,
+                                  onTap: () => _onTabTapped(1),
+                                  theme: theme,
+                                ),
+                              ),
+                              // Slot 2: Centre + placeholder space
+                              const Expanded(
+                                child: SizedBox.shrink(),
+                              ),
+                              // Slot 3: Records
+                              Expanded(
+                                child: _buildTabItem(
+                                  label: 'Records',
+                                  icon: Icons.receipt_long_outlined,
+                                  activeIcon: Icons.receipt_long_rounded,
+                                  isActive: widget.currentIndex == 2,
+                                  onTap: () => _onTabTapped(2),
+                                  theme: theme,
+                                ),
+                              ),
+                              // Slot 4: Insights
+                              Expanded(
+                                child: _buildTabItem(
+                                  label: 'Insights',
+                                  icon: Icons.insights_outlined,
+                                  activeIcon: Icons.insights_rounded,
+                                  isActive: widget.currentIndex == 3,
+                                  onTap: () => _onTabTapped(3),
+                                  theme: theme,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Centre + button raised 14px above the docked bar
+              Positioned(
+                left: (barWidth - 60) / 2,
+                top: 0,
+                child: Semantics(
+                  label: 'Add expense',
+                  button: true,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (_) => setState(() => _isAddPressed = true),
+                    onTapUp: (_) => setState(() => _isAddPressed = false),
+                    onTapCancel: () => setState(() => _isAddPressed = false),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      context.push('/add');
+                    },
+                    child: AnimatedScale(
+                      scale: _isAddPressed ? 0.94 : 1.0,
+                      duration: const Duration(milliseconds: 100),
+                      curve: Curves.easeOut,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: theme.canvas,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: isDark ? theme.primaryButtonBg : theme.navy,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.shadow.withValues(alpha: isDark ? 0.40 : 0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              size: 28,
+                              color: isDark ? theme.primaryButtonText : theme.onNavy,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabItem({
+    required String label,
+    required IconData icon,
+    required IconData activeIcon,
+    required bool isActive,
+    required VoidCallback onTap,
+    required SettlivThemeExtension theme,
+  }) {
+    final color = isActive ? theme.ink : theme.muted;
+
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                size: 22,
+                color: color,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                  color: color,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
 class AuroraBackground extends StatefulWidget {
@@ -20,11 +19,10 @@ class _AuroraBackgroundState extends State<AuroraBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 16),
+      duration: const Duration(seconds: 24),
     );
 
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
     if (!isTest) {
       _controller.repeat();
     }
@@ -38,11 +36,9 @@ class _AuroraBackgroundState extends State<AuroraBackground>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final theme = context.settliv;
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
     if (!isTest) {
       if (reduceMotion && _controller.isAnimating) {
@@ -56,18 +52,21 @@ class _AuroraBackgroundState extends State<AuroraBackground>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Base solid background
+          // Base solid canvas
           Container(
-            color: isDark ? AppColors.darkBase : AppColors.lightBase,
+            color: theme.canvas,
           ),
-          // Animated blobs painter
+          // Subtle ambient glow
           AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
               return CustomPaint(
                 painter: _AuroraPainter(
                   progress: (reduceMotion || isTest) ? 0.0 : _controller.value,
-                  isDark: isDark,
+                  canvasColor: theme.canvas,
+                  accentColor: theme.isDark ? theme.raised : theme.surface,
+                  glowColor: theme.heroMeshAccent,
+                  isDark: theme.isDark,
                 ),
                 size: Size.infinite,
               );
@@ -83,9 +82,18 @@ class _AuroraBackgroundState extends State<AuroraBackground>
 
 class _AuroraPainter extends CustomPainter {
   final double progress;
+  final Color canvasColor;
+  final Color accentColor;
+  final Color glowColor;
   final bool isDark;
 
-  _AuroraPainter({required this.progress, required this.isDark});
+  const _AuroraPainter({
+    required this.progress,
+    required this.canvasColor,
+    required this.accentColor,
+    required this.glowColor,
+    required this.isDark,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -93,111 +101,41 @@ class _AuroraPainter extends CustomPainter {
 
     final double t = progress * 2 * math.pi;
 
-    if (!isDark) {
-      // Light Mode: Cobalt, Lilac, Aqua, Peach
-      // Blob 1: Cobalt top-left
-      final offset1 = Offset(
-        size.width * (0.2 + 0.1 * math.sin(t)),
-        size.height * (0.15 + 0.08 * math.cos(t)),
-      );
-      final paint1 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraCobaltLight,
-            Color(0x004F6BFF),
-          ],
-        ).createShader(Rect.fromCircle(center: offset1, radius: size.width * 0.55));
-      canvas.drawCircle(offset1, size.width * 0.55, paint1);
+    // Subtle soft glow 1
+    final offset1 = Offset(
+      size.width * (0.2 + 0.08 * math.sin(t)),
+      size.height * (0.15 + 0.06 * math.cos(t)),
+    );
+    final paint1 = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          glowColor.withValues(alpha: isDark ? 0.12 : 0.05),
+          canvasColor.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(center: offset1, radius: size.width * 0.5));
+    canvas.drawCircle(offset1, size.width * 0.5, paint1);
 
-      // Blob 2: Lilac top-right
-      final offset2 = Offset(
-        size.width * (0.8 - 0.1 * math.cos(t)),
-        size.height * (0.35 + 0.1 * math.sin(t)),
-      );
-      final paint2 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraLilacLight,
-            Color(0x00A78BFA),
-          ],
-        ).createShader(Rect.fromCircle(center: offset2, radius: size.width * 0.6));
-      canvas.drawCircle(offset2, size.width * 0.6, paint2);
-
-      // Blob 3: Aqua bottom-left
-      final offset3 = Offset(
-        size.width * (0.15 + 0.12 * math.cos(t)),
-        size.height * (0.75 - 0.1 * math.sin(t)),
-      );
-      final paint3 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraAquaLight,
-            Color(0x005EEAD4),
-          ],
-        ).createShader(Rect.fromCircle(center: offset3, radius: size.width * 0.5));
-      canvas.drawCircle(offset3, size.width * 0.5, paint3);
-
-      // Blob 4: Soft Peach center-bottom
-      final offset4 = Offset(
-        size.width * (0.65 + 0.08 * math.sin(t * 1.5)),
-        size.height * (0.85 + 0.05 * math.cos(t * 1.5)),
-      );
-      final paint4 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraPeachLight,
-            Color(0x00FFC8A8),
-          ],
-        ).createShader(Rect.fromCircle(center: offset4, radius: size.width * 0.45));
-      canvas.drawCircle(offset4, size.width * 0.45, paint4);
-    } else {
-      // Dark Mode: Cobalt, Violet, Teal
-      // Blob 1: Cobalt
-      final offset1 = Offset(
-        size.width * (0.2 + 0.12 * math.sin(t)),
-        size.height * (0.2 + 0.1 * math.cos(t)),
-      );
-      final paint1 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraCobaltDark,
-            Color(0x003D5AFE),
-          ],
-        ).createShader(Rect.fromCircle(center: offset1, radius: size.width * 0.65));
-      canvas.drawCircle(offset1, size.width * 0.65, paint1);
-
-      // Blob 2: Violet
-      final offset2 = Offset(
-        size.width * (0.75 - 0.1 * math.cos(t)),
-        size.height * (0.45 + 0.12 * math.sin(t)),
-      );
-      final paint2 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraVioletDark,
-            Color(0x007C5CFF),
-          ],
-        ).createShader(Rect.fromCircle(center: offset2, radius: size.width * 0.6));
-      canvas.drawCircle(offset2, size.width * 0.6, paint2);
-
-      // Blob 3: Teal
-      final offset3 = Offset(
-        size.width * (0.35 + 0.15 * math.cos(t * 1.2)),
-        size.height * (0.8 - 0.08 * math.sin(t * 1.2)),
-      );
-      final paint3 = Paint()
-        ..shader = RadialGradient(
-          colors: const [
-            AppColors.auroraTealDark,
-            Color(0x0014B8A6),
-          ],
-        ).createShader(Rect.fromCircle(center: offset3, radius: size.width * 0.55));
-      canvas.drawCircle(offset3, size.width * 0.55, paint3);
-    }
+    // Subtle soft glow 2
+    final offset2 = Offset(
+      size.width * (0.8 - 0.08 * math.cos(t)),
+      size.height * (0.35 + 0.08 * math.sin(t)),
+    );
+    final paint2 = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          accentColor.withValues(alpha: isDark ? 0.15 : 0.08),
+          canvasColor.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(center: offset2, radius: size.width * 0.55));
+    canvas.drawCircle(offset2, size.width * 0.55, paint2);
   }
 
   @override
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
+    return oldDelegate.progress != progress ||
+        oldDelegate.canvasColor != canvasColor ||
+        oldDelegate.accentColor != accentColor ||
+        oldDelegate.glowColor != glowColor ||
+        oldDelegate.isDark != isDark;
   }
 }

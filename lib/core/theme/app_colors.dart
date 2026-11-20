@@ -1,92 +1,85 @@
 import 'package:flutter/material.dart';
 
 abstract class AppColors {
-  // Light Palette ("Pearl Glass")
-  static const Color lightBase = Color(0xFFF4F6FB);
-  static const Color lightInk = Color(0xFF0F1633);
-  static const Color lightSecondary = Color(0xFF5B6485);
-  static const Color lightTertiary = Color(0xFF8B93B0);
-  static const Color lightHairline = Color(0x1F0F1633); // ~12% ink
-  static const Color lightGlassBorder = Color(0x99FFFFFF); // 60% white
+  // Light Palette ("Quiet Fintech" / Linear / Revolut style)
+  static const Color lightCanvas = Color(0xFFF5F3EE);
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightRaised = Color(0xFFECE7DE);
+  static const Color lightHairline = Color(0xFFE7E3DA);
+  static const Color lightInk = Color(0xFF121826);
+  static const Color lightMuted = Color(0xFF5B6272); // AA safe > 5.5:1
+  static const Color lightTertiary = Color(0xFF8C93A3);
 
-  // Dark Palette ("Midnight Glass")
-  static const Color darkBase = Color(0xFF080B1A);
-  static const Color darkInk = Color(0xFFF5F7FF);
-  static const Color darkSecondary = Color(0xFF8E98B8);
-  static const Color darkTertiary = Color(0xFF5C6688);
-  static const Color darkHairline = Color(0x26FFFFFF); // ~15% white
-  static const Color darkGlassBorder = Color(0x2EFFFFFF); // ~18% white
+  // Dark Palette (Designed, not inverted)
+  static const Color darkCanvas = Color(0xFF0B1020);
+  static const Color darkSurface = Color(0xFF131A2E);
+  static const Color darkRaised = Color(0xFF1A2340);
+  static const Color darkHairline = Color(0xFF26304D);
+  static const Color darkInk = Color(0xFFECEAE4);
+  static const Color darkMuted = Color(0xFFA3A9BA); // AA safe > 5.7:1
+  static const Color darkTertiary = Color(0xFF6B758E);
 
-  // Aurora Bloom Colors - Light
-  static const Color auroraCobaltLight = Color(0x384F6BFF); // 22%
-  static const Color auroraLilacLight = Color(0x2EA78BFA);  // 18%
-  static const Color auroraAquaLight = Color(0x295EEAD4);   // 16%
-  static const Color auroraPeachLight = Color(0x1FFFC8A8);  // 12%
+  // Anchor Navy
+  static const Color navy = Color(0xFF0E1A3A);
+  static const Color navyLighter = Color(0xFF17254D);
+  static const Color offWhite = Color(0xFFECEAE4);
 
-  // Aurora Bloom Colors - Dark
-  static const Color auroraCobaltDark = Color(0x593D5AFE); // 35%
-  static const Color auroraVioletDark = Color(0x477C5CFF); // 28%
-  static const Color auroraTealDark = Color(0x2E14B8A6);   // 18%
+  // Semantic Money & State
+  static const Color emerald = Color(0xFF0FA37F);
+  static const Color textEmeraldLight = Color(0xFF086A51); // AA safe on light > 5.8:1
+  static const Color textEmeraldDark = Color(0xFF34D399);  // AA safe on dark > 7:1
+  static const Color emeraldTintLight = Color(0x1F0FA37F);
+  static const Color emeraldTintDark = Color(0x2E0FA37F);
 
-  // Premium Blue / Sapphire Anchor
-  static const Color sapphire = Color(0xFF2744E8);
-  static const Color sapphireStart = Color(0xFF2F4BFF);
-  static const Color sapphireEnd = Color(0xFF1B2FBF);
-  static const LinearGradient sapphireGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [sapphireStart, sapphireEnd],
-  );
+  static const Color coral = Color(0xFFEF5B48);
+  static const Color textCoralLight = Color(0xFFB52617);   // AA safe on light > 5.8:1
+  static const Color textCoralDark = Color(0xFFF87171);    // AA safe on dark > 4.8:1
+  static const Color coralTintLight = Color(0x1FEF5B48);
+  static const Color coralTintDark = Color(0x2EEF5B48);
 
-  // Money Meaning (Emerald & Coral - calm, never neon)
-  static const Color emerald = Color(0xFF12B48A);
-  static const Color emeraldTint = Color(0x2412B48A); // 14% tint
-  static const Color emeraldSoftBg = Color(0xFFE4F7F2);
+  // Category Accents (Used ONLY in category tiles and charts)
+  static const Color saffron = Color(0xFFF4A52C);
+  static const Color saffronTint = Color(0x24F4A52C);
+  static const Color teal = Color(0xFF1AA6B7);
+  static const Color tealTint = Color(0x241AA6B7);
+  static const Color orchid = Color(0xFF8E6BEA);
+  static const Color orchidTint = Color(0x248E6BEA);
 
-  static const Color coral = Color(0xFFF0614F);
-  static const Color coralTint = Color(0x24F0614F); // 14% tint
-  static const Color coralSoftBg = Color(0xFFFDECE9);
-
-  // Accents (Category tiles, charts, badges - low saturation, 14% tint)
-  static const Color lilac = Color(0xFF8B7CFF);
-  static const Color lilacTint = Color(0x248B7CFF);
-
-  static const Color aqua = Color(0xFF22C3D6);
-  static const Color aquaTint = Color(0x2422C3D6);
-
-  static const Color amber = Color(0xFFF5B544);
-  static const Color amberTint = Color(0x24F5B544);
-
-  // Backward compatibility / convenience aliases for old references
-  static const Color lightCanvas = lightBase;
-  static const Color lightSurface = Colors.white;
-  static const Color lightRaised = Color(0xFFF8FAFC);
-  static const Color darkCanvas = darkBase;
-  static const Color darkSurface = Color(0xFF10162A);
-  static const Color darkRaised = Color(0xFF171F38);
-  static const Color midnightNavy = sapphire;
-  static const Color cobaltGlow = sapphire;
-  static const Color saffron = amber;
-  static const Color saffronTint = amberTint;
-  static const Color saffronBright = amber;
-  static const Color teal = aqua;
-  static const Color tealTint = aquaTint;
-  static const Color tealBright = aqua;
-  static const Color orchid = lilac;
-  static const Color orchidTint = lilacTint;
-  static const Color orchidBright = lilac;
-  static const Color emeraldBright = emerald;
-  static const Color coralBright = coral;
-
-  // 8 Curated Duotone Avatar Pair Gradients
+  // 8 Curated Avatar Pair Gradients
   static const List<List<Color>> avatarGradients = [
-    [Color(0xFF2F4BFF), Color(0xFF8B7CFF)], // Sapphire / Lilac
-    [Color(0xFF12B48A), Color(0xFF22C3D6)], // Emerald / Aqua
-    [Color(0xFFF0614F), Color(0xFFF5B544)], // Coral / Amber
-    [Color(0xFF8B7CFF), Color(0xFF2F4BFF)], // Lilac / Sapphire
-    [Color(0xFF22C3D6), Color(0xFF12B48A)], // Aqua / Emerald
-    [Color(0xFFF5B544), Color(0xFFF0614F)], // Amber / Coral
-    [Color(0xFF2744E8), Color(0xFF12B48A)], // Sapphire / Emerald
-    [Color(0xFFD946EF), Color(0xFF8B7CFF)], // Rose / Lilac
+    [Color(0xFF0E1A3A), Color(0xFF3A558F)], // Navy / Slate
+    [Color(0xFF086A51), Color(0xFF1AA6B7)], // Forest / Teal
+    [Color(0xFFB52617), Color(0xFFF4A52C)], // Crimson / Saffron
+    [Color(0xFF5B3E96), Color(0xFF8E6BEA)], // Plum / Orchid
+    [Color(0xFF144D53), Color(0xFF0FA37F)], // Deep Teal / Emerald
+    [Color(0xFF8C3E14), Color(0xFFEF5B48)], // Burnt Amber / Coral
+    [Color(0xFF1B2F5B), Color(0xFF1AA6B7)], // Midnight / Teal
+    [Color(0xFF5E2B68), Color(0xFF8E6BEA)], // Wine / Orchid
   ];
+
+  // 6 Themes for Group Covers: Arcs, Waves, Contours, Orbits, Flatmates, GoaTrip
+  static const List<List<Color>> coverThemes = [
+    // 0: Arcs (Navy / Teal)
+    [Color(0xFF0E1A3A), Color(0xFF1AA6B7), Color(0xFF3A558F)],
+    // 1: Waves (Forest / Emerald)
+    [Color(0xFF0A3326), Color(0xFF0FA37F), Color(0xFF266650)],
+    // 2: Contours (Deep Slate / Saffron)
+    [Color(0xFF181F33), Color(0xFFF4A52C), Color(0xFF3B486B)],
+    // 3: Orbits (Plum / Orchid)
+    [Color(0xFF24153E), Color(0xFF8E6BEA), Color(0xFF4C307B)],
+    // 4: Flatmates (Classic Navy / Lilac)
+    [Color(0xFF0E1A3A), Color(0xFF8E6BEA), Color(0xFF25345C)],
+    // 5: GoaTrip (Ocean Teal / Sun Coral)
+    [Color(0xFF0C3843), Color(0xFF1AA6B7), Color(0xFFEF5B48)],
+  ];
+}
+
+extension ColorValuesCompat on Color {
+  Color withValues({double? alpha, double? red, double? green, double? blue}) {
+    final int a = alpha != null ? (alpha * 255).round().clamp(0, 255) : this.alpha;
+    final int r = red != null ? (red * 255).round().clamp(0, 255) : this.red;
+    final int g = green != null ? (green * 255).round().clamp(0, 255) : this.green;
+    final int b = blue != null ? (blue * 255).round().clamp(0, 255) : this.blue;
+    return Color.fromARGB(a, r, g, b);
+  }
 }

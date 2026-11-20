@@ -64,11 +64,17 @@ class BalanceEngine {
     for (final exp in expenses) {
       if (exp.groupId != groupId || exp.isDeleted) continue;
 
-      totalSpend += exp.amount;
-      categorySpend[exp.category] = (categorySpend[exp.category] ?? 0) + exp.amount;
+      totalSpend += exp.totalPaise;
+      categorySpend[exp.category] = (categorySpend[exp.category] ?? 0) + exp.totalPaise;
 
-      // Payer gets credited full amount
-      net[exp.paidBy] = (net[exp.paidBy] ?? 0) + exp.amount;
+      // Payer(s) get credited full amount
+      if (exp.payers.isNotEmpty) {
+        for (final p in exp.payers) {
+          net[p.personId] = (net[p.personId] ?? 0) + p.paise;
+        }
+      } else {
+        net[exp.paidBy] = (net[exp.paidBy] ?? 0) + exp.amount;
+      }
 
       // Each participant owes their share
       exp.shares.forEach((personId, shareAmount) {
@@ -76,9 +82,9 @@ class BalanceEngine {
       });
     }
 
-    // Process settlements
+    // Process non-deleted settlements
     for (final s in settlements) {
-      if (s.groupId != groupId) continue;
+      if (s.groupId != groupId || s.isDeleted) continue;
       // Payer paid off debt -> net increases
       net[s.payerId] = (net[s.payerId] ?? 0) + s.amount;
       // Payee received payment -> net decreases
@@ -97,6 +103,7 @@ class BalanceEngine {
   }
 
   /// Computes overall balances across all groups for a specific user.
+  /// Skips personal group ('group_personal') which is excluded from balances.
   UserOverallBalance computeUserOverallBalance({
     required String currentUserId,
     required List<String> groupIds,
@@ -109,6 +116,8 @@ class BalanceEngine {
     int totalUserOwes = 0;
 
     for (final groupId in groupIds) {
+      if (groupId == 'group_personal') continue; // Excluded from shared balances
+
       final members = groupMembersMap[groupId] ?? [];
       final summary = computeGroupSummary(
         groupId: groupId,

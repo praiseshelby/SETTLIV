@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
 class PersonAvatar extends StatelessWidget {
@@ -21,8 +20,8 @@ class PersonAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = person?.name ?? name ?? 'User';
     final initials = _extractInitials(displayName);
-    final gradient = _getGradientForName(displayName);
     final theme = context.settliv;
+    final gradient = _getGradientForName(displayName, theme);
 
     return Container(
       width: size,
@@ -42,7 +41,7 @@ class PersonAvatar extends StatelessWidget {
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: theme.shadow.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -57,7 +56,7 @@ class PersonAvatar extends StatelessWidget {
               initials,
               style: TextStyle(
                 fontFamily: 'Manrope',
-                color: Colors.white,
+                color: theme.white,
                 fontWeight: FontWeight.w700,
                 fontSize: size * 0.44,
                 letterSpacing: -0.2,
@@ -79,12 +78,12 @@ class PersonAvatar extends StatelessWidget {
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
-  List<Color> _getGradientForName(String input) {
+  List<Color> _getGradientForName(String input, SettlivThemeExtension theme) {
     int hash = 0;
     for (int i = 0; i < input.length; i++) {
       hash = input.codeUnitAt(i) + ((hash << 5) - hash);
     }
-    final index = hash.abs() % AppColors.avatarGradients.length;
-    return AppColors.avatarGradients[index];
+    final index = hash.abs() % theme.avatarGradients.length;
+    return theme.avatarGradients[index];
   }
 }

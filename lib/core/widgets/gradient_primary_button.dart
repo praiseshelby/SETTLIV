@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 
 class GradientPrimaryButton extends StatefulWidget {
@@ -32,6 +32,7 @@ class _GradientPrimaryButtonState extends State<GradientPrimaryButton> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.settliv;
     final bool isEnabled = widget.onPressed != null && !widget.isLoading;
 
     final double scale = _isPressed ? 0.98 : 1.0;
@@ -55,36 +56,32 @@ class _GradientPrimaryButtonState extends State<GradientPrimaryButton> {
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            gradient: isEnabled
-                ? (widget.gradient ?? AppColors.sapphireGradient)
-                : const LinearGradient(
-                    colors: [Color(0xFF9AA8E8), Color(0xFF7E8ECF)],
-                  ),
-            borderRadius: BorderRadius.circular(18),
+            color: isEnabled ? theme.primaryButtonBg : theme.raised,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withValues(alpha: isEnabled ? 0.28 : 0.1),
+              color: theme.hairline,
               width: 1,
             ),
             boxShadow: isEnabled
                 ? [
                     BoxShadow(
-                      color: AppColors.sapphireEnd
-                          .withValues(alpha: _isHovered ? 0.45 : 0.35),
-                      blurRadius: _isHovered ? 24 : 16,
-                      offset: const Offset(0, 8),
-                      spreadRadius: -2,
+                      color: theme.shadow.withValues(alpha: theme.isDark ? 0.35 : 0.15),
+                      blurRadius: _isHovered ? 20 : 14,
+                      offset: const Offset(0, 6),
                     ),
                   ]
                 : null,
           ),
           child: Center(
             child: widget.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isEnabled ? theme.primaryButtonText : theme.muted,
+                      ),
                     ),
                   )
                 : Row(
@@ -98,11 +95,10 @@ class _GradientPrimaryButtonState extends State<GradientPrimaryButton> {
                       Flexible(
                         child: Text(
                           widget.label,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: Colors.white,
+                          style: AppTypography.button.copyWith(
+                            color: isEnabled ? theme.primaryButtonText : theme.muted,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

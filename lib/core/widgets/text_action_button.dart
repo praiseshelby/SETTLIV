@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -26,18 +25,17 @@ class TextActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     final Color color;
     switch (variant) {
       case TextActionButtonVariant.cobalt:
-        color = isDark ? const Color(0xFF7E9DFF) : AppColors.cobaltGlow;
+        color = theme.isDark ? theme.ink : theme.navy;
         break;
       case TextActionButtonVariant.destructive:
-        color = isDark ? AppColors.coralBright : AppColors.coral;
+        color = theme.textCoral;
         break;
       case TextActionButtonVariant.secondary:
-        color = theme.secondary;
+        color = theme.muted;
         break;
     }
 
@@ -61,15 +59,12 @@ class TextActionButton extends StatelessWidget {
               leading!,
               const SizedBox(width: 6),
             ],
-            Flexible(
-              child: Text(
-                label,
-                style: AppTypography.button.copyWith(
-                  color: color,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+            Text(
+              label,
+              style: AppTypography.button.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
           ],

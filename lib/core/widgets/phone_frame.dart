@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import 'aurora_background.dart';
@@ -16,7 +15,7 @@ class PhoneFrame extends StatelessWidget {
   static const double cornerRadius = 44.0;
 
   static const String prototypeNote =
-      'This is a v0 prototype. Settliv has more screens and features planned (people, search, backup, reminders and more), but only the 3 core screens are built here because this assignment requires 3.';
+      'v0 prototype with local demo data. More screens and online features come in the full app.';
 
   @override
   Widget build(BuildContext context) {
@@ -28,13 +27,13 @@ class PhoneFrame extends StatelessWidget {
       return child;
     }
 
-    final double totalFrameHeight = targetHeight + (bezelWidth * 2);
-    final double totalFrameWidth = targetWidth + (bezelWidth * 2);
-    final isDark = context.isDarkMode;
+    const double totalFrameHeight = targetHeight + (bezelWidth * 2);
+    const double totalFrameWidth = targetWidth + (bezelWidth * 2);
+    final theme = context.settliv;
     final isWideDesktop = screenWidth >= 900;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBase : AppColors.lightBase,
+      backgroundColor: theme.canvas,
       body: AuroraBackground(
         child: SafeArea(
           child: Padding(
@@ -51,9 +50,7 @@ class PhoneFrame extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 4.2, // ~0.32em
-                      color: isDark
-                          ? AppColors.darkSecondary
-                          : AppColors.lightSecondary,
+                      color: theme.muted,
                     ),
                   ),
                 ),
@@ -77,7 +74,7 @@ class PhoneFrame extends StatelessWidget {
                                   media: media,
                                   totalFrameWidth: totalFrameWidth,
                                   totalFrameHeight: totalFrameHeight,
-                                  isDark: isDark,
+                                  theme: theme,
                                 ),
                               ),
                             ),
@@ -98,20 +95,19 @@ class PhoneFrame extends StatelessWidget {
                                         Container(
                                           width: 8,
                                           height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.sapphire,
+                                          decoration: BoxDecoration(
+                                            color: theme.navy,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           'PROTOTYPE NOTE',
-                                          style: AppTypography.sectionLabel.copyWith(
-                                            color: isDark
-                                                ? AppColors.darkSecondary
-                                                : AppColors.lightSecondary,
+                                          style: AppTypography.caption.copyWith(
+                                            color: theme.muted,
                                             fontSize: 11,
                                             letterSpacing: 1.0,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ],
@@ -120,9 +116,7 @@ class PhoneFrame extends StatelessWidget {
                                     Text(
                                       prototypeNote,
                                       style: AppTypography.caption.copyWith(
-                                        color: isDark
-                                            ? AppColors.darkSecondary
-                                            : AppColors.lightSecondary,
+                                        color: theme.muted,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         height: 1.45,
@@ -140,7 +134,7 @@ class PhoneFrame extends StatelessWidget {
                             media: media,
                             totalFrameWidth: totalFrameWidth,
                             totalFrameHeight: totalFrameHeight,
-                            isDark: isDark,
+                            theme: theme,
                           ),
                         ),
                 ),
@@ -156,9 +150,7 @@ class PhoneFrame extends StatelessWidget {
                       style: AppTypography.caption.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? AppColors.darkSecondary.withValues(alpha: 0.8)
-                            : AppColors.lightSecondary.withValues(alpha: 0.8),
+                        color: theme.muted.withValues(alpha: 0.8),
                         height: 1.35,
                       ),
                     ),
@@ -177,34 +169,27 @@ class PhoneFrame extends StatelessWidget {
     required MediaQueryData media,
     required double totalFrameWidth,
     required double totalFrameHeight,
-    required bool isDark,
+    required SettlivThemeExtension theme,
   }) {
+    final isDark = theme.isDark;
     return FittedBox(
       fit: BoxFit.contain,
       child: Container(
         width: totalFrameWidth,
         height: totalFrameHeight,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E2230) : const Color(0xFF262C3A), // Graphite bezel
+          color: theme.surface,
           borderRadius: BorderRadius.circular(cornerRadius + bezelWidth),
           border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.28),
+            color: theme.hairline,
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.22),
+              color: theme.shadow.withValues(alpha: isDark ? 0.45 : 0.22),
               blurRadius: 44,
               offset: const Offset(0, 20),
               spreadRadius: -4,
-            ),
-            BoxShadow(
-              color: AppColors.sapphire.withValues(alpha: isDark ? 0.25 : 0.12),
-              blurRadius: 70,
-              offset: const Offset(0, 28),
-              spreadRadius: 2,
             ),
           ],
         ),

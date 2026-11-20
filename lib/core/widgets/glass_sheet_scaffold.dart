@@ -26,11 +26,13 @@ class GlassSheetScaffold extends StatelessWidget {
     Widget? trailing,
     bool isScrollControlled = true,
   }) {
+    final theme = context.settliv;
     return showModalBottomSheet<T>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: isScrollControlled,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
+      backgroundColor: theme.transparent,
+      barrierColor: theme.scrim,
       builder: (context) => GlassSheetScaffold(
         title: title,
         trailing: trailing,
@@ -42,28 +44,25 @@ class GlassSheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     return RepaintBoundary(
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0x38FFFFFF) : const Color(0xE6FFFFFF),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              color: theme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.white.withValues(alpha: 0.7),
+                color: theme.hairline,
                 width: 1.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.15),
-                  blurRadius: 40,
-                  offset: const Offset(0, -10),
+                  color: theme.shadow.withValues(alpha: theme.isDark ? 0.45 : 0.12),
+                  blurRadius: 32,
+                  offset: const Offset(0, -8),
                 ),
               ],
             ),
@@ -96,14 +95,15 @@ class GlassSheetScaffold extends StatelessWidget {
                           title,
                           style: AppTypography.titleLarge.copyWith(
                             color: theme.ink,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        ?trailing,
+                        if (trailing != null) trailing!,
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Flexible(child: child),
+                    child,
                   ],
                 ),
               ),

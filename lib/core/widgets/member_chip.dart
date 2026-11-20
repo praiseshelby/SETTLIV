@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import 'person_avatar.dart';
@@ -22,16 +21,15 @@ class MemberChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final isDark = context.isDarkMode;
 
     final Color bgColor;
     final Color textColor;
     final Color borderColor;
 
     if (isSelected) {
-      bgColor = isDark ? const Color(0xFF263760) : AppColors.midnightNavy;
-      textColor = Colors.white;
-      borderColor = Colors.transparent;
+      bgColor = theme.navy;
+      textColor = theme.onNavy;
+      borderColor = theme.navy;
     } else {
       bgColor = theme.raised;
       textColor = theme.ink;
@@ -76,9 +74,7 @@ class MemberChip extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: AppTypography.caption.copyWith(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.8)
-                            : theme.secondary,
+                        color: isSelected ? theme.onNavy.withValues(alpha: 0.8) : theme.muted,
                         fontSize: 10,
                       ),
                     ),

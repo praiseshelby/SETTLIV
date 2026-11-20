@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
@@ -16,7 +15,7 @@ class BalancePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
+    final theme = context.settliv;
 
     final Color dotColor;
     final Color bgColor;
@@ -24,34 +23,34 @@ class BalancePill extends StatelessWidget {
     final String label;
 
     if (paise > 0) {
-      dotColor = AppColors.emerald;
-      bgColor = isDark ? const Color(0x2E12B48A) : AppColors.emeraldTint;
-      textColor = AppColors.emerald;
+      dotColor = theme.emerald;
+      bgColor = theme.emeraldTint;
+      textColor = theme.textEmerald;
       final amountStr = CurrencyFormatter.formatPaise(paise, absolute: true);
-      label = compact ? '+$amountStr' : 'You are owed $amountStr';
+      label = compact ? '+$amountStr' : 'Owed $amountStr';
     } else if (paise < 0) {
-      dotColor = AppColors.coral;
-      bgColor = isDark ? const Color(0x2EF0614F) : AppColors.coralTint;
-      textColor = AppColors.coral;
+      dotColor = theme.coral;
+      bgColor = theme.coralTint;
+      textColor = theme.textCoral;
       final amountStr = CurrencyFormatter.formatPaise(paise, absolute: true);
       label = compact ? '-$amountStr' : 'You owe $amountStr';
     } else {
-      dotColor = isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
-      bgColor = isDark ? const Color(0x1FFFFFFF) : const Color(0x140F1633);
-      textColor = isDark ? AppColors.darkSecondary : AppColors.lightSecondary;
+      dotColor = theme.muted;
+      bgColor = theme.raised;
+      textColor = theme.muted;
       label = 'All settled';
     }
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 4 : 5,
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: dotColor.withValues(alpha: isDark ? 0.35 : 0.22),
+          color: dotColor.withValues(alpha: theme.isDark ? 0.35 : 0.20),
           width: 1.0,
         ),
       ),
@@ -66,17 +65,16 @@ class BalancePill extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.chip.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+          const SizedBox(width: 5),
+          // Never ellipsize or truncate money!
+          Text(
+            label,
+            softWrap: false,
+            style: AppTypography.caption.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],

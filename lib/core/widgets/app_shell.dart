@@ -1,27 +1,39 @@
 import 'package:flutter/material.dart';
-import 'floating_nav_bar.dart';
+import 'package:go_router/go_router.dart';
+import 'docked_nav_bar.dart';
 
 class AppShell extends StatelessWidget {
-  final String currentPath;
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   const AppShell({
     super.key,
-    required this.currentPath,
-    required this.child,
+    required this.navigationShell,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Stack(
       children: [
-        Positioned.fill(child: child),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: FloatingNavBar(currentPath: currentPath),
+        Positioned.fill(
+          child: navigationShell,
         ),
+        if (!isKeyboardOpen)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DockedNavBar(
+              currentIndex: navigationShell.currentIndex,
+              onTabSelected: (index) {
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
+            ),
+          ),
       ],
     );
   }
