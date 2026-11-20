@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
+import '../theme/app_theme.dart';
 import 'person_avatar.dart';
 
 class AvatarStack extends StatelessWidget {
@@ -14,14 +15,15 @@ class AvatarStack extends StatelessWidget {
     required this.people,
     this.maxVisible = 3,
     this.size,
-    this.avatarSize = 30,
-    this.overlap = 10,
+    this.avatarSize = 28,
+    this.overlap = 8,
   });
 
   @override
   Widget build(BuildContext context) {
     if (people.isEmpty) return const SizedBox.shrink();
 
+    final theme = context.settliv;
     final effectiveSize = size ?? avatarSize;
     final visiblePeople = people.take(maxVisible).toList();
     final remainingCount = people.length - visiblePeople.length;
@@ -51,22 +53,26 @@ class AvatarStack extends StatelessWidget {
                 height: effectiveSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF6B7280),
+                  color: theme.tertiary,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: theme.surface,
                     width: 2.0,
                   ),
                 ),
                 child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      '+$remainingCount',
-                      style: TextStyle(
-                        fontFamily: 'Manrope',
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: effectiveSize * 0.4,
+                  child: Padding(
+                    padding: EdgeInsets.all(effectiveSize * 0.10),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '+$remainingCount',
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: effectiveSize * 0.44,
+                          height: 1.0,
+                        ),
                       ),
                     ),
                   ),

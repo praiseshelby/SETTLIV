@@ -16,6 +16,7 @@ class ExpenseTile extends StatefulWidget {
   final VoidCallback onTap;
   final bool isHighlighted;
   final bool showDivider;
+  final bool showGroupName;
 
   const ExpenseTile({
     super.key,
@@ -26,6 +27,7 @@ class ExpenseTile extends StatefulWidget {
     required this.onTap,
     this.isHighlighted = false,
     this.showDivider = false,
+    this.showGroupName = true,
   });
 
   @override
@@ -41,7 +43,7 @@ class _ExpenseTileState extends State<ExpenseTile> {
     final theme = context.settliv;
 
     final payerName = widget.payer?.name ?? 'Someone';
-    final groupName = widget.group?.name ?? '';
+    final groupName = (widget.showGroupName && widget.group != null) ? widget.group!.name : '';
     final subtitle = groupName.isNotEmpty
         ? 'Paid by $payerName · $groupName'
         : 'Paid by $payerName';

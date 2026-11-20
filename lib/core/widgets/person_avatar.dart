@@ -13,7 +13,7 @@ class PersonAvatar extends StatelessWidget {
     super.key,
     this.person,
     this.name,
-    this.size = 32,
+    this.size = 28,
     this.showRing = true,
   });
 
@@ -36,7 +36,7 @@ class PersonAvatar extends StatelessWidget {
         ),
         border: showRing
             ? Border.all(
-                color: theme.surface.withValues(alpha: 0.9),
+                color: theme.surface,
                 width: 2.0,
               )
             : null,
@@ -50,7 +50,7 @@ class PersonAvatar extends StatelessWidget {
       ),
       child: Center(
         child: Padding(
-          padding: EdgeInsets.all(size * 0.15),
+          padding: EdgeInsets.all(size * 0.10),
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(

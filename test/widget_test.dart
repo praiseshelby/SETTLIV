@@ -21,7 +21,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify GroupDetailScreen components
-    expect(find.text('Day 3 of 5 · Goa Trip'), findsNothing); // Flatmates is home
+    expect(find.text('Day 3 of 5'), findsNothing); // Flatmates is home
     expect(find.text('Expenses'), findsOneWidget);
     expect(find.text('Balances'), findsOneWidget);
 
@@ -49,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify trip progress bar
-    expect(find.text('Day 3 of 5 · Goa Trip'), findsOneWidget);
+    expect(find.text('Day 3 of 5'), findsOneWidget);
     expect(find.text('You owe ₹380'), findsOneWidget);
 
     // Tap Settle up

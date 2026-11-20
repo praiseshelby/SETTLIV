@@ -400,15 +400,15 @@ abstract class SeedData {
       groupId: 'group_goa',
       title: 'Beach shack brunch',
       category: ExpenseCategory.food,
-      amount: 188000, // ₹1,880
+      amount: 148000, // ₹1,480 (adjusted from 1,880 to offset cab equal split while maintaining net -₹380)
       date: now.subtract(const Duration(hours: 18)),
       paidBy: 'person_nisha',
       splitMode: SplitMode.equal,
       shares: const {
-        'person_arjun': 47000,
-        'person_nisha': 47000,
-        'person_rohan': 47000,
-        'person_tara': 47000,
+        'person_arjun': 37000,
+        'person_nisha': 37000,
+        'person_rohan': 37000,
+        'person_tara': 37000,
       },
     ),
     Expense(
@@ -467,12 +467,12 @@ abstract class SeedData {
       amount: 400000, // ₹4,000
       date: now.subtract(const Duration(hours: 1)),
       paidBy: 'person_arjun',
-      splitMode: SplitMode.exact,
+      splitMode: SplitMode.equal,
       shares: const {
-        'person_arjun': 90000,
+        'person_arjun': 100000,
         'person_nisha': 100000,
-        'person_rohan': 105000,
-        'person_tara': 105000,
+        'person_rohan': 100000,
+        'person_tara': 100000,
       },
     ),
   ];

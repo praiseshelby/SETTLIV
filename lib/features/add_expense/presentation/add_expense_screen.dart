@@ -21,6 +21,7 @@ import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
+import '../../../data/engine/split_calculator.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../logic/quick_expense_parser.dart';
 
@@ -1437,46 +1438,40 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   Map<String, int> _computeFinalShares(int totalPaise) {
-    final Map<String, int> result = {};
-
+    final paidBy = _paidById;
     if (_splitMode == SplitMode.equal) {
-      final count = _selectedMemberIds.length;
-      final perPerson = totalPaise ~/ count;
-      int remaining = totalPaise;
-      final membersList = _selectedMemberIds.toList();
-
-      for (int i = 0; i < membersList.length; i++) {
-        final id = membersList[i];
-        if (i == membersList.length - 1) {
-          result[id] = remaining;
-        } else {
-          result[id] = perPerson;
-          remaining -= perPerson;
-        }
-      }
+      return SplitCalculator.splitEqual(
+        totalPaise: totalPaise,
+        memberIds: _selectedMemberIds.toList(),
+        paidBy: paidBy,
+      );
     } else if (_splitMode == SplitMode.exact) {
+      final Map<String, int> exactMap = {};
       for (final id in _selectedMemberIds) {
-        result[id] =
+        exactMap[id] =
             CurrencyFormatter.parseToPaise(_exactControllers[id]?.text ?? '') ??
                 0;
       }
+      return SplitCalculator.validateExact(
+        totalPaise: totalPaise,
+        memberIds: _selectedMemberIds.toList(),
+        exactShares: exactMap,
+      ).shares;
     } else if (_splitMode == SplitMode.percent) {
-      int remaining = totalPaise;
-      final membersList = _selectedMemberIds.toList();
-      for (int i = 0; i < membersList.length; i++) {
-        final id = membersList[i];
-        final pct = int.tryParse(_percentControllers[id]?.text ?? '') ?? 0;
-        if (i == membersList.length - 1) {
-          result[id] = remaining;
-        } else {
-          final share = (totalPaise * pct) ~/ 100;
-          result[id] = share;
-          remaining -= share;
-        }
+      final Map<String, double> pctMap = {};
+      for (final id in _selectedMemberIds) {
+        pctMap[id] =
+            double.tryParse(_percentControllers[id]?.text ?? '') ?? 0.0;
       }
+      return SplitCalculator.splitPercent(
+        totalPaise: totalPaise,
+        memberIds: _selectedMemberIds.toList(),
+        percentages: pctMap,
+        paidBy: paidBy,
+      );
     }
 
-    return result;
+    return {};
   }
 
   // ---------------------------------------------------------------------------

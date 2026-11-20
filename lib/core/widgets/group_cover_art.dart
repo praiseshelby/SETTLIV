@@ -35,16 +35,18 @@ class GroupCoverArt extends StatelessWidget {
     final effectiveCoverType =
         coverType ?? group?.coverType ?? GroupCoverType.flatmates;
 
-    Widget content = ClipRRect(
-      borderRadius: effectiveRadius,
-      child: SizedBox(
-        height: height,
-        width: width ?? double.infinity,
-        child: CustomPaint(
-          painter: effectiveCoverType == GroupCoverType.flatmates
-              ? _FlatmatesCoverPainter()
-              : _GoaTripCoverPainter(),
-          size: Size(width ?? double.infinity, height),
+    Widget content = RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: effectiveRadius,
+        child: SizedBox(
+          height: height,
+          width: width ?? double.infinity,
+          child: CustomPaint(
+            painter: effectiveCoverType == GroupCoverType.flatmates
+                ? _FlatmatesCoverPainter()
+                : _GoaTripCoverPainter(),
+            size: Size(width ?? double.infinity, height),
+          ),
         ),
       ),
     );

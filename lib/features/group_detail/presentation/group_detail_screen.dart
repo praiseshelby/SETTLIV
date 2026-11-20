@@ -9,7 +9,6 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/avatar_stack.dart';
 import '../../../core/widgets/balance_pill.dart';
-import '../../../core/widgets/coming_soon_tag.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/glass_segmented.dart';
@@ -26,6 +25,7 @@ import '../../../data/repositories/app_repository.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../sheets/expense_detail_sheet.dart';
 import '../sheets/settle_sheet.dart';
+import '../sheets/nudge_sheet.dart';
 import 'widgets/balance_bars_chart.dart';
 import 'widgets/category_donut_chart.dart';
 
@@ -274,21 +274,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(child: BalancePill(paise: userNetPaise)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${groupMembers.length} members',
-                                    style: AppTypography.caption.copyWith(
-                                      color: theme.secondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              BalancePill(paise: userNetPaise),
                               // Trip Progress Bar (Trip groups only)
                               if (group.type == GroupType.trip) ...[
                                 const SizedBox(height: 14),
@@ -306,7 +292,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Day ${progress.currentDay} of ${progress.totalDays} · ${group.name}',
+                                            'Day ${progress.currentDay} of ${progress.totalDays}',
                                             style: AppTypography.bodyMedium.copyWith(
                                               color: theme.ink,
                                               fontSize: 12.5,
@@ -341,21 +327,126 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                   );
                                 }),
                               ],
-                              const SizedBox(height: 12),
-                              // Quiet feature chips: Nudge reminders & Invite link
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 6,
-                                children: const [
-                                  ComingSoonTag(
-                                    label: 'Nudge reminders',
-                                    featureDescription:
-                                        'Send polite WhatsApp or push reminders for pending debts.',
+                              const SizedBox(height: 14),
+                              // Clean row of two text+icon actions: Nudge (functional) and Settle up (functional)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Semantics(
+                                      button: true,
+                                      label: 'Send nudge reminder',
+                                      child: InkWell(
+                                        onTap: () {
+                                          final debt = summary.debts
+                                              .cast<SimplifiedDebt?>()
+                                              .firstWhere(
+                                                (d) =>
+                                                    d?.toPersonId ==
+                                                    currentUserId,
+                                                orElse: () => null,
+                                              );
+                                          final debtor = debt != null
+                                              ? repo.getPerson(debt.fromPersonId)
+                                              : null;
+                                          NudgeSheet.show(
+                                            context: context,
+                                            group: group,
+                                            debt: debt,
+                                            debtor: debtor,
+                                            amountPaise: debt?.amount,
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: theme.surface
+                                                .withValues(alpha: 0.7),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                                color: theme.hairline),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.notifications_none_rounded,
+                                                size: 16,
+                                                color: AppColors.sapphire,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'Nudge',
+                                                  style: AppTypography.button
+                                                      .copyWith(
+                                                    color: theme.ink,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  ComingSoonTag(
-                                    label: 'Invite link',
-                                    featureDescription:
-                                        'Share a join link via WhatsApp with other roommates or trip buddies.',
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Semantics(
+                                      button: true,
+                                      label: 'Settle up',
+                                      child: InkWell(
+                                        onTap: () {
+                                          SettleSheet.show(
+                                            context: context,
+                                            group: group,
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: theme.surface
+                                                .withValues(alpha: 0.7),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                                color: theme.hairline),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.flash_on_rounded,
+                                                size: 16,
+                                                color: AppColors.sapphire,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'Settle up',
+                                                  style: AppTypography.button
+                                                      .copyWith(
+                                                    color: theme.ink,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -523,6 +614,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           payer: repo.getPerson(dayExpenses[i].paidBy),
                           group: repo.getGroup(dayExpenses[i].groupId),
                           currentUserId: repo.currentUserId,
+                          showGroupName: false,
                           onTap: () {
                             ExpenseDetailSheet.show(
                               context: context,
@@ -696,10 +788,54 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                 ),
                               ),
                             ] else if (isUserOwed) ...[
-                              ComingSoonTag(
-                                label: 'Nudge',
-                                featureDescription:
-                                    'Send a friendly payment reminder via SMS or WhatsApp.',
+                              Semantics(
+                                button: true,
+                                label: 'Send nudge reminder to ${fromPerson?.name ?? "debtor"}',
+                                child: InkWell(
+                                  onTap: () {
+                                    final currentGroup =
+                                        repo.getGroup(widget.groupId);
+                                    if (currentGroup != null) {
+                                      NudgeSheet.show(
+                                        context: context,
+                                        group: currentGroup,
+                                        debt: debt,
+                                        debtor: fromPerson,
+                                        amountPaise: debt.amount,
+                                      );
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: theme.surface.withValues(alpha: 0.8),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(999)),
+                                      border: Border.all(color: theme.hairline),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.notifications_none_rounded,
+                                          size: 13,
+                                          color: AppColors.sapphire,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Nudge',
+                                          style: TextStyle(
+                                            color: theme.ink,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             ] else ...[
                               Text(

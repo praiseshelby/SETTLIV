@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,35 @@ import 'routes/app_router.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: SettlivApp()));
+}
+
+/// Custom scroll behavior that hides scrollbars and overscroll glows app-wide,
+/// while supporting touch, mouse drag, trackpad, and mouse wheel scrolling.
+class SettlivScrollBehavior extends MaterialScrollBehavior {
+  const SettlivScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    // Hide ALL scrollbars
+    return child;
+  }
+
+  @override
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    // No overscroll glow
+    return child;
+  }
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.invertedStylus,
+        PointerDeviceKind.trackpad,
+      };
 }
 
 class SettlivApp extends ConsumerWidget {
@@ -21,6 +51,7 @@ class SettlivApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Settliv',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const SettlivScrollBehavior(),
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
