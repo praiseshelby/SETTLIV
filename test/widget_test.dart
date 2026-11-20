@@ -1,23 +1,32 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:settliv/core/widgets/group_card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:settliv/features/group_detail/presentation/widgets/balance_bars_chart.dart';
 import 'package:settliv/features/group_detail/presentation/widgets/category_donut_chart.dart';
 import 'package:settliv/main.dart';
 import 'package:settliv/routes/app_router.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('Home screen renders groups, balances, and navigates to group detail',
       (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    expect(find.text("YOUR BALANCE"), findsOneWidget);
-    final flatmatesCard = find.widgetWithText(GroupCard, 'Flatmates');
-    expect(flatmatesCard, findsOneWidget);
+    expect(find.text("NET ACROSS GROUPS"), findsOneWidget);
+    final flatmatesFinder = find.text('Flatmates');
+    await tester.scrollUntilVisible(flatmatesFinder, 150);
+    await tester.pumpAndSettle();
+    expect(flatmatesFinder, findsOneWidget);
 
     // Tap Flatmates card to open GroupDetailScreen
-    await tester.tap(flatmatesCard);
+    await tester.tap(flatmatesFinder);
     await tester.pumpAndSettle();
 
     // Verify GroupDetailScreen components
@@ -36,14 +45,15 @@ void main() {
 
   testWidgets('Goa trip shows trip progress bar and settle up sheet opens',
       (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    final goaCard = find.widgetWithText(GroupCard, 'Goa Trip');
-    expect(goaCard, findsOneWidget);
-
-    await tester.ensureVisible(goaCard);
+    final goaCard = find.text('Goa Trip');
+    await tester.scrollUntilVisible(goaCard, 150);
     await tester.pumpAndSettle();
+    expect(goaCard, findsOneWidget);
 
     await tester.tap(goaCard);
     await tester.pumpAndSettle();

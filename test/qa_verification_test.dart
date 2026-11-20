@@ -34,7 +34,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('YOUR BALANCE'), findsOneWidget);
+      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

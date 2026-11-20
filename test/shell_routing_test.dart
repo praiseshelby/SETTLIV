@@ -22,11 +22,6 @@ void main() {
     // On '/' (Home), DockedNavBar is visible
     expect(find.byType(DockedNavBar), findsOneWidget);
 
-    // Navigate to '/groups' tab
-    router.go('/groups');
-    await tester.pumpAndSettle();
-    expect(find.byType(DockedNavBar), findsOneWidget);
-
     // Navigate to '/records' tab
     router.go('/records');
     await tester.pumpAndSettle();
@@ -36,6 +31,21 @@ void main() {
     router.go('/insights');
     await tester.pumpAndSettle();
     expect(find.byType(DockedNavBar), findsOneWidget);
+
+    // Navigate to '/plan' tab
+    router.go('/plan');
+    await tester.pumpAndSettle();
+    expect(find.byType(DockedNavBar), findsOneWidget);
+
+    // Push '/groups' (pushed route above shell, NO nav bar)
+    router.push('/groups');
+    await tester.pumpAndSettle();
+    expect(find.byType(DockedNavBar), findsNothing);
+
+    // Push '/balances' (pushed route above shell, NO nav bar)
+    router.push('/balances');
+    await tester.pumpAndSettle();
+    expect(find.byType(DockedNavBar), findsNothing);
 
     // Push '/settings' (which uses parentNavigatorKey: rootNavigatorKey)
     router.push('/settings');

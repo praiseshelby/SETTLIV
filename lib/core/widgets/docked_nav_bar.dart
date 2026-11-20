@@ -33,15 +33,15 @@ class _DockedNavBarState extends State<DockedNavBar> {
     final isDark = theme.isDark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     const barBodyHeight = 64.0;
-    const plusProtrusion = 14.0;
-    final totalHeight = barBodyHeight + plusProtrusion + bottomPadding;
+    const plusRaise = 12.0;
+    final totalHeight = barBodyHeight + plusRaise + bottomPadding;
 
-    // Slot 0 (Home), 1 (Groups), 2 (Plus), 3 (Records), 4 (Insights)
-    // widget.currentIndex maps:
-    // 0 -> slot 0 (0.10)
-    // 1 -> slot 1 (0.30)
-    // 2 -> slot 3 (0.70)
-    // 3 -> slot 4 (0.90)
+    // 5 slots: Slot 0 (Home), Slot 1 (Records), Slot 2 (+), Slot 3 (Insights), Slot 4 (Plan)
+    // Map widget.currentIndex (0, 1, 2, 3) to slot center fractions:
+    // 0 -> 0.10
+    // 1 -> 0.30
+    // 2 -> 0.70
+    // 3 -> 0.90
     double targetFraction = 0.10;
     if (widget.currentIndex == 1) targetFraction = 0.30;
     if (widget.currentIndex == 2) targetFraction = 0.70;
@@ -50,14 +50,15 @@ class _DockedNavBarState extends State<DockedNavBar> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final barWidth = constraints.maxWidth;
-        final indicatorX = (barWidth * targetFraction) - 9.0; // 18px wide -> center - 9
+        // 3x20 indicator line centered over active tab: (barWidth * fraction) - 10.0
+        final indicatorX = (barWidth * targetFraction) - 10.0;
 
         return SizedBox(
           height: totalHeight,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Docked bar container at the bottom
+              // Docked full-width bar at bottom
               Positioned(
                 left: 0,
                 right: 0,
@@ -85,14 +86,14 @@ class _DockedNavBarState extends State<DockedNavBar> {
                       ),
                       child: Stack(
                         children: [
-                          // Sliding 3x18 active indicator line along top edge
+                          // 3x20 active indicator line centered over the active tab sliding along the bar's top edge (200ms)
                           AnimatedPositioned(
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeOutCubic,
                             left: indicatorX,
                             top: 0,
                             child: Container(
-                              width: 18,
+                              width: 20,
                               height: 3,
                               decoration: BoxDecoration(
                                 color: theme.ink,
@@ -102,6 +103,7 @@ class _DockedNavBarState extends State<DockedNavBar> {
                           ),
                           // 5 equal slots row
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Slot 0: Home
                               Expanded(
@@ -114,12 +116,12 @@ class _DockedNavBarState extends State<DockedNavBar> {
                                   theme: theme,
                                 ),
                               ),
-                              // Slot 1: Groups
+                              // Slot 1: Records
                               Expanded(
                                 child: _buildTabItem(
-                                  label: 'Groups',
-                                  icon: Icons.people_outline_rounded,
-                                  activeIcon: Icons.people_rounded,
+                                  label: 'Records',
+                                  icon: Icons.receipt_long_outlined,
+                                  activeIcon: Icons.receipt_long_rounded,
                                   isActive: widget.currentIndex == 1,
                                   onTap: () => _onTabTapped(1),
                                   theme: theme,
@@ -129,23 +131,23 @@ class _DockedNavBarState extends State<DockedNavBar> {
                               const Expanded(
                                 child: SizedBox.shrink(),
                               ),
-                              // Slot 3: Records
-                              Expanded(
-                                child: _buildTabItem(
-                                  label: 'Records',
-                                  icon: Icons.receipt_long_outlined,
-                                  activeIcon: Icons.receipt_long_rounded,
-                                  isActive: widget.currentIndex == 2,
-                                  onTap: () => _onTabTapped(2),
-                                  theme: theme,
-                                ),
-                              ),
-                              // Slot 4: Insights
+                              // Slot 3: Insights
                               Expanded(
                                 child: _buildTabItem(
                                   label: 'Insights',
                                   icon: Icons.insights_outlined,
                                   activeIcon: Icons.insights_rounded,
+                                  isActive: widget.currentIndex == 2,
+                                  onTap: () => _onTabTapped(2),
+                                  theme: theme,
+                                ),
+                              ),
+                              // Slot 4: Plan
+                              Expanded(
+                                child: _buildTabItem(
+                                  label: 'Plan',
+                                  icon: Icons.pie_chart_outline_rounded,
+                                  activeIcon: Icons.pie_chart_rounded,
                                   isActive: widget.currentIndex == 3,
                                   onTap: () => _onTabTapped(3),
                                   theme: theme,
@@ -160,9 +162,9 @@ class _DockedNavBarState extends State<DockedNavBar> {
                 ),
               ),
 
-              // Centre + button raised 14px above the docked bar
+              // Centre +: 52x52 rounded square radius 18, indigo-navy (light) / off-white (dark), raised 12px, soft shadow + hairline, NO coloured ring, press scale 0.94
               Positioned(
-                left: (barWidth - 60) / 2,
+                left: (barWidth - 52) / 2,
                 top: 0,
                 child: Semantics(
                   label: 'Add expense',
@@ -178,36 +180,31 @@ class _DockedNavBarState extends State<DockedNavBar> {
                     },
                     child: AnimatedScale(
                       scale: _isAddPressed ? 0.94 : 1.0,
-                      duration: const Duration(milliseconds: 100),
-                      curve: Curves.easeOut,
+                      duration: const Duration(milliseconds: 120),
+                      curve: Curves.easeOutCubic,
                       child: Container(
-                        width: 60,
-                        height: 60,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: theme.canvas,
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        padding: const EdgeInsets.all(4),
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: isDark ? theme.primaryButtonBg : theme.navy,
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.shadow.withValues(alpha: isDark ? 0.40 : 0.18),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                          color: isDark ? theme.primaryButtonBg : theme.navy,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark ? theme.hairline : theme.white.withValues(alpha: 0.15),
+                            width: 1.0,
                           ),
-                          child: Center(
-                            child: Icon(
-                              Icons.add_rounded,
-                              size: 28,
-                              color: isDark ? theme.primaryButtonText : theme.onNavy,
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.shadow.withValues(alpha: isDark ? 0.40 : 0.20),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 28,
+                            color: isDark ? theme.primaryButtonText : theme.white,
                           ),
                         ),
                       ),
@@ -236,33 +233,36 @@ class _DockedNavBarState extends State<DockedNavBar> {
       button: true,
       selected: isActive,
       label: label,
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isActive ? activeIcon : icon,
-                size: 22,
-                color: color,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.caption.copyWith(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+      child: Material(
+        color: theme.transparent,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: theme.transparent,
+          highlightColor: theme.transparent,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 56),
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isActive ? activeIcon : icon,
+                  size: 24,
                   color: color,
-                  letterSpacing: -0.1,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: AppTypography.tabLabel.copyWith(
+                    color: color,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -146,6 +146,11 @@ final allExpensesProvider = Provider<List<Expense>>((ref) {
   return repo.getAllExpenses();
 });
 
+final allSettlementsProvider = Provider<List<Settlement>>((ref) {
+  final repo = ref.watch(appRepositoryProvider);
+  return repo.getAllSettlements();
+});
+
 final groupExpensesProvider =
     Provider.family<List<Expense>, String>((ref, groupId) {
   final repo = ref.watch(appRepositoryProvider);

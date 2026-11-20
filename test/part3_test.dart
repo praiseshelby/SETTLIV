@@ -8,7 +8,7 @@ import 'package:settliv/data/models/settlement.dart';
 
 void main() {
   group('Part 3a & Router: Navigation & Floating Nav Bar', () {
-    testWidgets('Floating bar navigates between Home, Groups, and Activity',
+    testWidgets('Floating bar navigates between Home, Records, Insights, and Plan',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -18,35 +18,29 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially on Home screen
-      expect(find.text('YOUR BALANCE'), findsOneWidget);
-      expect(find.bySemanticsLabel('Groups'), findsOneWidget);
+      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('Records'), findsOneWidget);
 
-      // Tap Groups slot in nav bar
-      await tester.tap(find.bySemanticsLabel('Groups'));
-      await tester.pumpAndSettle();
-
-      // Should be on Groups screen
-      expect(find.text('Groups'), findsWidgets);
-      expect(find.text('New group'), findsOneWidget);
-
-      // Tap Records / Activity slot in nav bar
-      final recordsFinder = find.bySemanticsLabel('Records');
-      if (recordsFinder.evaluate().isNotEmpty) {
-        await tester.tap(recordsFinder);
-      } else {
-        await tester.tap(find.bySemanticsLabel('Activity'));
-      }
+      // Tap Records slot in nav bar
+      await tester.tap(find.text('Records'));
       await tester.pumpAndSettle();
 
       // Should be on Records screen
       expect(find.text('Records'), findsWidgets);
       expect(find.text('All groups'), findsOneWidget);
 
-      // Tap Home slot to return to Home
-      await tester.tap(find.bySemanticsLabel('Home'));
+      // Tap Insights slot in nav bar
+      await tester.tap(find.text('Insights'));
       await tester.pumpAndSettle();
 
-      expect(find.text('YOUR BALANCE'), findsOneWidget);
+      // Should be on Insights screen
+      expect(find.text('Insights'), findsWidgets);
+
+      // Tap Home slot to return to Home
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
     });
 
     testWidgets('Tapping center + button in floating bar opens /add',
@@ -82,7 +76,7 @@ void main() {
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('YOUR BALANCE'), findsOneWidget);
+      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
     });
 
     testWidgets('Invalid group id shows friendly Group not found state',
@@ -102,7 +96,7 @@ void main() {
       await tester.tap(find.text('Back to Home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('YOUR BALANCE'), findsOneWidget);
+      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
     });
   });
 

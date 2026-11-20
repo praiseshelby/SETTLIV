@@ -1,52 +1,13 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-class AuroraBackground extends StatefulWidget {
+class AuroraBackground extends StatelessWidget {
   final Widget child;
   const AuroraBackground({super.key, required this.child});
 
   @override
-  State<AuroraBackground> createState() => _AuroraBackgroundState();
-}
-
-class _AuroraBackgroundState extends State<AuroraBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 24),
-    );
-
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
-    if (!isTest) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
-
-    if (!isTest) {
-      if (reduceMotion && _controller.isAnimating) {
-        _controller.stop();
-      } else if (!reduceMotion && !_controller.isAnimating) {
-        _controller.repeat();
-      }
-    }
 
     return RepaintBoundary(
       child: Stack(
@@ -56,42 +17,39 @@ class _AuroraBackgroundState extends State<AuroraBackground>
           Container(
             color: theme.canvas,
           ),
-          // Subtle ambient glow
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              return CustomPaint(
-                painter: _AuroraPainter(
-                  progress: (reduceMotion || isTest) ? 0.0 : _controller.value,
-                  canvasColor: theme.canvas,
-                  accentColor: theme.isDark ? theme.raised : theme.surface,
-                  glowColor: theme.heroMeshAccent,
-                  isDark: theme.isDark,
-                ),
-                size: Size.infinite,
-              );
-            },
+          // Static, cached radial aurora wash
+          CustomPaint(
+            painter: _AuroraPainter(
+              canvasColor: theme.canvas,
+              violetColor: theme.auroraViolet,
+              blueColor: theme.auroraBlue,
+              washColor: theme.canvasWash,
+              isDark: theme.isDark,
+            ),
+            size: Size.infinite,
           ),
           // Foreground content
-          widget.child,
+          widgetChild(child),
         ],
       ),
     );
   }
+
+  static Widget widgetChild(Widget child) => child;
 }
 
 class _AuroraPainter extends CustomPainter {
-  final double progress;
   final Color canvasColor;
-  final Color accentColor;
-  final Color glowColor;
+  final Color violetColor;
+  final Color blueColor;
+  final Color washColor;
   final bool isDark;
 
   const _AuroraPainter({
-    required this.progress,
     required this.canvasColor,
-    required this.accentColor,
-    required this.glowColor,
+    required this.violetColor,
+    required this.blueColor,
+    required this.washColor,
     required this.isDark,
   });
 
@@ -99,43 +57,63 @@ class _AuroraPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.width == 0 || size.height == 0) return;
 
-    final double t = progress * 2 * math.pi;
+    if (isDark) {
+      // Midnight Glass: canvas with violet wash #1A1640 at ~45%
+      final washPaint = Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.6, -0.6),
+          radius: 1.2,
+          colors: [
+            washColor.withValues(alpha: 0.45),
+            canvasColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), washPaint);
 
-    // Subtle soft glow 1
-    final offset1 = Offset(
-      size.width * (0.2 + 0.08 * math.sin(t)),
-      size.height * (0.15 + 0.06 * math.cos(t)),
-    );
-    final paint1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          glowColor.withValues(alpha: isDark ? 0.12 : 0.05),
-          canvasColor.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(center: offset1, radius: size.width * 0.5));
-    canvas.drawCircle(offset1, size.width * 0.5, paint1);
+      // Subtle cool ambient glow bottom right
+      final darkBluePaint = Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.7, 0.8),
+          radius: 1.0,
+          colors: [
+            blueColor.withValues(alpha: 0.20),
+            canvasColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), darkBluePaint);
+    } else {
+      // Pearl Glass: soft violet radial #E9E5FF at ~50% top-left
+      final violetPaint = Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.7, -0.7),
+          radius: 1.2,
+          colors: [
+            violetColor.withValues(alpha: 0.50),
+            canvasColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), violetPaint);
 
-    // Subtle soft glow 2
-    final offset2 = Offset(
-      size.width * (0.8 - 0.08 * math.cos(t)),
-      size.height * (0.35 + 0.08 * math.sin(t)),
-    );
-    final paint2 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          accentColor.withValues(alpha: isDark ? 0.15 : 0.08),
-          canvasColor.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(center: offset2, radius: size.width * 0.55));
-    canvas.drawCircle(offset2, size.width * 0.55, paint2);
+      // faint cool-blue #E4EEFF at ~40% bottom-right
+      final bluePaint = Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.8, 0.8),
+          radius: 1.1,
+          colors: [
+            blueColor.withValues(alpha: 0.40),
+            canvasColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bluePaint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.canvasColor != canvasColor ||
-        oldDelegate.accentColor != accentColor ||
-        oldDelegate.glowColor != glowColor ||
+    return oldDelegate.canvasColor != canvasColor ||
+        oldDelegate.violetColor != violetColor ||
+        oldDelegate.blueColor != blueColor ||
+        oldDelegate.washColor != washColor ||
         oldDelegate.isDark != isDark;
   }
 }

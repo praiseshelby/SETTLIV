@@ -64,6 +64,13 @@ void main() {
       expect(loadedExp.totalPaise, equals(50000));
     });
 
+    test('Cleans up stale v1 storage and replaces with seed v2', () async {
+      await prefs.setString('settliv_ledger_v1', '{"version": 1, "data": "stale"}');
+      final repo = PersistentAppRepository(prefs: prefs);
+      expect(prefs.containsKey('settliv_ledger_v1'), isFalse);
+      expect(repo.getGroups().length, equals(SeedData.groups.length));
+    });
+
     test('Corrupt JSON fallback: recovers to seed data cleanly and flags corrupt flag', () async {
       // Store corrupted/invalid JSON in prefs
       await prefs.setString(PersistentAppRepository.storageKey, '{"version": 999, "corrupt": true}');

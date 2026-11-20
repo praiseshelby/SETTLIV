@@ -4,6 +4,8 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/groups/presentation/groups_screen.dart';
 import '../features/activity/presentation/activity_screen.dart';
 import '../features/insights/presentation/insights_screen.dart';
+import '../features/plan/presentation/plan_screen.dart';
+import '../features/balances/presentation/balances_screen.dart';
 import '../features/add_expense/presentation/add_expense_screen.dart';
 import '../features/group_detail/presentation/group_detail_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -60,7 +62,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     );
   },
   routes: [
-    // 4-Tab Navigation Shell using StatefulShellRoute.indexedStack
+    // 4-Tab Navigation Shell: Home, Records, [+], Insights, Plan (NO Groups tab)
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return PhoneFrame(
@@ -79,16 +81,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ],
         ),
-        // Tab 1: Groups
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/groups',
-              builder: (context, state) => const GroupsScreen(),
-            ),
-          ],
-        ),
-        // Tab 2: Records
+        // Tab 1: Records
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -97,12 +90,21 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ],
         ),
-        // Tab 3: Insights
+        // Tab 2: Insights
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/insights',
               builder: (context, state) => const InsightsScreen(),
+            ),
+          ],
+        ),
+        // Tab 3: Plan
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/plan',
+              builder: (context, state) => const PlanScreen(),
             ),
           ],
         ),
@@ -116,6 +118,20 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     ),
 
     // Pushed routes (ABOVE the shell, docked bar is never shown on them)
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: '/balances',
+      builder: (context, state) => const PhoneFrame(
+        child: BalancesScreen(),
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: '/groups',
+      builder: (context, state) => const PhoneFrame(
+        child: GroupsScreen(),
+      ),
+    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/add',

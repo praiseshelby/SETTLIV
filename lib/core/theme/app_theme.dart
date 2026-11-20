@@ -8,16 +8,19 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   // Surfaces
   final Color canvas;
   final Color surface;
+  final Color surfaceSolid;
   final Color raised;
   final Color hairline;
+  final Color innerHighlight;
 
   // Text / Inks
   final Color ink;
   final Color muted;
   final Color tertiary;
 
-  // Anchor & Primary Buttons
+  // Anchor & Primary Buttons & Accent
   final Color navy;
+  final Color accent;
   final Color onNavy;
   final Color primaryButtonBg;
   final Color primaryButtonText;
@@ -46,7 +49,10 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   final Color shadow;
   final Color barSurface;
 
-  // Custom Painter Tokens
+  // Aurora & Mesh
+  final Color auroraViolet;
+  final Color auroraBlue;
+  final Color canvasWash;
   final Color heroMeshStart;
   final Color heroMeshEnd;
   final Color heroMeshAccent;
@@ -58,12 +64,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   const SettlivThemeExtension({
     required this.canvas,
     required this.surface,
+    required this.surfaceSolid,
     required this.raised,
     required this.hairline,
+    required this.innerHighlight,
     required this.ink,
     required this.muted,
     required this.tertiary,
     required this.navy,
+    required this.accent,
     required this.onNavy,
     required this.primaryButtonBg,
     required this.primaryButtonText,
@@ -85,6 +94,9 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     required this.black,
     required this.shadow,
     required this.barSurface,
+    required this.auroraViolet,
+    required this.auroraBlue,
+    required this.canvasWash,
     required this.heroMeshStart,
     required this.heroMeshEnd,
     required this.heroMeshAccent,
@@ -99,14 +111,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   static const light = SettlivThemeExtension(
     canvas: AppColors.lightCanvas,
     surface: AppColors.lightSurface,
+    surfaceSolid: AppColors.lightSurfaceSolid,
     raised: AppColors.lightRaised,
     hairline: AppColors.lightHairline,
+    innerHighlight: Color(0xFFFFFFFF),
     ink: AppColors.lightInk,
     muted: AppColors.lightMuted,
     tertiary: AppColors.lightTertiary,
-    navy: AppColors.navy,
+    navy: AppColors.anchorIndigo,
+    accent: AppColors.accentViolet,
     onNavy: Color(0xFFFFFFFF),
-    primaryButtonBg: AppColors.navy,
+    primaryButtonBg: AppColors.anchorIndigo,
     primaryButtonText: Color(0xFFFFFFFF),
     emerald: AppColors.emerald,
     textEmerald: AppColors.textEmeraldLight,
@@ -120,15 +135,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     tealTint: AppColors.tealTint,
     orchid: AppColors.orchid,
     orchidTint: AppColors.orchidTint,
-    scrim: Color(0x660E1A3A),
+    scrim: Color(0x66000000),
     transparent: Color(0x00000000),
     white: Color(0xFFFFFFFF),
     black: Color(0xFF000000),
-    shadow: Color(0x1F0E1A3A),
-    barSurface: Color(0xE6FFFFFF), // ~90% white
-    heroMeshStart: AppColors.navy,
-    heroMeshEnd: Color(0xFF1B2E5E),
-    heroMeshAccent: Color(0xFF263F7C),
+    shadow: Color(0xFF16193F),
+    barSurface: Color(0xE0FFFFFF), // ~88% opacity
+    auroraViolet: AppColors.lightAuroraViolet,
+    auroraBlue: AppColors.lightAuroraBlue,
+    canvasWash: Color(0x00000000),
+    heroMeshStart: Color(0xFF16193F),
+    heroMeshEnd: Color(0xFF0F122F),
+    heroMeshAccent: Color(0xFF5B4BDB),
     avatarGradients: AppColors.avatarGradients,
     coverThemePalettes: AppColors.coverThemes,
     isDark: false,
@@ -137,15 +155,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   static const dark = SettlivThemeExtension(
     canvas: AppColors.darkCanvas,
     surface: AppColors.darkSurface,
+    surfaceSolid: AppColors.darkSurfaceSolid,
     raised: AppColors.darkRaised,
     hairline: AppColors.darkHairline,
+    innerHighlight: Color(0x1AFFFFFF),
     ink: AppColors.darkInk,
     muted: AppColors.darkMuted,
     tertiary: AppColors.darkTertiary,
-    navy: AppColors.navy,
-    onNavy: AppColors.darkInk,
+    navy: AppColors.anchorIndigo,
+    accent: AppColors.accentViolet,
+    onNavy: Color(0xFFECEBF5),
     primaryButtonBg: AppColors.offWhite,
-    primaryButtonText: AppColors.navy,
+    primaryButtonText: AppColors.lightInk,
     emerald: AppColors.emerald,
     textEmerald: AppColors.textEmeraldDark,
     emeraldTint: AppColors.emeraldTintDark,
@@ -158,15 +179,18 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     tealTint: AppColors.tealTint,
     orchid: AppColors.orchid,
     orchidTint: AppColors.orchidTint,
-    scrim: Color(0x99000000),
+    scrim: Color(0x80000000),
     transparent: Color(0x00000000),
     white: Color(0xFFFFFFFF),
     black: Color(0xFF000000),
-    shadow: Color(0x66000000),
-    barSurface: Color(0xE6131A2E), // ~90% dark surface
-    heroMeshStart: Color(0xFF0A1227),
-    heroMeshEnd: Color(0xFF131D3B),
-    heroMeshAccent: Color(0xFF1A274E),
+    shadow: Color(0xFF000000),
+    barSurface: Color(0xE012142A), // ~88% opacity
+    auroraViolet: Color(0x1F5B4BDB),
+    auroraBlue: Color(0x183F4685),
+    canvasWash: AppColors.darkCanvasWash,
+    heroMeshStart: Color(0xFF16193F),
+    heroMeshEnd: Color(0xFF0A0C1C),
+    heroMeshAccent: Color(0xFF5B4BDB),
     avatarGradients: AppColors.avatarGradients,
     coverThemePalettes: AppColors.coverThemes,
     isDark: true,
@@ -176,12 +200,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   SettlivThemeExtension copyWith({
     Color? canvas,
     Color? surface,
+    Color? surfaceSolid,
     Color? raised,
     Color? hairline,
+    Color? innerHighlight,
     Color? ink,
     Color? muted,
     Color? tertiary,
     Color? navy,
+    Color? accent,
     Color? onNavy,
     Color? primaryButtonBg,
     Color? primaryButtonText,
@@ -203,6 +230,9 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     Color? black,
     Color? shadow,
     Color? barSurface,
+    Color? auroraViolet,
+    Color? auroraBlue,
+    Color? canvasWash,
     Color? heroMeshStart,
     Color? heroMeshEnd,
     Color? heroMeshAccent,
@@ -213,12 +243,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     return SettlivThemeExtension(
       canvas: canvas ?? this.canvas,
       surface: surface ?? this.surface,
+      surfaceSolid: surfaceSolid ?? this.surfaceSolid,
       raised: raised ?? this.raised,
       hairline: hairline ?? this.hairline,
+      innerHighlight: innerHighlight ?? this.innerHighlight,
       ink: ink ?? this.ink,
       muted: muted ?? this.muted,
       tertiary: tertiary ?? this.tertiary,
       navy: navy ?? this.navy,
+      accent: accent ?? this.accent,
       onNavy: onNavy ?? this.onNavy,
       primaryButtonBg: primaryButtonBg ?? this.primaryButtonBg,
       primaryButtonText: primaryButtonText ?? this.primaryButtonText,
@@ -240,6 +273,9 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       black: black ?? this.black,
       shadow: shadow ?? this.shadow,
       barSurface: barSurface ?? this.barSurface,
+      auroraViolet: auroraViolet ?? this.auroraViolet,
+      auroraBlue: auroraBlue ?? this.auroraBlue,
+      canvasWash: canvasWash ?? this.canvasWash,
       heroMeshStart: heroMeshStart ?? this.heroMeshStart,
       heroMeshEnd: heroMeshEnd ?? this.heroMeshEnd,
       heroMeshAccent: heroMeshAccent ?? this.heroMeshAccent,
@@ -250,169 +286,140 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   }
 
   @override
-  SettlivThemeExtension lerp(
-      ThemeExtension<SettlivThemeExtension>? other, double t) {
+  SettlivThemeExtension lerp(ThemeExtension<SettlivThemeExtension>? other, double t) {
     if (other is! SettlivThemeExtension) return this;
     return SettlivThemeExtension(
-      canvas: Color.lerp(canvas, other.canvas, t)!,
-      surface: Color.lerp(surface, other.surface, t)!,
-      raised: Color.lerp(raised, other.raised, t)!,
-      hairline: Color.lerp(hairline, other.hairline, t)!,
-      ink: Color.lerp(ink, other.ink, t)!,
-      muted: Color.lerp(muted, other.muted, t)!,
-      tertiary: Color.lerp(tertiary, other.tertiary, t)!,
-      navy: Color.lerp(navy, other.navy, t)!,
-      onNavy: Color.lerp(onNavy, other.onNavy, t)!,
-      primaryButtonBg: Color.lerp(primaryButtonBg, other.primaryButtonBg, t)!,
-      primaryButtonText:
-          Color.lerp(primaryButtonText, other.primaryButtonText, t)!,
-      emerald: Color.lerp(emerald, other.emerald, t)!,
-      textEmerald: Color.lerp(textEmerald, other.textEmerald, t)!,
-      emeraldTint: Color.lerp(emeraldTint, other.emeraldTint, t)!,
-      coral: Color.lerp(coral, other.coral, t)!,
-      textCoral: Color.lerp(textCoral, other.textCoral, t)!,
-      coralTint: Color.lerp(coralTint, other.coralTint, t)!,
-      saffron: Color.lerp(saffron, other.saffron, t)!,
-      saffronTint: Color.lerp(saffronTint, other.saffronTint, t)!,
-      teal: Color.lerp(teal, other.teal, t)!,
-      tealTint: Color.lerp(tealTint, other.tealTint, t)!,
-      orchid: Color.lerp(orchid, other.orchid, t)!,
-      orchidTint: Color.lerp(orchidTint, other.orchidTint, t)!,
-      scrim: Color.lerp(scrim, other.scrim, t)!,
+      canvas: Color.lerp(canvas, other.canvas, t) ?? canvas,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+      surfaceSolid: Color.lerp(surfaceSolid, other.surfaceSolid, t) ?? surfaceSolid,
+      raised: Color.lerp(raised, other.raised, t) ?? raised,
+      hairline: Color.lerp(hairline, other.hairline, t) ?? hairline,
+      innerHighlight: Color.lerp(innerHighlight, other.innerHighlight, t) ?? innerHighlight,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
+      muted: Color.lerp(muted, other.muted, t) ?? muted,
+      tertiary: Color.lerp(tertiary, other.tertiary, t) ?? tertiary,
+      navy: Color.lerp(navy, other.navy, t) ?? navy,
+      accent: Color.lerp(accent, other.accent, t) ?? accent,
+      onNavy: Color.lerp(onNavy, other.onNavy, t) ?? onNavy,
+      primaryButtonBg: Color.lerp(primaryButtonBg, other.primaryButtonBg, t) ?? primaryButtonBg,
+      primaryButtonText: Color.lerp(primaryButtonText, other.primaryButtonText, t) ?? primaryButtonText,
+      emerald: Color.lerp(emerald, other.emerald, t) ?? emerald,
+      textEmerald: Color.lerp(textEmerald, other.textEmerald, t) ?? textEmerald,
+      emeraldTint: Color.lerp(emeraldTint, other.emeraldTint, t) ?? emeraldTint,
+      coral: Color.lerp(coral, other.coral, t) ?? coral,
+      textCoral: Color.lerp(textCoral, other.textCoral, t) ?? textCoral,
+      coralTint: Color.lerp(coralTint, other.coralTint, t) ?? coralTint,
+      saffron: Color.lerp(saffron, other.saffron, t) ?? saffron,
+      saffronTint: Color.lerp(saffronTint, other.saffronTint, t) ?? saffronTint,
+      teal: Color.lerp(teal, other.teal, t) ?? teal,
+      tealTint: Color.lerp(tealTint, other.tealTint, t) ?? tealTint,
+      orchid: Color.lerp(orchid, other.orchid, t) ?? orchid,
+      orchidTint: Color.lerp(orchidTint, other.orchidTint, t) ?? orchidTint,
+      scrim: Color.lerp(scrim, other.scrim, t) ?? scrim,
       transparent: transparent,
       white: white,
       black: black,
-      shadow: Color.lerp(shadow, other.shadow, t)!,
-      barSurface: Color.lerp(barSurface, other.barSurface, t)!,
-      heroMeshStart: Color.lerp(heroMeshStart, other.heroMeshStart, t)!,
-      heroMeshEnd: Color.lerp(heroMeshEnd, other.heroMeshEnd, t)!,
-      heroMeshAccent: Color.lerp(heroMeshAccent, other.heroMeshAccent, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t) ?? shadow,
+      barSurface: Color.lerp(barSurface, other.barSurface, t) ?? barSurface,
+      auroraViolet: Color.lerp(auroraViolet, other.auroraViolet, t) ?? auroraViolet,
+      auroraBlue: Color.lerp(auroraBlue, other.auroraBlue, t) ?? auroraBlue,
+      canvasWash: Color.lerp(canvasWash, other.canvasWash, t) ?? canvasWash,
+      heroMeshStart: Color.lerp(heroMeshStart, other.heroMeshStart, t) ?? heroMeshStart,
+      heroMeshEnd: Color.lerp(heroMeshEnd, other.heroMeshEnd, t) ?? heroMeshEnd,
+      heroMeshAccent: Color.lerp(heroMeshAccent, other.heroMeshAccent, t) ?? heroMeshAccent,
       avatarGradients: t < 0.5 ? avatarGradients : other.avatarGradients,
-      coverThemePalettes:
-          t < 0.5 ? coverThemePalettes : other.coverThemePalettes,
+      coverThemePalettes: t < 0.5 ? coverThemePalettes : other.coverThemePalettes,
       isDark: t < 0.5 ? isDark : other.isDark,
     );
   }
 }
 
+extension SettlivThemeContext on BuildContext {
+  SettlivThemeExtension get settliv =>
+      Theme.of(this).extension<SettlivThemeExtension>() ?? SettlivThemeExtension.light;
+}
+
 class AppTheme {
-  static ThemeData light() {
+  static ThemeData light() => lightTheme;
+  static ThemeData dark() => darkTheme;
+
+  static ThemeData get lightTheme {
+    const ext = SettlivThemeExtension.light;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.lightCanvas,
-      canvasColor: AppColors.lightCanvas,
-      cardColor: AppColors.lightSurface,
-      dividerColor: AppColors.lightHairline,
-      fontFamily: AppTypography.fontFamily,
-      fontFamilyFallback: AppTypography.fontFamilyFallback,
+      scaffoldBackgroundColor: ext.canvas,
+      fontFamily: AppTypography.fontBody,
+      extensions: const [ext],
+      colorScheme: ColorScheme.light(
+        surface: ext.surfaceSolid,
+        primary: ext.navy,
+        secondary: ext.accent,
+        error: ext.coral,
+        onSurface: ext.ink,
+        onPrimary: ext.white,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.lightHairline,
+        thickness: 1,
+        space: 1,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
+        iconTheme: IconThemeData(color: AppColors.lightInk),
       ),
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.navy,
-        onPrimary: Color(0xFFFFFFFF),
-        surface: AppColors.lightSurface,
-        onSurface: AppColors.lightInk,
-        error: AppColors.coral,
-        onError: Color(0xFFFFFFFF),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+        },
       ),
-      dialogTheme: DialogTheme(
-        backgroundColor: AppColors.lightSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.lightHairline),
-        ),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.transparent,
-        modalBackgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.navy,
-        contentTextStyle: const TextStyle(
-          color: Color(0xFFFFFFFF),
-          fontFamily: AppTypography.fontFamily,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      textSelectionTheme: TextSelectionThemeData(
-        cursorColor: AppColors.navy,
-        selectionColor: AppColors.navy.withValues(alpha: 0.2),
-        selectionHandleColor: AppColors.navy,
-      ),
-      extensions: const [SettlivThemeExtension.light],
     );
   }
 
-  static ThemeData dark() {
+  static ThemeData get darkTheme {
+    const ext = SettlivThemeExtension.dark;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.darkCanvas,
-      canvasColor: AppColors.darkCanvas,
-      cardColor: AppColors.darkSurface,
-      dividerColor: AppColors.darkHairline,
-      fontFamily: AppTypography.fontFamily,
-      fontFamilyFallback: AppTypography.fontFamilyFallback,
+      scaffoldBackgroundColor: ext.canvas,
+      fontFamily: AppTypography.fontBody,
+      extensions: const [ext],
+      colorScheme: ColorScheme.dark(
+        surface: ext.surfaceSolid,
+        primary: ext.primaryButtonBg,
+        secondary: ext.accent,
+        error: ext.coral,
+        onSurface: ext.ink,
+        onPrimary: ext.primaryButtonText,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.darkHairline,
+        thickness: 1,
+        space: 1,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: IconThemeData(color: AppColors.darkInk),
       ),
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.offWhite,
-        onPrimary: AppColors.navy,
-        surface: AppColors.darkSurface,
-        onSurface: AppColors.darkInk,
-        error: AppColors.coral,
-        onError: Color(0xFFFFFFFF),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+        },
       ),
-      dialogTheme: DialogTheme(
-        backgroundColor: AppColors.darkSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.darkHairline),
-        ),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.transparent,
-        modalBackgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.darkRaised,
-        contentTextStyle: const TextStyle(
-          color: AppColors.darkInk,
-          fontFamily: AppTypography.fontFamily,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      textSelectionTheme: TextSelectionThemeData(
-        cursorColor: AppColors.offWhite,
-        selectionColor: AppColors.offWhite.withValues(alpha: 0.25),
-        selectionHandleColor: AppColors.offWhite,
-      ),
-      extensions: const [SettlivThemeExtension.dark],
     );
   }
-}
-
-extension BuildContextThemeX on BuildContext {
-  SettlivThemeExtension get settliv =>
-      Theme.of(this).extension<SettlivThemeExtension>() ??
-      SettlivThemeExtension.light;
-
-  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 }

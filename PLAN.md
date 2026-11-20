@@ -147,3 +147,63 @@
   - Docked bar does not overlay content or sheets.
   - All 88 automated tests passing, 0 analyzer issues.
   - Visual QA verified across 390x844 and 360x640 in Light and Dark modes.
+
+---
+
+## Task 3: Visual Direction, Shell, Home, Balances, Insights, Plan
+
+### Set 1: Revamp, Shell, Home, Balances, Insights, Plan (COMPLETED)
+- [x] **1A. Data Regression Investigation & Seed Versioning**:
+  - Stale persisted data key `settliv_ledger_v1` cleared and upgraded to `settliv_ledger_v2` with `schemaVersion = 2` and `seedVersion = 2`.
+  - Added schema/seed version migration logic in `PersistentAppRepository` to safely upgrade or reseed without user data corruption.
+  - Added integration test `test/seed_integration_test.dart` asserting fresh storage boot gives exact hero numbers: Flatmates +₹1,240, Goa Trip -₹380, net +₹860 across groups.
+- [x] **1B. Theme, Tokens & Bundled Fonts ("Pearl Glass" & "Midnight Glass")**:
+  - Removed beige/warm theme. Implemented modern cool-white "Pearl Glass" (#F6F7FC canvas, radial aurora #E9E5FF at 50% top-left, #E4EEFF at 40% bottom-right, 80% white surface with 1px hairline #E3E5F1, 1px white inner top highlight, ink #12132B, muted #5A5F7A, anchor Deep Indigo-Navy #16193F, accent #5B4BDB).
+  - Implemented "Midnight Glass" dark theme (#0A0C1C canvas, violet wash #1A1640 at 45%, surface #12142A at 80%, raised #191C3A, hairline #272B4A, text #ECEBF5, muted #A5A8C0, off-white primary button with ink text).
+  - Bundled official Google Fonts TTF assets (Sora for money, titles, numbers; Plus Jakarta Sans for body, labels, inputs) with all required weights declared in `pubspec.yaml`.
+  - Verified ₹ glyph renders in both font families with tabular figures (`FontFeature.tabularFigures()`).
+  - Added font specimen to `/gallery` showing money, titles, body, and ₹ symbol in both themes.
+  - Verified static cached `AuroraBackground` inside `RepaintBoundary` repainting only on theme changes.
+  - Built unified `ScreenScaffold` and `SectionCard` with 8pt grid, 20px screen padding, 28px top radii for sheets, 24px cards, 16px controls.
+  - Verified token scanner (`test/theme_token_scan_test.dart`) and WCAG AA contrast (`test/wcag_contrast_test.dart`).
+- [x] **1C. Navigation Shell & Docked Nav Bar**:
+  - `StatefulShellRoute` with 4 tabs + center action: Home, Records, [+], Insights, Plan (NO Groups tab).
+  - Docked full-width bar (top corners 28, top hairline, blur BackdropFilter layer at 88% surface, upward diffused shadow, hidden when keyboard is open, safe-area aware).
+  - Active indicator: 3x20 sliding line centered over active tab (200ms ease-out).
+  - Center + button: 52x52 rounded square (radius 18), deep indigo-navy in light / off-white in dark, raised 12px, soft shadow + hairline, NO colored ring, press scale 0.94, opens `/add`.
+  - All pushed routes (`/add`, `/balances`, `/groups`, `/group/:id`, `/settings`, `/gallery`) sit above shell with no docked bar.
+  - Content bottom padding equals bar height + safe area + 16px.
+- [x] **1D. Home Screen & Balance Hero**:
+  - Time-aware greeting, date line ("Saturday, 21 November"), 44px avatar button navigating to `/settings`.
+  - Balance Hero Card: deep indigo-navy mesh with faint violet glow and 1px inner highlight; eyebrow "NET ACROSS GROUPS"; headline sentence ("You're owed" / "You owe" / "All settled up"); white Sora 40-44/800 amount with count-up, NO minus sign, on-dark status marker; thin diverging bar; two distinct columns for "Owed to you" and "You owe"; footer row with counterparty avatars and "View breakdown ›" opening `/balances`.
+  - "This month" compact card: YOUR share this month vs last month with arrow and percentage change, month-to-date line, tapping opens `/insights`.
+  - "Needs attention" card: displays ONLY when actionable items exist (debtor owing for 7+ days, due recurring bills, over budget).
+  - Recent activity: pure function `RecentActivityEngine` (unit tested in `test/recent_activity_engine_test.dart`), single grouped container with hairline dividers, compact rows with category icon tiles, payer/settlement subtitles, amount sentences ("You lent ₹3,000", "You owe ₹1,160", "Not involved"), tapping opens detail sheet.
+  - Recent groups: max 2 by last activity with cover strip, member avatars, full balance sentence, and "All groups ›" opening `/groups`.
+- [x] **1E. Balances Page (/balances)**:
+  - Header with net sentence ("You're owed ₹860 overall across groups").
+  - Rectangular segmented control (radius 16) "Owed to you (N)" / "You owe (N)".
+  - Per-person net summary rows with breakdown line ("Flatmates ₹1,240 · Goa Trip ₹640"), expandable per-group lines with individual Nudge/Settle actions.
+  - "Settle all" with simulated UPI flow and cash option; undo snackbar restoring exact ledger state.
+  - Pure function engine `PersonBalanceEngine` unit-tested in `test/person_balance_engine_test.dart`.
+- [x] **1F. Insights Screen (/insights)**:
+  - Period selector: This month, Last month, 3M, 6M, Year.
+  - Debts & settlements card (settled in period vs net still owed).
+  - "Your spending" hero (YOUR share only, never group totals) with percentage vs previous period.
+  - Category breakdown donut chart via CustomPainter with slice percentages and list.
+  - Breakdown by group and personal space.
+  - Spending habits insights.
+- [x] **1G. Plan Screen (/plan)**:
+  - Monthly budget overview with your share spent so far.
+  - 3-state progress bar (Emerald <=80%, Saffron 80-100%, Coral >100%).
+  - Month-end pace projection ("Projected: ₹X at current pace ~₹Y/day").
+  - Category spending limits with edit sheet, persisted in SharedPreferences.
+- [x] **1H. Quality Assurance & Defect Fixes**:
+  - Fixed 24px overflow on Home at 360x640 with text scale factor 1.3 in "This month" card.
+  - Fixed hero card column money truncation ("Owed to you ₹1,2...") at 360px width by giving amount its own prominent tabular figure line.
+  - Fixed `summary.breakdownText` in `PersonBalanceEngine` to use `CurrencyFormatter.formatPaise()` with proper Indian grouping commas.
+  - Removed unused imports and cleaned up test prints.
+  - Captured 32 responsive screenshots across 390x844 and 360x640 in both Light and Dark modes.
+  - Full test suite: 98/98 tests passing.
+  - `flutter analyze`: 0 issues found.
+

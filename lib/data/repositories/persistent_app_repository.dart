@@ -11,8 +11,9 @@ import '../seed/seed_data.dart';
 import 'app_repository.dart';
 
 class PersistentAppRepository implements AppRepository {
-  static const String storageKey = 'settliv_ledger_v1';
-  static const int schemaVersion = 1;
+  static const String storageKey = 'settliv_ledger_v2';
+  static const int schemaVersion = 2;
+  static const int seedVersion = 2;
 
   final BalanceEngine _engine = const BalanceEngine();
   final SharedPreferences? _prefs;
@@ -39,6 +40,11 @@ class PersistentAppRepository implements AppRepository {
   void _loadInitialData() {
     _resetToSeed();
     if (_prefs != null) {
+      // Clean up stale v1 storage key if present
+      if (_prefs.containsKey('settliv_ledger_v1')) {
+        _prefs.remove('settliv_ledger_v1');
+      }
+
       final rawJson = _prefs.getString(storageKey);
       if (rawJson != null && rawJson.trim().isNotEmpty) {
         _loadFromJsonString(rawJson);
@@ -59,9 +65,11 @@ class PersistentAppRepository implements AppRepository {
     try {
       final Map<String, dynamic> data = jsonDecode(rawJson) as Map<String, dynamic>;
       final int version = data['version'] as int? ?? 0;
-      if (version != schemaVersion) {
+      final int loadedSeedVersion = data['seedVersion'] as int? ?? 0;
+      if (version != schemaVersion || loadedSeedVersion < seedVersion) {
         _wasCorruptDataRecovered = true;
         _resetToSeed();
+        _saveToStorageImmediate();
         return false;
       }
 
@@ -168,11 +176,17 @@ class PersistentAppRepository implements AppRepository {
     });
   }
 
+  void _saveToStorageImmediate() {
+    _debounceTimer?.cancel();
+    _saveNow();
+  }
+
   Future<void> _saveNow() async {
     if (_prefs == null) return;
     try {
       final data = {
         'version': schemaVersion,
+        'seedVersion': seedVersion,
         'savedAt': _clock().toIso8601String(),
         'currentUserId': _currentUserId,
         'people': _people.map((p) => p.toJson()).toList(),

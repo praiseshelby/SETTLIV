@@ -1,68 +1,100 @@
 import 'package:flutter/material.dart';
 
 abstract class AppTypography {
-  static const String fontFamily = 'Manrope';
-  static const List<String> fontFamilyFallback = [
-    'Manrope',
+  static const String fontHeading = 'Sora';
+  static const String fontBody = 'PlusJakartaSans';
+  static const String fontFamily = fontBody;
+  static const List<String> fontFamilyFallback = bodyFallback;
+
+  static const List<String> headingFallback = [
+    'PlusJakartaSans',
     '-apple-system',
     'BlinkMacSystemFont',
     'Segoe UI',
     'Roboto',
-    'Helvetica Neue',
-    'Arial',
     'sans-serif',
   ];
 
-  /// Screen and card titles: 22 / 700
-  static const TextStyle titleLarge = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 22,
+  static const List<String> bodyFallback = [
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'Roboto',
+    'sans-serif',
+  ];
+
+  /// Screen titles: 28 / 700 (Sora)
+  static const TextStyle screenTitle = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.6,
+    height: 1.2,
+  );
+  static const TextStyle titleLarge = screenTitle;
+
+  /// Section titles: 17 / 700 (Sora)
+  static const TextStyle sectionTitle = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 17,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
     height: 1.25,
   );
-  static const TextStyle screenTitle = titleLarge;
+  static const TextStyle sectionHeader = sectionTitle;
+  static const TextStyle titleMedium = sectionTitle;
 
-  /// Hero balance number: 44-52 / 800 with tight tabular figures
-  static const TextStyle heroMoney = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 44,
+  /// Subheading / card titles: 19 / 700 (Sora)
+  static const TextStyle titleCard = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 19,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.4,
+    height: 1.25,
+  );
+
+  /// Money Hero: 42 / 800 (Sora) with tight tracking and tabular figures
+  static const TextStyle moneyHero = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 42,
     fontWeight: FontWeight.w800,
-    letterSpacing: -1.5,
+    letterSpacing: -1.4,
     height: 1.1,
     fontFeatures: [FontFeature.tabularFigures()],
   );
-  static const TextStyle moneyHero = heroMoney;
+  static const TextStyle heroMoney = moneyHero;
 
-  /// Standard display money: 40 / 700
-  static const TextStyle displayMoney = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 40,
-    fontWeight: FontWeight.w700,
+  /// Large Money: 32 / 800 (Sora)
+  static const TextStyle moneyLarge = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 32,
+    fontWeight: FontWeight.w800,
     letterSpacing: -1.0,
     height: 1.15,
     fontFeatures: [FontFeature.tabularFigures()],
   );
-  static const TextStyle moneyLarge = displayMoney;
+  static const TextStyle displayMoney = moneyLarge;
 
-  /// Medium money: 24 / 700
+  /// Medium Money: 22 / 700 (Sora)
   static const TextStyle moneyMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 24,
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
+    fontSize: 22,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
     height: 1.2,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  /// Regular money: 16 / 700
+  /// Regular Money: 16 / 700 (Sora)
   static const TextStyle moneyRegular = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
+    fontFamily: fontHeading,
+    fontFamilyFallback: headingFallback,
     fontSize: 16,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
@@ -70,83 +102,76 @@ abstract class AppTypography {
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  /// Medium title / card header: 18-20 / 700
-  static const TextStyle titleMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 18,
+  /// Eyebrow labels: 11 / 700 with +0.6 tracking (Plus Jakarta Sans)
+  static const TextStyle eyebrow = TextStyle(
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
+    fontSize: 11,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.2,
-    height: 1.3,
+    letterSpacing: 0.6,
+    height: 1.2,
   );
+  static const TextStyle sectionLabel = eyebrow;
 
-  /// Section uppercase labels: 12 / 700 uppercase with 0.8 tracking
-  static const TextStyle sectionLabel = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.8,
-    height: 1.3,
-  );
-
-  /// Section header (alias): 17 / 700
-  static const TextStyle sectionHeader = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 17,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -0.2,
-    height: 1.3,
-  );
-
-  /// Body text: 15 / 500
+  /// Body text: 15 / 500 (Plus Jakarta Sans)
   static const TextStyle body = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
     fontSize: 15,
     fontWeight: FontWeight.w500,
     letterSpacing: -0.1,
     height: 1.4,
   );
+  static const TextStyle bodyMedium = body;
 
-  /// Body medium / semibold: 15 / 600
-  static const TextStyle bodyMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
+  /// Body bold / semibold: 15 / 600 (Plus Jakarta Sans)
+  static const TextStyle bodySemiBold = TextStyle(
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
     fontSize: 15,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.1,
     height: 1.4,
   );
 
-  /// Caption: 12-13 / 600
+  /// Captions: 12 / 600 (Plus Jakarta Sans)
   static const TextStyle caption = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 13,
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
+    fontSize: 12,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.0,
+    height: 1.3,
+  );
+  static const TextStyle chip = caption;
+
+  /// Small labels / tabs: 11 / 600 (Plus Jakarta Sans)
+  static const TextStyle tabLabel = TextStyle(
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    height: 1.2,
+  );
+
+  /// Inputs: 16 / 500 (Plus Jakarta Sans)
+  static const TextStyle input = TextStyle(
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -0.1,
     height: 1.35,
   );
 
-  /// Button label: 16 / 700
+  /// Buttons: 15 / 600 (Plus Jakarta Sans)
   static const TextStyle button = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 16,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -0.2,
-    height: 1.25,
-  );
-
-  /// Small chip label: 12 / 600
-  static const TextStyle chip = TextStyle(
-    fontFamily: fontFamily,
-    fontFamilyFallback: fontFamilyFallback,
-    fontSize: 12,
+    fontFamily: fontBody,
+    fontFamilyFallback: bodyFallback,
+    fontSize: 15,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.1,
-    height: 1.25,
+    letterSpacing: -0.1,
+    height: 1.3,
   );
 }

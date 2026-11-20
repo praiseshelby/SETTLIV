@@ -167,6 +167,41 @@ class _ComponentGalleryScreenState extends State<ComponentGalleryScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+
+          // 8. Font Specimen: Sora + Plus Jakarta Sans + ₹ Symbol
+          _buildSideBySide(
+            title: '8. Font Specimen: Sora (Titles/Money) & Plus Jakarta Sans (Body/₹)',
+            builder: (ctx) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '₹860 Owed',
+                  style: AppTypography.moneyLarge.copyWith(color: ctx.settliv.ink),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '₹12,450.50 Hero Tabular',
+                  style: AppTypography.moneyHero.copyWith(color: ctx.settliv.textEmerald, fontSize: 24),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Screen Title 28/700 Sora',
+                  style: AppTypography.screenTitle.copyWith(color: ctx.settliv.ink, fontSize: 18),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Section Header 17/700 Sora',
+                  style: AppTypography.sectionTitle.copyWith(color: ctx.settliv.ink, fontSize: 14),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Body 15/500 Plus Jakarta Sans with ₹ glyph rendering verified.',
+                  style: AppTypography.body.copyWith(color: ctx.settliv.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -203,7 +238,7 @@ class _ComponentGalleryScreenState extends State<ComponentGalleryScreen> {
                         Text(
                           'LIGHT',
                           style: TextStyle(
-                            fontFamily: 'Manrope',
+                            fontFamily: AppTypography.fontBody,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: ctx.settliv.muted,
@@ -237,7 +272,7 @@ class _ComponentGalleryScreenState extends State<ComponentGalleryScreen> {
                         Text(
                           'DARK',
                           style: TextStyle(
-                            fontFamily: 'Manrope',
+                            fontFamily: AppTypography.fontBody,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: ctx.settliv.muted,

@@ -11,6 +11,7 @@ enum ExpenseCategory {
   other('Other');
 
   final String label;
+  String get displayName => label;
   const ExpenseCategory(this.label);
 }
 
@@ -154,7 +155,7 @@ class Expense {
     Map<String, int>? shares,
     DateTime? createdAt,
     DateTime? updatedAt,
-    this.deletedAt,
+    DateTime? deletedAt,
     bool? isDeleted,
     List<ExpenseRevision>? revisions,
     this.source = ExpenseSource.manual,
@@ -172,12 +173,8 @@ class Expense {
                 : (shares != null ? shares.keys.toList() : const [])),
         createdAt = createdAt ?? date,
         updatedAt = updatedAt ?? date,
-        revisions = revisions ?? const [] {
-    // If isDeleted is explicitly true and deletedAt is not set, set deletedAt
-    if (isDeleted == true && deletedAt == null) {
-      // In immutable fields, deletedAt cannot be reassigned here unless in initializer
-    }
-  }
+        deletedAt = deletedAt ?? (isDeleted == true ? (updatedAt ?? date) : null),
+        revisions = revisions ?? const [];
 
   Expense copyWith({
     String? id,
