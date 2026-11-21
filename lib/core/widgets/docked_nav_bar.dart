@@ -78,7 +78,7 @@ class _DockedNavBarState extends State<DockedNavBar> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.shadow.withValues(alpha: isDark ? 0.35 : 0.06),
+                            color: theme.shadow.withOpacity(isDark ? 0.35 : 0.06),
                             blurRadius: 16,
                             offset: const Offset(0, -4),
                           ),
@@ -189,12 +189,12 @@ class _DockedNavBarState extends State<DockedNavBar> {
                           color: isDark ? theme.primaryButtonBg : theme.navy,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: isDark ? theme.hairline : theme.white.withValues(alpha: 0.15),
+                            color: isDark ? theme.hairline : theme.white.withOpacity(0.15),
                             width: 1.0,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.shadow.withValues(alpha: isDark ? 0.40 : 0.20),
+                              color: theme.shadow.withOpacity(isDark ? 0.40 : 0.20),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

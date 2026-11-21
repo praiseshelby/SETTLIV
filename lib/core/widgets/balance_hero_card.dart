@@ -120,12 +120,12 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isDark ? theme.hairline : theme.white.withValues(alpha: 0.15),
+                  color: isDark ? theme.hairline : theme.white.withOpacity(0.15),
                   width: 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadow.withValues(alpha: isDark ? 0.45 : 0.18),
+                    color: theme.shadow.withOpacity(isDark ? 0.45 : 0.18),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -154,7 +154,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                       right: 12,
                       height: 1.0,
                       child: Container(
-                        color: theme.white.withValues(alpha: 0.20),
+                        color: theme.white.withOpacity(0.20),
                       ),
                     ),
 
@@ -263,7 +263,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                       Text(
                                         'Owed to you',
                                         style: AppTypography.caption.copyWith(
-                                          color: theme.white.withValues(alpha: 0.70),
+                                          color: theme.white.withOpacity(0.70),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -282,7 +282,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                       Text(
                                         'from ${widget.owedFromCount} ${widget.owedFromCount == 1 ? "person" : "people"}',
                                         style: AppTypography.caption.copyWith(
-                                          color: theme.white.withValues(alpha: 0.65),
+                                          color: theme.white.withOpacity(0.65),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -293,7 +293,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                 Container(
                                   width: 1,
                                   margin: const EdgeInsets.symmetric(horizontal: 14),
-                                  color: theme.white.withValues(alpha: 0.15),
+                                  color: theme.white.withOpacity(0.15),
                                 ),
                                 Expanded(
                                   child: Column(
@@ -302,7 +302,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                       Text(
                                         'You owe',
                                         style: AppTypography.caption.copyWith(
-                                          color: theme.white.withValues(alpha: 0.70),
+                                          color: theme.white.withOpacity(0.70),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -321,7 +321,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                       Text(
                                         'to ${widget.owesToCount} ${widget.owesToCount == 1 ? "person" : "people"}',
                                         style: AppTypography.caption.copyWith(
-                                          color: theme.white.withValues(alpha: 0.65),
+                                          color: theme.white.withOpacity(0.65),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -337,7 +337,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                           // Hairline divider above footer
                           Container(
                             height: 1,
-                            color: theme.white.withValues(alpha: 0.12),
+                            color: theme.white.withOpacity(0.12),
                           ),
                           const SizedBox(height: 14),
 
@@ -373,7 +373,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   Text(
                                     'View breakdown',
                                     style: AppTypography.caption.copyWith(
-                                      color: theme.white.withValues(alpha: 0.85),
+                                      color: theme.white.withOpacity(0.85),
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,
                                     ),
@@ -382,7 +382,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   Icon(
                                     Icons.chevron_right_rounded,
                                     size: 18,
-                                    color: theme.white.withValues(alpha: 0.85),
+                                    color: theme.white.withOpacity(0.85),
                                   ),
                                 ],
                               ),
@@ -437,8 +437,8 @@ class _HeroMeshPainter extends CustomPainter {
         center: const Alignment(0.85, -0.85),
         radius: 1.0,
         colors: [
-          accentColor.withValues(alpha: 0.35),
-          startColor.withValues(alpha: 0.0),
+          accentColor.withOpacity(0.35),
+          startColor.withOpacity(0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), glowPaint);
@@ -449,8 +449,8 @@ class _HeroMeshPainter extends CustomPainter {
         center: const Alignment(-0.85, 0.95),
         radius: 0.9,
         colors: [
-          accentColor.withValues(alpha: 0.18),
-          endColor.withValues(alpha: 0.0),
+          accentColor.withOpacity(0.18),
+          endColor.withOpacity(0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), secondaryGlow);

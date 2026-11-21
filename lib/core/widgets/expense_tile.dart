@@ -91,8 +91,8 @@ class _ExpenseTileState extends State<ExpenseTile> {
             curve: Curves.easeOutCubic,
             child: Container(
               color: widget.isHighlighted
-                  ? theme.navy.withValues(alpha: 0.10)
-                  : (_isHovered ? theme.raised.withValues(alpha: 0.40) : theme.transparent),
+                  ? theme.navy.withOpacity(0.10)
+                  : (_isHovered ? theme.raised.withOpacity(0.40) : theme.transparent),
               child: Column(
                 children: [
                   SizedBox(
@@ -143,33 +143,40 @@ class _ExpenseTileState extends State<ExpenseTile> {
                           const SizedBox(width: 12),
 
                           // 3. Tabular total amount & Coloured share label
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                CurrencyFormatter.formatPaise(
-                                  widget.expense.amount,
-                                  absolute: true,
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 110),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  CurrencyFormatter.formatPaise(
+                                    widget.expense.amount,
+                                    absolute: true,
+                                  ),
+                                  style: AppTypography.body.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                style: AppTypography.body.copyWith(
-                                  color: theme.ink,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                const SizedBox(height: 2),
+                                Text(
+                                  shareLabel,
+                                  style: AppTypography.caption.copyWith(
+                                    color: shareColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                shareLabel,
-                                style: AppTypography.caption.copyWith(
-                                  color: shareColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
