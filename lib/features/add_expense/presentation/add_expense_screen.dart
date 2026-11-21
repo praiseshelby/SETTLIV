@@ -96,6 +96,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     _startExampleTimer();
 
+    // Auto-focus Quick tab keyboard on open (when not editing an existing expense)
+    if (widget.initialExpense == null && _selectedTab == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _quickFocusNode.requestFocus();
+      });
+    }
+
     final exp = widget.initialExpense;
     if (exp != null) {
       final rupeePart = exp.amount ~/ 100;
@@ -132,9 +139,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _selectedGroupId = widget.preselectedGroupId ?? 'group_flatmates';
       _selectedDate = DateTime.now();
       _paidById = SeedData.currentUserId;
-      _selectedMemberIds = _selectedGroupId == 'group_flatmates'
-          ? {'person_arjun', 'person_meera', 'person_kabir'}
-          : {'person_arjun', 'person_nisha', 'person_rohan', 'person_tara'};
+      if (_selectedGroupId == 'group_personal') {
+        _selectedMemberIds = {SeedData.currentUserId};
+      } else if (_selectedGroupId == 'group_flatmates') {
+        _selectedMemberIds = {'person_arjun', 'person_meera', 'person_kabir'};
+      } else {
+        _selectedMemberIds = {
+          'person_arjun',
+          'person_nisha',
+          'person_rohan',
+          'person_tara',
+        };
+      }
       _splitMode = SplitMode.equal;
       _rebuildSplitControllers();
     }
@@ -193,15 +209,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   void _initMembersForGroup() {
-    if (_selectedGroupId == 'group_flatmates') {
-      _selectedMemberIds = {'person_arjun', 'person_meera', 'person_kabir'};
+    final repo = ref.read(appRepositoryProvider);
+    final group = repo.getGroup(_selectedGroupId);
+    if (group == null) return;
+    if (group.isPersonal) {
+      // Personal space: only the current user, no split
+      _selectedMemberIds = {SeedData.currentUserId};
+      _paidById = SeedData.currentUserId;
     } else {
-      _selectedMemberIds = {
-        'person_arjun',
-        'person_nisha',
-        'person_rohan',
-        'person_tara',
-      };
+      _selectedMemberIds = group.memberIds.toSet();
     }
     _rebuildSplitControllers();
   }
@@ -1025,6 +1041,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (widget.initialExpense != null) {
       buttonLabel =
           'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
+    } else if (currentGroup.isPersonal) {
+      buttonLabel =
+          'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · personal';
     } else {
       buttonLabel =
           'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · split with ${_selectedMemberIds.length} people';
@@ -1180,7 +1199,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             const SizedBox(height: 8),
             GlassSegmented<String>(
               values: groups.map((g) => g.id).toList(),
-              labels: groups.map((g) => g.name).toList(),
+              labels: groups.map((g) => g.isPersonal ? 'Personal (just me)' : g.name).toList(),
               selectedValue: _selectedGroupId,
               onValueChanged: (newId) {
                 if (_selectedGroupId != newId) {
@@ -1243,7 +1262,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     borderRadius: 18,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
-                    onTap: () => _openPaidByPickerSheet(people),
+                    onTap: currentGroup.isPersonal
+                        ? null
+                        : () => _openPaidByPickerSheet(people),
                     child: Row(
                       children: [
                         PersonAvatar(person: payer, size: 28),
@@ -1280,99 +1301,102 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
             const SizedBox(height: 22),
 
-            // Split with section: Clear / All toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'SPLIT WITH',
-                  style: AppTypography.sectionLabel.copyWith(
-                    color: theme.secondary,
-                    letterSpacing: 0.8,
-                    fontSize: 11,
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    final groupMembers = people
-                        .where((p) => currentGroup.memberIds.contains(p.id))
-                        .map((p) => p.id)
-                        .toSet();
-                    setState(() {
-                      if (_selectedMemberIds.length == groupMembers.length) {
-                        _selectedMemberIds = {};
-                      } else {
-                        _selectedMemberIds = groupMembers;
-                      }
-                      _rebuildSplitControllers();
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text(
-                      _selectedMemberIds.length == currentGroup.memberIds.length
-                          ? 'Clear'
-                          : 'All',
-                      style: TextStyle(
-                        fontFamily: 'Manrope',
-                        color: theme.navy,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
+            // Split with + Split mode: hidden for Personal (just me) group
+            if (!currentGroup.isPersonal) ...[ 
+              // Split with section: Clear / All toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'SPLIT WITH',
+                    style: AppTypography.sectionLabel.copyWith(
+                      color: theme.secondary,
+                      letterSpacing: 0.8,
+                      fontSize: 11,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final p in people
-                    .where((p) => currentGroup.memberIds.contains(p.id))) ...[
-                  MemberChip(
-                    person: p,
-                    isSelected: _selectedMemberIds.contains(p.id),
-                    onSelected: (selected) {
+                  InkWell(
+                    onTap: () {
+                      final groupMembers = people
+                          .where((p) => currentGroup.memberIds.contains(p.id))
+                          .map((p) => p.id)
+                          .toSet();
                       setState(() {
-                        if (selected) {
-                          _selectedMemberIds.add(p.id);
+                        if (_selectedMemberIds.length == groupMembers.length) {
+                          _selectedMemberIds = {};
                         } else {
-                          _selectedMemberIds.remove(p.id);
+                          _selectedMemberIds = groupMembers;
                         }
                         _rebuildSplitControllers();
                       });
                     },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: Text(
+                        _selectedMemberIds.length == currentGroup.memberIds.length
+                            ? 'Clear'
+                            : 'All',
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          color: theme.navy,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 22),
-
-            // Split mode: Equal | Exact | Percent
-            Text(
-              'SPLIT MODE',
-              style: AppTypography.sectionLabel.copyWith(
-                color: theme.secondary,
-                letterSpacing: 0.8,
-                fontSize: 11,
               ),
-            ),
-            const SizedBox(height: 8),
-            GlassSegmented<int>(
-              values: const [0, 1, 2],
-              labels: const ['Equal', 'Exact', 'Percent'],
-              selectedValue: _splitMode.index,
-              onValueChanged: (idx) =>
-                  setState(() => _splitMode = SplitMode.values[idx]),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 10),
 
-            _buildSplitModeContent(people, amountPaise),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final p in people
+                      .where((p) => currentGroup.memberIds.contains(p.id))) ...[
+                    MemberChip(
+                      person: p,
+                      isSelected: _selectedMemberIds.contains(p.id),
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedMemberIds.add(p.id);
+                          } else {
+                            _selectedMemberIds.remove(p.id);
+                          }
+                          _rebuildSplitControllers();
+                        });
+                      },
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 22),
+
+              // Split mode: Equal | Exact | Percent
+              Text(
+                'SPLIT MODE',
+                style: AppTypography.sectionLabel.copyWith(
+                  color: theme.secondary,
+                  letterSpacing: 0.8,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 8),
+              GlassSegmented<int>(
+                values: const [0, 1, 2],
+                labels: const ['Equal', 'Exact', 'Percent'],
+                selectedValue: _splitMode.index,
+                onValueChanged: (idx) =>
+                    setState(() => _splitMode = SplitMode.values[idx]),
+              ),
+              const SizedBox(height: 14),
+
+              _buildSplitModeContent(people, amountPaise),
+            ],
           ],
         ),
 
@@ -1942,13 +1966,19 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   void _openPaidByPickerSheet(List<Person> people) {
     final theme = context.settliv;
+    final repo = ref.read(appRepositoryProvider);
+    final group = repo.getGroup(_selectedGroupId);
+    final available = group != null
+        ? people.where((p) => group.memberIds.contains(p.id)).toList()
+        : people;
+
     GlassSheetScaffold.show(
       context: context,
       title: 'Who paid for this?',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final p in people) ...[
+          for (final p in available) ...[
             ListTile(
               leading: PersonAvatar(person: p, size: 32),
               title: Text(

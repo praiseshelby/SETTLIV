@@ -207,3 +207,22 @@
   - Full test suite: 98/98 tests passing.
   - `flutter analyze`: 0 issues found.
 
+---
+
+### Set 2: Records Personal Filter & Add Expense Personal Space (COMPLETED)
+- [x] **2A. Records Screen (/records / /activity)**:
+  - Added "Personal" filter chip alongside "All groups" and shared groups.
+  - Tapping "Personal" filters expense list exclusively to personal space transactions.
+  - Subtitle updated to reflect personal expenses across groups.
+- [x] **2B. Add Expense Personal Space**:
+  - Group selector displays "Personal (just me)" for the personal group.
+  - Selecting "Personal (just me)" hides the "SPLIT WITH" and "SPLIT MODE" sections (no split, 100% share for current user).
+  - Save button dynamically adapts to display "Save ₹X · personal".
+  - Quick tab automatically focuses input field on navigating to `/add`.
+- [x] **2C. Expense Tile Subtitle**:
+  - When an expense belongs to the personal group, subtitle renders "Personal · Paid by you".
+  - Fixed row constraints to prevent horizontal overflow on narrow viewports with enlarged text scale factors.
+- [x] **2D. Set 2 Verification Tests**:
+  - Added `test/set2_verification_test.dart` testing filter chip presence, personal expense filtering, Personal (just me) option, hiding split-with section, and personal subtitle rendering.
+
+

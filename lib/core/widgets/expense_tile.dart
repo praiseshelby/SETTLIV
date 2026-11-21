@@ -42,10 +42,18 @@ class _ExpenseTileState extends State<ExpenseTile> {
     final theme = context.settliv;
 
     final payerName = widget.payer?.name ?? 'Someone';
-    final groupName = (widget.showGroupName && widget.group != null) ? widget.group!.name : '';
-    final subtitle = groupName.isNotEmpty
-        ? 'Paid by $payerName · $groupName'
-        : 'Paid by $payerName';
+    final isPersonalGroup = widget.group?.isPersonal ?? false;
+    final groupName = (widget.showGroupName && widget.group != null && !isPersonalGroup)
+        ? widget.group!.name
+        : '';
+    final String subtitle;
+    if (isPersonalGroup) {
+      subtitle = 'Personal · Paid by you';
+    } else if (groupName.isNotEmpty) {
+      subtitle = 'Paid by $payerName · $groupName';
+    } else {
+      subtitle = 'Paid by $payerName';
+    }
 
     // Calculate Arjun's personal share in this expense
     final bool isPayer = widget.expense.paidBy == widget.currentUserId;

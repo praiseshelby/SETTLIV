@@ -37,7 +37,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final repo = ref.watch(appRepositoryProvider);
     final allExpenses = ref.watch(allExpensesProvider);
     final allGroups = ref.watch(allGroupsProvider);
-    final groups = allGroups.where((g) => !g.isPersonal).toList();
+    // Show shared groups + Personal chip separately; exclude archived
+    final sharedGroups = allGroups.where((g) => !g.isPersonal && !g.isArchived).toList();
+    final personalGroup = allGroups.firstWhere(
+      (g) => g.isPersonal,
+      orElse: () => allGroups.first,
+    );
     final currentUserId = repo.currentUserId;
 
     // Filter by group and search query
@@ -81,7 +86,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'All transaction records across your groups',
+                'All transaction records across your groups and personal expenses',
                 style: AppTypography.caption.copyWith(
                   color: theme.muted,
                   fontWeight: FontWeight.w500,
@@ -139,7 +144,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Group Filter Chips (All groups + specific groups)
+              // Group Filter Chips (All + Personal + specific shared groups)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -149,7 +154,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       isSelected: _selectedGroupId == 'all',
                       onTap: () => setState(() => _selectedGroupId = 'all'),
                     ),
-                    for (final g in groups) ...[
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      label: 'Personal',
+                      isSelected: _selectedGroupId == personalGroup.id,
+                      onTap: () => setState(() => _selectedGroupId = personalGroup.id),
+                    ),
+                    for (final g in sharedGroups) ...[
                       const SizedBox(width: 8),
                       _buildFilterChip(
                         label: g.name,
