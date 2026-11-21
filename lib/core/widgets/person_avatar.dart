@@ -1,3 +1,4 @@
+import '../../../core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
 import '../theme/app_theme.dart';
@@ -55,7 +56,7 @@ class PersonAvatar extends StatelessWidget {
             child: Text(
               initials,
               style: TextStyle(
-                fontFamily: 'Manrope',
+                fontFamily: AppTypography.fontBody,
                 color: theme.white,
                 fontWeight: FontWeight.w700,
                 fontSize: size * 0.44,

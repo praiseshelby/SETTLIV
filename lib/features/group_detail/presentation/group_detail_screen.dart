@@ -773,13 +773,13 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 6),
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(colors: [theme.navy, theme.navy]),
+                                      color: theme.primaryButtonBg,
                                       borderRadius: const BorderRadius.all(Radius.circular(999)),
                                     ),
                                     child: Text(
                                       'Settle',
                                       style: TextStyle(
-                                        color: theme.white,
+                                        color: theme.primaryButtonText,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
                                       ),

@@ -1,3 +1,4 @@
+import '../../../core/theme/app_typography.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
@@ -37,7 +38,7 @@ class AvatarStack extends StatelessWidget {
         text: TextSpan(
           text: person.avatarInitials,
           style: TextStyle(
-            fontFamily: 'Manrope',
+            fontFamily: AppTypography.fontBody,
             fontWeight: FontWeight.w700,
             fontSize: effectiveSize * 0.40,
           ),
@@ -94,7 +95,7 @@ class AvatarStack extends StatelessWidget {
                       child: Text(
                         '+$remainingCount',
                         style: TextStyle(
-                          fontFamily: 'Manrope',
+                          fontFamily: AppTypography.fontBody,
                           color: theme.white,
                           fontWeight: FontWeight.w700,
                           fontSize: effectiveSize * 0.44,

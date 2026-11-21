@@ -600,7 +600,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               child: Text(
                                 'Use this',
                                 style: TextStyle(
-                                  fontFamily: 'Manrope',
+                                  fontFamily: AppTypography.fontBody,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: theme.navy,
@@ -831,7 +831,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           Text(
             '$label: ',
             style: TextStyle(
-              fontFamily: 'Manrope',
+              fontFamily: AppTypography.fontBody,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: theme.secondary,
@@ -841,7 +841,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             child: Text(
               value,
               style: TextStyle(
-                fontFamily: 'Manrope',
+                fontFamily: AppTypography.fontBody,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: theme.ink,
@@ -894,7 +894,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       child: Text(
                         '${s.displayTitle} (${CurrencyFormatter.formatPaise(s.latestAmountPaise, absolute: true)})',
                         style: TextStyle(
-                          fontFamily: 'Manrope',
+                          fontFamily: AppTypography.fontBody,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: theme.ink,
@@ -906,7 +906,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     Text(
                       '${s.count} times',
                       style: TextStyle(
-                        fontFamily: 'Manrope',
+                        fontFamily: AppTypography.fontBody,
                         fontSize: 11,
                         color: theme.secondary,
                       ),
@@ -1005,7 +1005,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               label: Text(
                 'Edit details in Manual',
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   color: theme.navy,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -1119,7 +1119,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   child: Text(
                     'Add an amount to continue',
                     style: TextStyle(
-                      fontFamily: 'Manrope',
+                      fontFamily: AppTypography.fontBody,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: theme.textCoral,
@@ -1164,7 +1164,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 child: Text(
                   'Description is required',
                   style: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: theme.textCoral,
@@ -1339,7 +1339,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             ? 'Clear'
                             : 'All',
                         style: TextStyle(
-                          fontFamily: 'Manrope',
+                          fontFamily: AppTypography.fontBody,
                           color: theme.navy,
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
@@ -1522,7 +1522,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             Text(
               cat.label,
               style: TextStyle(
-                fontFamily: 'Manrope',
+                fontFamily: AppTypography.fontBody,
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 color: isSelected ? theme.ink : theme.secondary,
@@ -1655,7 +1655,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           ? '${CurrencyFormatter.formatPaise(diff.abs(), absolute: true)} left to assign'
                           : 'Over by ${CurrencyFormatter.formatPaise(diff.abs(), absolute: true)}'),
                   style: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: diff == 0 ? theme.textEmerald : theme.secondary,
@@ -1664,7 +1664,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 Text(
                   'Total: ${CurrencyFormatter.formatPaise(totalAssigned, absolute: true)} / ${CurrencyFormatter.formatPaise(totalPaise, absolute: true)}',
                   style: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: theme.secondary,
@@ -1725,7 +1725,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       CurrencyFormatter.formatPaise(sharePaise,
                           absolute: true),
                       style: TextStyle(
-                        fontFamily: 'Manrope',
+                        fontFamily: AppTypography.fontBody,
                         fontSize: 12,
                         color: theme.secondary,
                       ),
@@ -1777,7 +1777,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         ? '${diffPct.toStringAsFixed(2)}% left to assign'
                         : 'Over by ${diffPct.abs().toStringAsFixed(2)}%'),
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: (diffPct.abs() < 0.01)
@@ -1788,7 +1788,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               Text(
                 'Total: ${totalPct.toStringAsFixed(1)}% / 100%',
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: theme.secondary,
@@ -1939,7 +1939,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               title: Text(
                 DateFormatter.formatFull(d),
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontWeight: _selectedDate.day == d.day &&
                           _selectedDate.month == d.month &&
                           _selectedDate.year == d.year
@@ -1984,7 +1984,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               title: Text(
                 p.id == SeedData.currentUserId ? '${p.name} (You)' : p.name,
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontWeight: _paidById == p.id
                       ? FontWeight.w700
                       : FontWeight.w500,

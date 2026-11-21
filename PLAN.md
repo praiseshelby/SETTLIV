@@ -225,4 +225,24 @@
 - [x] **2D. Set 2 Verification Tests**:
   - Added `test/set2_verification_test.dart` testing filter chip presence, personal expense filtering, Personal (just me) option, hiding split-with section, and personal subtitle rendering.
 
+---
+
+### Set 3: Group Detail, Theme Cross-Fade, Font Cleanup, Verification (COMPLETED)
+- [x] **3A. Groups & Group Detail Screen**:
+  - Theme-adaptive "New group" button on Groups screen using `theme.primaryButtonBg` and `theme.primaryButtonText`.
+  - Group Detail collapsing header with frosted back button and trip progress indicator for trip groups.
+  - Interactive tabs: Expenses list (grouped by day, clean hairline dividers) and Balances ("Who pays whom", `BalanceBarsChart`, `CategoryDonutChart`).
+  - SettleSheet and NudgeSheet functional flows accessible from header and bottom bar.
+- [x] **3B. Typography & Font Cleanup**:
+  - Eradicated all 31 hardcoded `'Manrope'` string literals across `lib/` in favor of `AppTypography.fontBody` (`PlusJakartaSans`) and `AppTypography.fontDisplay` (`Sora`).
+- [x] **3C. Theme Cross-Fade & Contrast**:
+  - Verified `SettlivThemeExtension.lerp` for smooth transitions between Light and Dark modes.
+  - Verified WCAG AA contrast compliance across all text and surface tokens.
+- [x] **3D. Web App Cache Bypass**:
+  - Unregistered stale PWA service workers in `web/index.html` and configured `Cache-Control: no-store, no-cache, must-revalidate` in local server to guarantee fresh updates on browser refresh.
+- [x] **3E. Comprehensive Set 3 Test Suite**:
+  - Added `test/set3_verification_test.dart` testing Groups list, Group Detail tab switching, Settle/Nudge sheets, and live Theme switching.
+  - Verified full test suite: 108/108 tests passing, 0 analyze issues.
+
+
 

@@ -99,7 +99,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               TextField(
                 controller: _searchController,
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: theme.ink,
@@ -107,7 +107,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search by description or person...',
                   hintStyle: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     color: theme.muted.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
@@ -297,7 +297,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Manrope',
+              fontFamily: AppTypography.fontBody,
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected ? theme.onNavy : theme.ink,

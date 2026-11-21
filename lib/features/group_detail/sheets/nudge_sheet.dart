@@ -132,7 +132,7 @@ class NudgeSheet extends StatelessWidget {
                   SnackBar(
                     content: const Text(
                       'Reminder message copied to clipboard!',
-                      style: TextStyle(fontFamily: 'Manrope'),
+                      style: TextStyle(fontFamily: AppTypography.fontBody),
                     ),
                     behavior: SnackBarBehavior.floating,
                     duration: const Duration(seconds: 3),

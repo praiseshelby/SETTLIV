@@ -91,7 +91,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: theme.navy,
+                          color: theme.primaryButtonBg,
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
@@ -104,12 +104,12 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.add_rounded, size: 18, color: theme.onNavy),
+                            Icon(Icons.add_rounded, size: 18, color: theme.primaryButtonText),
                             const SizedBox(width: 4),
                             Text(
                               'New group',
                               style: AppTypography.chip.copyWith(
-                                color: theme.onNavy,
+                                color: theme.primaryButtonText,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -296,7 +296,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
               TextField(
                 controller: _nameController,
                 style: TextStyle(
-                  fontFamily: 'Manrope',
+                  fontFamily: AppTypography.fontBody,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: theme.ink,
@@ -304,7 +304,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                 decoration: InputDecoration(
                   hintText: 'e.g. Flat 402, Manali Trip',
                   hintStyle: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     color: theme.muted,
                   ),
                   filled: true,
@@ -361,7 +361,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                         label: Text(_members[i]),
                         backgroundColor: theme.raised,
                         labelStyle: TextStyle(
-                          fontFamily: 'Manrope',
+                          fontFamily: AppTypography.fontBody,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: theme.ink,
@@ -381,7 +381,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                     child: TextField(
                       controller: _memberController,
                       style: TextStyle(
-                        fontFamily: 'Manrope',
+                        fontFamily: AppTypography.fontBody,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: theme.ink,
@@ -389,7 +389,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                       decoration: InputDecoration(
                         hintText: 'Add member by name...',
                         hintStyle: TextStyle(
-                          fontFamily: 'Manrope',
+                          fontFamily: AppTypography.fontBody,
                           color: theme.muted,
                         ),
                         filled: true,
@@ -481,7 +481,7 @@ class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? theme.onNavy : theme.ink,

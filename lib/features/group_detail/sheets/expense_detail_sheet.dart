@@ -322,7 +322,7 @@ class ExpenseDetailSheet extends ConsumerWidget {
                 label: const Text(
                   'Delete',
                   style: TextStyle(
-                    fontFamily: 'Manrope',
+                    fontFamily: AppTypography.fontBody,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
