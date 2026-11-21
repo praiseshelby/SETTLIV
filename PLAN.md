@@ -244,5 +244,33 @@
   - Added `test/set3_verification_test.dart` testing Groups list, Group Detail tab switching, Settle/Nudge sheets, and live Theme switching.
   - Verified full test suite: 108/108 tests passing, 0 analyze issues.
 
+---
+
+### Extended Features: Group Edit, Recurring Engine, Export/Import & Live UPI (COMPLETED)
+- [x] **Extended 1. Active Group Management (Edit Group)**:
+  - Added `EditGroupSheet` (`lib/features/group_detail/sheets/edit_group_sheet.dart`) launched from action button in `GroupDetailScreen` SliverAppBar.
+  - Edit group name with validation.
+  - Switch group type (Home, Trip, Other).
+  - 6 Cover Theme Selector swatches with live gradient previews (`GroupCoverArt`).
+  - Member management: view existing members, remove members (except current user), and add new members from contacts or create a new person inline.
+  - Calls `updateGroup` and `addPerson` via `appStateProvider.notifier`.
+- [x] **Extended 2. Recurring Expenses Engine**:
+  - Implemented `processDueRecurringExpenses` in `PersistentAppRepository` and `AppStateNotifier` to compute due dates based on frequency (daily, weekly, monthly, yearly), generate exact paise shares with `SplitCalculator`, advance `lastGeneratedDate`, and persist new `Expense` records.
+  - Created `RecurringExpensesScreen` (`lib/features/settings/presentation/recurring_expenses_screen.dart`) with active status banner, manual "Check due" trigger, rule cards with pause/resume toggle, delete confirmation, and modal sheet to add new recurring rules.
+  - Added route `/settings/recurring` and linked from Settings screen.
+- [x] **Extended 3. Data Export & Import (JSON & CSV)**:
+  - Implemented `exportLedgerJson()` serializing full ledger matching v2 schema.
+  - Implemented `exportExpensesCsv()` with RFC-compliant escaping, date, title, category, group, amount, payer, split mode, and personal flag.
+  - Implemented `restoreFromJson()` validating invariants (current user exists, group members, computed shares sum matching total paise) before applying to ledger and saving.
+  - Integrated in `SettingsScreen` under "BACKUP & EXPORT": Export JSON Backup (dialog + clipboard copy), Export Expenses CSV (clipboard copy), and Restore from JSON Backup (text input modal with validation).
+- [x] **Extended 4. Live Device UPI Deep-Linking**:
+  - In `SettleSheet`, constructed standard Indian UPI intent URLs (`upi://pay?pa=...&pn=...&am=...&cu=INR&tn=...`).
+  - Tested `canLaunchUrl(universalUri)` with `launchUrl(..., mode: LaunchMode.externalApplication)`.
+  - Added automated fallback to clipboard copy and confirmation step for web/desktop environments.
+- [x] **Extended 5. Test Suite & Verification**:
+  - Added `test/extended_features_test.dart` testing group editing, recurring template creation & due processing, JSON/CSV exports, valid/invalid restore invariants, and UPI URI generation.
+  - Verified: `flutter analyze` (**0 issues found**).
+  - Verified: `flutter test` (**118/118 tests passed**).
+
 
 

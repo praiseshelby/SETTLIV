@@ -7,6 +7,7 @@ import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
 import '../engine/balance_engine.dart';
+import '../engine/split_calculator.dart';
 import '../seed/seed_data.dart';
 import 'app_repository.dart';
 
@@ -392,6 +393,222 @@ class PersistentAppRepository implements AppRepository {
   void deleteRecurringTemplate(String id) {
     _recurringTemplates.removeWhere((r) => r.id == id);
     _scheduleSave();
+  }
+
+  @override
+  List<Expense> processDueRecurringExpenses({DateTime? asOf}) {
+    final now = asOf ?? _clock();
+    final generated = <Expense>[];
+
+    for (int i = 0; i < _recurringTemplates.length; i++) {
+      final template = _recurringTemplates[i];
+      if (template.isPaused) continue;
+      if (template.endDate != null && now.isAfter(template.endDate!)) continue;
+
+      DateTime nextDate;
+      if (template.lastGeneratedDate == null) {
+        nextDate = template.startDate;
+      } else {
+        nextDate = _calculateNextDueDate(template.lastGeneratedDate!, template.frequency);
+      }
+
+      var currentTemplate = template;
+      while (!nextDate.isAfter(now) &&
+          (currentTemplate.endDate == null || !nextDate.isAfter(currentTemplate.endDate!))) {
+        final payerId = currentTemplate.payers.isNotEmpty
+            ? currentTemplate.payers.first.personId
+            : currentUserId;
+
+        final shares = SplitCalculator.splitEqual(
+          totalPaise: currentTemplate.totalPaise,
+          memberIds: currentTemplate.participants,
+          paidBy: payerId,
+        );
+
+        final newExpense = Expense(
+          id: 'rec_${currentTemplate.id}_${nextDate.millisecondsSinceEpoch}',
+          groupId: currentTemplate.groupId,
+          description: currentTemplate.description,
+          note: currentTemplate.note ?? 'Recurring (${currentTemplate.frequency.label})',
+          category: currentTemplate.category,
+          totalPaise: currentTemplate.totalPaise,
+          date: nextDate,
+          payers: currentTemplate.payers,
+          splitMode: currentTemplate.splitMode,
+          splitParameters: currentTemplate.splitParameters,
+          participants: currentTemplate.participants,
+          computedShares: shares,
+          createdAt: _clock(),
+        );
+
+        generated.add(newExpense);
+        _expenses.insert(0, newExpense);
+
+        currentTemplate = currentTemplate.copyWith(lastGeneratedDate: nextDate);
+        nextDate = _calculateNextDueDate(nextDate, currentTemplate.frequency);
+      }
+
+      if (currentTemplate != template) {
+        _recurringTemplates[i] = currentTemplate;
+      }
+    }
+
+    if (generated.isNotEmpty) {
+      _scheduleSave();
+    }
+    return generated;
+  }
+
+  DateTime _calculateNextDueDate(DateTime from, RecurringFrequency freq) {
+    switch (freq) {
+      case RecurringFrequency.daily:
+        return from.add(const Duration(days: 1));
+      case RecurringFrequency.weekly:
+        return from.add(const Duration(days: 7));
+      case RecurringFrequency.monthly:
+        int year = from.year;
+        int month = from.month + 1;
+        if (month > 12) {
+          year++;
+          month = 1;
+        }
+        final maxDay = _daysInMonth(year, month);
+        final day = from.day.clamp(1, maxDay);
+        return DateTime(year, month, day, from.hour, from.minute);
+      case RecurringFrequency.yearly:
+        int year = from.year + 1;
+        final maxDay = _daysInMonth(year, from.month);
+        final day = from.day.clamp(1, maxDay);
+        return DateTime(year, from.month, day, from.hour, from.minute);
+    }
+  }
+
+  int _daysInMonth(int year, int month) {
+    final nextMonth = month == 12 ? DateTime(year + 1, 1, 1) : DateTime(year, month + 1, 1);
+    return nextMonth.subtract(const Duration(days: 1)).day;
+  }
+
+  @override
+  String exportLedgerJson() {
+    final data = {
+      'version': schemaVersion,
+      'seedVersion': seedVersion,
+      'savedAt': _clock().toIso8601String(),
+      'currentUserId': _currentUserId,
+      'people': _people.map((p) => p.toJson()).toList(),
+      'groups': _groups.map((g) => g.toJson()).toList(),
+      'expenses': _expenses.map((e) => e.toJson()).toList(),
+      'settlements': _settlements.map((s) => s.toJson()).toList(),
+      'recurringTemplates': _recurringTemplates.map((r) => r.toJson()).toList(),
+    };
+    return const JsonEncoder.withIndent('  ').convert(data);
+  }
+
+  @override
+  String exportExpensesCsv() {
+    final buffer = StringBuffer();
+    buffer.writeln('Date,Title,Category,Group,Amount (INR),Paid By,Split Mode,Is Personal');
+
+    final groupMap = {for (final g in _groups) g.id: g.name};
+    final personMap = {for (final p in _people) p.id: p.name};
+
+    final activeExpenses = _expenses.where((e) => !e.isDeleted).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    for (final e in activeExpenses) {
+      final dateStr =
+          '${e.date.year.toString().padLeft(4, '0')}-${e.date.month.toString().padLeft(2, '0')}-${e.date.day.toString().padLeft(2, '0')}';
+      final titleEscaped = '"${e.description.replaceAll('"', '""')}"';
+      final category = e.category.label;
+      final groupName = groupMap[e.groupId] ?? 'Unknown';
+      final groupEscaped = '"${groupName.replaceAll('"', '""')}"';
+      final amount = (e.totalPaise / 100).toStringAsFixed(2);
+      final payerName = e.payers.isNotEmpty
+          ? (personMap[e.payers.first.personId] ?? e.payers.first.personId)
+          : 'Unknown';
+      final payerEscaped = '"${payerName.replaceAll('"', '""')}"';
+      final splitMode = e.splitMode.label;
+      final isPersonal = e.groupId == 'group_personal' ? 'Yes' : 'No';
+
+      buffer.writeln('$dateStr,$titleEscaped,$category,$groupEscaped,$amount,$payerEscaped,$splitMode,$isPersonal');
+    }
+
+    return buffer.toString();
+  }
+
+  @override
+  bool restoreFromJson(String rawJson) {
+    try {
+      final Map<String, dynamic> data = jsonDecode(rawJson) as Map<String, dynamic>;
+      final int version = data['version'] as int? ?? 0;
+      final int loadedSeedVersion = data['seedVersion'] as int? ?? 0;
+      if (version != schemaVersion || loadedSeedVersion < seedVersion) {
+        return false;
+      }
+
+      final String currentUserId = data['currentUserId'] as String? ?? SeedData.currentUserId;
+      final peopleList = (data['people'] as List<dynamic>?)
+              ?.map((p) => Person.fromJson(p as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final groupsList = (data['groups'] as List<dynamic>?)
+              ?.map((g) => Group.fromJson(g as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final expensesList = (data['expenses'] as List<dynamic>?)
+              ?.map((e) => Expense.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final settlementsList = (data['settlements'] as List<dynamic>?)
+              ?.map((s) => Settlement.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final recurringList = (data['recurringTemplates'] as List<dynamic>?)
+              ?.map((r) => RecurringTemplate.fromJson(r as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      // Validate invariants
+      final peopleIds = peopleList.map((p) => p.id).toSet();
+      final groupIds = groupsList.map((g) => g.id).toSet();
+
+      if (!peopleIds.contains(currentUserId)) {
+        return false;
+      }
+      for (final g in groupsList) {
+        for (final m in g.memberIds) {
+          if (!peopleIds.contains(m)) return false;
+        }
+      }
+      for (final e in expensesList) {
+        if (!groupIds.contains(e.groupId)) return false;
+        final sharesSum = e.computedShares.values.fold<int>(0, (a, b) => a + b);
+        if (sharesSum != e.totalPaise) return false;
+        for (final m in e.computedShares.keys) {
+          if (!peopleIds.contains(m)) return false;
+        }
+        for (final p in e.payers) {
+          if (!peopleIds.contains(p.personId)) return false;
+        }
+      }
+      for (final s in settlementsList) {
+        if (!groupIds.contains(s.groupId)) return false;
+        if (!peopleIds.contains(s.from) || !peopleIds.contains(s.to)) return false;
+      }
+
+      // Valid! Commit state
+      _currentUserId = currentUserId;
+      _people = peopleList;
+      _groups = groupsList;
+      _expenses = expensesList;
+      _settlements = settlementsList;
+      _recurringTemplates = recurringList;
+      _wasCorruptDataRecovered = false;
+      _saveToStorageImmediate();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

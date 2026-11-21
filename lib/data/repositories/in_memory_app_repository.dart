@@ -4,6 +4,7 @@ import '../models/person.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
+import '../models/recurring_template.dart';
 import '../engine/balance_engine.dart';
 import 'app_repository.dart';
 import 'persistent_app_repository.dart';
@@ -94,6 +95,41 @@ class AppStateNotifier extends Notifier<int> {
     notifyChange();
   }
 
+  void addRecurringTemplate(RecurringTemplate template) {
+    repository.addRecurringTemplate(template);
+    notifyChange();
+  }
+
+  void updateRecurringTemplate(RecurringTemplate template) {
+    repository.updateRecurringTemplate(template);
+    notifyChange();
+  }
+
+  void deleteRecurringTemplate(String id) {
+    repository.deleteRecurringTemplate(id);
+    notifyChange();
+  }
+
+  int processDueRecurringExpenses({DateTime? asOf}) {
+    final generated = repository.processDueRecurringExpenses(asOf: asOf);
+    if (generated.isNotEmpty) {
+      notifyChange();
+    }
+    return generated.length;
+  }
+
+  String exportLedgerJson() => repository.exportLedgerJson();
+
+  String exportExpensesCsv() => repository.exportExpensesCsv();
+
+  bool restoreFromJson(String jsonString) {
+    final ok = repository.restoreFromJson(jsonString);
+    if (ok) {
+      notifyChange();
+    }
+    return ok;
+  }
+
   Future<void> startFresh() async {
     await repository.startFresh();
     notifyChange();
@@ -165,4 +201,9 @@ final allPeopleProvider = Provider<List<Person>>((ref) {
 final personProvider = Provider.family<Person?, String>((ref, personId) {
   final repo = ref.watch(appRepositoryProvider);
   return repo.getPerson(personId);
+});
+
+final allRecurringTemplatesProvider = Provider<List<RecurringTemplate>>((ref) {
+  final repo = ref.watch(appRepositoryProvider);
+  return repo.getRecurringTemplates();
 });

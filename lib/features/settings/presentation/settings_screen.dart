@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -66,6 +67,180 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SnackBar(
         content: Text(upi.isNotEmpty ? 'UPI ID saved' : 'Profile updated'),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _exportJsonBackup() {
+    final jsonStr = ref.read(appStateProvider.notifier).exportLedgerJson();
+    Clipboard.setData(ClipboardData(text: jsonStr));
+
+    final theme = context.settliv;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.surface,
+        title: Row(
+          children: [
+            Icon(Icons.file_download_outlined, color: theme.navy),
+            const SizedBox(width: 8),
+            Text('JSON Backup', style: TextStyle(color: theme.ink, fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ledger backup has been copied to your clipboard. You can paste it into a file or save it securely.',
+              style: TextStyle(color: theme.muted, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.raised,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: theme.hairline),
+              ),
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: SingleChildScrollView(
+                child: Text(
+                  jsonStr,
+                  style: TextStyle(
+                    color: theme.ink,
+                    fontFamily: 'monospace',
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: jsonStr));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied backup again')),
+              );
+            },
+            child: Text('Copy again', style: TextStyle(color: theme.navy)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: FilledButton.styleFrom(backgroundColor: theme.navy),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ledger JSON backup copied to clipboard!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _exportExpensesCsv() {
+    final csvStr = ref.read(appStateProvider.notifier).exportExpensesCsv();
+    Clipboard.setData(ClipboardData(text: csvStr));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Expenses CSV exported & copied to clipboard!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _openRestoreDialog() {
+    final theme = context.settliv;
+    final restoreController = TextEditingController();
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: theme.surface,
+          title: Row(
+            children: [
+              Icon(Icons.file_upload_outlined, color: theme.navy),
+              const SizedBox(width: 8),
+              Text('Restore from Backup', style: TextStyle(color: theme.ink, fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Paste the JSON backup string below to restore all groups, expenses, and balances.',
+                style: TextStyle(color: theme.muted, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: restoreController,
+                maxLines: 6,
+                style: TextStyle(
+                  color: theme.ink,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Paste JSON backup here...',
+                  hintStyle: TextStyle(color: theme.muted, fontSize: 12),
+                  filled: true,
+                  fillColor: theme.raised,
+                  errorText: errorText,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.hairline),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.hairline),
+                  ),
+                ),
+                onChanged: (_) {
+                  if (errorText != null) setDialogState(() => errorText = null);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: TextStyle(color: theme.muted)),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = restoreController.text.trim();
+                if (text.isEmpty) {
+                  setDialogState(() => errorText = 'Please paste backup JSON');
+                  return;
+                }
+                final ok = ref.read(appStateProvider.notifier).restoreFromJson(text);
+                if (ok) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ledger successfully restored from backup!'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                } else {
+                  setDialogState(() => errorText = 'Invalid backup format or corrupt schema');
+                }
+              },
+              style: FilledButton.styleFrom(backgroundColor: theme.navy),
+              child: const Text('Restore'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -421,7 +596,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 28),
 
-            // Recurring Expenses (Stub entry for Part 2)
+            // Recurring Expenses
             Text(
               'LEDGER FEATURES',
               style: AppTypography.caption.copyWith(
@@ -435,9 +610,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               level: GlassLevel.level1,
               borderRadius: 20,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              onTap: () => context.push('/settings/recurring'),
               child: Row(
                 children: [
-                  Icon(Icons.repeat_rounded, color: theme.ink, size: 24),
+                  Icon(Icons.repeat_rounded, color: theme.navy, size: 24),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -457,68 +633,124 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.raised,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Part 2',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.muted,
+                    size: 20,
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 28),
+
+            // Backup & Restore
+            Text(
+              'BACKUP & EXPORT',
+              style: AppTypography.caption.copyWith(
+                color: theme.muted,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
             const SizedBox(height: 10),
 
-            // Backup & Restore (Stub entry for Part 3)
+            // Export JSON Backup
             GlassSurface(
               level: GlassLevel.level1,
               borderRadius: 20,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              onTap: _exportJsonBackup,
               child: Row(
                 children: [
-                  Icon(Icons.backup_outlined, color: theme.ink, size: 24),
+                  Icon(Icons.file_download_outlined, color: theme.ink, size: 24),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Backup & restore',
+                          'Export JSON backup',
                           style: AppTypography.body.copyWith(
                             color: theme.ink,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          'Export ledger or import backup',
+                          'Copy full ledger data to clipboard',
                           style: AppTypography.caption.copyWith(color: theme.muted),
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.raised,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Part 3',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  Icon(Icons.chevron_right_rounded, color: theme.muted, size: 20),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Export Expenses (CSV)
+            GlassSurface(
+              level: GlassLevel.level1,
+              borderRadius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              onTap: _exportExpensesCsv,
+              child: Row(
+                children: [
+                  Icon(Icons.table_chart_outlined, color: theme.ink, size: 24),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Export expenses (CSV)',
+                          style: AppTypography.body.copyWith(
+                            color: theme.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'Spreadsheet-compatible expense export',
+                          style: AppTypography.caption.copyWith(color: theme.muted),
+                        ),
+                      ],
                     ),
                   ),
+                  Icon(Icons.chevron_right_rounded, color: theme.muted, size: 20),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Restore from JSON Backup
+            GlassSurface(
+              level: GlassLevel.level1,
+              borderRadius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              onTap: _openRestoreDialog,
+              child: Row(
+                children: [
+                  Icon(Icons.file_upload_outlined, color: theme.ink, size: 24),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Restore from JSON backup',
+                          style: AppTypography.body.copyWith(
+                            color: theme.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'Restore ledger from clipboard string',
+                          style: AppTypography.caption.copyWith(color: theme.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: theme.muted, size: 20),
                 ],
               ),
             ),

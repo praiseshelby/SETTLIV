@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -148,17 +149,43 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
     setState(() => _step = SettleStep.upiPicker);
   }
 
-  void _onSelectUpiApp(String appName) {
+  Future<void> _onSelectUpiApp(String appName) async {
     setState(() {
       _selectedUpiApp = appName;
       _step = SettleStep.simulation;
     });
 
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) {
-        setState(() => _step = SettleStep.confirmation);
+    final upiId = _payee?.upiId ??
+        '${(_payee?.name ?? "user").toLowerCase().replaceAll(' ', '')}@okaxis';
+    final payeeName = _payee?.name ?? 'Settliv Member';
+    final amountStr = (_enteredAmountPaise / 100).toStringAsFixed(2);
+    final note = 'Settliv: ${widget.group.name}';
+
+    final universalUri = Uri.parse(
+      'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$amountStr&cu=INR&tn=${Uri.encodeComponent(note)}',
+    );
+
+    bool launched = false;
+    try {
+      if (await canLaunchUrl(universalUri)) {
+        launched = await launchUrl(
+          universalUri,
+          mode: LaunchMode.externalApplication,
+        );
       }
-    });
+    } catch (_) {
+      launched = false;
+    }
+
+    if (!launched) {
+      // Fallback for web or desktop without native UPI handler: copy UPI ID
+      Clipboard.setData(ClipboardData(text: upiId));
+      await Future.delayed(const Duration(milliseconds: 700));
+    }
+
+    if (mounted) {
+      setState(() => _step = SettleStep.confirmation);
+    }
   }
 
   void _onMarkPaidInCash() {
@@ -513,7 +540,8 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
   // Step 2: UPI App Picker
   // ---------------------------------------------------------------------------
   Widget _buildUpiPickerStep(SettlivThemeExtension theme) {
-    final mockUpiId = '${_payee?.name.toLowerCase() ?? "user"}@okaxis';
+    final upiId = _payee?.upiId ??
+        '${(_payee?.name ?? "user").toLowerCase().replaceAll(' ', '')}@okaxis';
 
     final upiApps = [
       ('GPay', theme.navy, Icons.account_balance_wallet_rounded),
@@ -622,7 +650,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'UPI ID: $mockUpiId',
+                    'UPI ID: $upiId',
                     style: AppTypography.caption.copyWith(
                       color: theme.muted,
                       fontSize: 12,
@@ -630,7 +658,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
                   ),
                   InkWell(
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: mockUpiId));
+                      Clipboard.setData(ClipboardData(text: upiId));
                       setState(() => _copiedUpi = true);
                       Future.delayed(const Duration(seconds: 2), () {
                         if (mounted) setState(() => _copiedUpi = false);
@@ -668,13 +696,13 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.info_outline_rounded,
+                  Icons.bolt_rounded,
                   size: 14,
-                  color: theme.muted,
+                  color: theme.textEmerald,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Simulated in prototype',
+                  'Live UPI intent & auto-fallback',
                   style: AppTypography.caption.copyWith(
                     color: theme.muted,
                     fontWeight: FontWeight.w700,

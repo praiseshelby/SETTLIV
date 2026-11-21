@@ -9,6 +9,7 @@ import '../features/balances/presentation/balances_screen.dart';
 import '../features/add_expense/presentation/add_expense_screen.dart';
 import '../features/group_detail/presentation/group_detail_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/presentation/recurring_expenses_screen.dart';
 import '../features/gallery/component_gallery_screen.dart';
 import '../core/widgets/phone_frame.dart';
 import '../core/widgets/app_shell.dart';
@@ -180,6 +181,13 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
       path: '/settings',
       builder: (context, state) => const PhoneFrame(
         child: SettingsScreen(),
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: '/settings/recurring',
+      builder: (context, state) => const PhoneFrame(
+        child: RecurringExpensesScreen(),
       ),
     ),
     GoRoute(

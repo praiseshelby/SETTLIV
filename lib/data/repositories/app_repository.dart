@@ -38,6 +38,11 @@ abstract class AppRepository {
   void addRecurringTemplate(RecurringTemplate template);
   void updateRecurringTemplate(RecurringTemplate template);
   void deleteRecurringTemplate(String id);
+  List<Expense> processDueRecurringExpenses({DateTime? asOf});
+
+  String exportLedgerJson();
+  String exportExpensesCsv();
+  bool restoreFromJson(String jsonString);
 
   GroupBalanceSummary getGroupSummary(String groupId);
   UserOverallBalance getUserOverallBalance();

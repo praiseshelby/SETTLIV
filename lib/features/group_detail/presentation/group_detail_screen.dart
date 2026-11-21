@@ -25,6 +25,7 @@ import '../../../data/repositories/in_memory_app_repository.dart';
 import '../sheets/expense_detail_sheet.dart';
 import '../sheets/settle_sheet.dart';
 import '../sheets/nudge_sheet.dart';
+import '../sheets/edit_group_sheet.dart';
 import 'widgets/balance_bars_chart.dart';
 import 'widgets/category_donut_chart.dart';
 
@@ -174,6 +175,35 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                       ),
                     ),
                   ),
+                  actions: [
+                    if (!group.isPersonal)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Center(
+                          child: Semantics(
+                            button: true,
+                            label: 'Edit Group',
+                            child: InkWell(
+                              onTap: () => EditGroupSheet.show(
+                                context: context,
+                                group: group,
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                              child: GlassSurface(
+                                level: GlassLevel.level1,
+                                borderRadius: 999,
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  Icons.tune_rounded,
+                                  color: theme.ink,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,
