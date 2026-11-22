@@ -1,3 +1,5 @@
+import 'widgets/dashboard_web_view.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +35,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
+    final effective = ref.watch(effectiveExperienceProvider);
+    if (effective == EffectiveExperience.web) {
+      return const DashboardWebView();
+    }
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final overall = ref.watch(userOverallBalanceProvider);

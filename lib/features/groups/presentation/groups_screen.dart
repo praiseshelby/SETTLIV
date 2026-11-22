@@ -1,3 +1,6 @@
+import '../../../core/layout/adaptive_layout.dart';
+import '../../../core/profile/experience_mode.dart';
+import '../../../core/widgets/adaptive_presenter.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,14 +25,11 @@ class GroupsScreen extends ConsumerStatefulWidget {
 
 class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   void _openNewGroupSheet(BuildContext context) {
-    final theme = context.settliv;
-    showModalBottomSheet<void>(
+    AdaptivePresenter.show<void>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: theme.transparent,
-      barrierColor: theme.scrim,
-      builder: (_) => const _NewGroupSheet(),
+      title: 'New group',
+      type: PresentationType.formOrConfirmation,
+      child: const _NewGroupSheet(),
     );
   }
 
@@ -116,20 +116,63 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   ),
                 ),
               ] else ...[
-                for (final group in groups) ...[
-                  GroupCard(
-                    group: group,
-                    members: people
-                        .where((p) => group.memberIds.contains(p.id))
-                        .toList(),
-                    userNetPaise: repo
-                            .getGroupSummary(group.id)
-                            .netBalances[currentUserId] ??
-                        0,
-                    onTap: () => context.push('/group/${group.id}'),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                Builder(
+                  builder: (ctx) {
+                    final effective = ref.watch(effectiveExperienceProvider);
+                    final layout = AdaptiveLayout.of(ctx);
+
+                    if (effective == EffectiveExperience.web && layout != LayoutClass.compact) {
+                      final crossAxisCount = layout == LayoutClass.expanded ? 3 : 2;
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          const spacing = 16.0;
+                          final cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+
+                          return Wrap(
+                            spacing: spacing,
+                            runSpacing: spacing,
+                            children: groups.map((group) {
+                              return SizedBox(
+                                width: cardWidth,
+                                child: GroupCard(
+                                  group: group,
+                                  members: people
+                                      .where((p) => group.memberIds.contains(p.id))
+                                      .toList(),
+                                  userNetPaise: repo
+                                          .getGroupSummary(group.id)
+                                          .netBalances[currentUserId] ??
+                                      0,
+                                  onTap: () => context.push('/group/${group.id}'),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      );
+                    }
+
+                    // Mobile / compact web: single list
+                    return Column(
+                      children: groups.map((group) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: GroupCard(
+                            group: group,
+                            members: people
+                                .where((p) => group.memberIds.contains(p.id))
+                                .toList(),
+                            userNetPaise: repo
+                                    .getGroupSummary(group.id)
+                                    .netBalances[currentUserId] ??
+                                0,
+                            onTap: () => context.push('/group/${group.id}'),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
               ],
             ],
           ),

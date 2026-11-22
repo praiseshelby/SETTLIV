@@ -359,14 +359,57 @@
 
 ---
 
-### Part W2: Desktop & Web Layouts for Core Screens (PENDING USER "CONTINUE")
-- [ ] Dashboard (Home) Web View: 2-column or 3-column responsive grid, expanded hero, quick actions, side rail.
-- [ ] Groups Hub Web View: Responsive group cards grid + members summary sidebar.
-- [ ] Records Web View: Split view or master-detail with filter bar, search, and detail pane.
-- [ ] Insights Web View: Side-by-side spend breakdown, trends, and category charts.
-- [ ] Add Expense Web Dialog: 2-column layout for Manual tab, centered form presentation.
-- [ ] Settings Web View: Categorized multi-column layout.
+### Brand Rule: Wordmark ONLY (No Logomark) (COMPLETED)
+- [x] **Wordmark-Only Enforcement**:
+  - Completely removed the "S" logomark / logo icon across the entire codebase (sidebar header, medium rail, compact web header, drawer, and Settings brand block).
+  - Brand identity is strictly and exclusively the text "SETTLIV".
+  - **Rule**: Any items in Set 2, Set 3, or W3 that mention a logomark now mean wordmark only.
+  - Implemented `SettlivWordmark` ([settliv_wordmark.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/core/widgets/settliv_wordmark.dart)) in Bricolage Grotesque ExtraBold (`FontWeight.w800`), ALL CAPS, wide tracking (~0.18em = `fontSize * 0.18`), solid ink color, baseline-aligned and optically centered:
+    - Expanded sidebar: ~18px, left-aligned with nav items' text column.
+    - Medium rail: ~13px rotated 90 degrees vertical (reading bottom-to-top via `RotatedBox(quarterTurns: 3)`).
+    - Compact web header: ~16px, beside the left menu button.
+    - Settings end block: 24px large wordmark plus version line.
+    - Lock screen & loading screen (when built): centered wordmark, no icon.
+  - Unit test added verifying zero logomark widgets exist in the tree and wordmark renders across all shell variants without overflow.
 
 ---
 
-### Part W3: Motion, Polish, Shortcuts, Browser Integrations & Screenshots (PENDING)
+### Part W2: Desktop & Web Layouts for Core Screens (COMPLETED)
+- [x] **Dashboard (`/`) Web View ([dashboard_web_view.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/home/presentation/widgets/dashboard_web_view.dart))**:
+  - Header: Large display greeting + date in Bricolage Grotesque, no icon, no status; theme toggle button.
+  - Bento Layout:
+    - Row 1: Net Position Hero card (span 7, whole card clickable -> `/balances`) beside "This month" spend card (span 5, vs last month percent, progress bar, clickable -> `/insights`).
+    - Row 2: Recent groups (span 7, 2 rich cards with cover art, member count, balance pill, "All groups ›") beside Shortcuts (span 5, ranked tiles, scan hidden on desktop per rule).
+    - Row 3: Recent activity (span 12) proper table (Description, Group, Paid by, Date, Your share) with hover highlight, clicking row opens `ExpenseDetailSheet` in AdaptivePresenter right drawer, same 3-row / today rule.
+    - Footer compatibility line: "Also runs as a mobile app and a website · See versions in Settings ›".
+    - Compact web stacks the bento in single column without overflow.
+- [x] **Groups (`/groups`) Web View ([groups_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/groups/presentation/groups_screen.dart))**:
+  - Responsive card grid: 3 columns on expanded (>=1100), 2 columns on medium (720-1099), 1 column on compact (<720).
+  - Large cover art, hover lift (-2px translateY) and click feedback on `GroupCard`.
+  - "+ New group" button opens `AdaptivePresenter.show` centered modal dialog on desktop/medium and bottom sheet on compact.
+- [x] **Group Detail (`/group/:id`) Web View ([group_detail_web_view.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/group_detail/presentation/widgets/group_detail_web_view.dart))**:
+  - Full-bleed cover banner with glass title block and `‹ Groups` back control.
+  - Expanded two-pane layout:
+    - Left column (flex 7): Expenses table (Description, Paid by, Date, Total) with hover highlight; tapping row opens `ExpenseDetailSheet` in right drawer.
+    - Right column (flex 5): Sticky glass column with "Who pays whom" group balances, Nudge & Settle up buttons, and `CategoryDonutChart`.
+  - Compact web stacks banner, group balances, expenses table, and donut chart.
+- [x] **Balances (`/balances`) Web View ([balances_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/balances/presentation/balances_screen.dart))**:
+  - Replaces mobile segmented control with two side-by-side columns: "OWED TO YOU" on left, "YOU OWE" on right.
+  - Person rows with inline per-group expansion, Settle, Nudge, and amount badges.
+  - "SETTLED RECENTLY" section below with undo action.
+  - Compact web stacks sections without overflow.
+  - Back control: `‹ Home` text link on desktop returning to `/`.
+- [x] **Verification & Test Suite**:
+  - Added `test/part_w2_test.dart` verifying wordmark styling, rotated rail wordmark, zero logomark widgets, dashboard bento elements and drawer, groups responsive grid, group detail two-pane layout, balances side-by-side columns, and compact viewport responsiveness.
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **154/154 tests passing** (100%).
+
+---
+
+### Part W3: Records, Insights, Add Expense Dialog, Settings Two-Pane, First Impression & QA (PENDING USER "CONTINUE")
+- [ ] Records Web View: toolbar (search, Filters opening popover dialog, summary line), full-width table with sticky header, hover row, tabular amounts, detail in right drawer; compact = card list.
+- [ ] Insights (+ Budgets nested) Web View: bento of larger charts with hover tooltips, same data and reconciliation with Records; Budgets keeps all current content in the new layout.
+- [ ] Add Expense Web Dialog: centered dialog (~960x680) with two panes: composer/manual form left, single draft/preview card right (never duplicate info); compact web = full-screen sheet. All validations/parsers unchanged; Esc/Enter handled.
+- [ ] Settings Web View: two-pane with section list on left (scroll-spy) and content on right; includes Experience; end brand block with large wordmark.
+- [ ] First Impression & Web Meta: branded loading screen in `web/index.html` (wordmark, subtle pulse, light/dark aware, tagline "One codebase. Every screen."), page title, meta description, og tags, theme-color, favicon/manifest name.
+- [ ] Final QA & Screenshots Pass: take screenshots (desktop 1440x900 light+dark for Dashboard, Groups, Records, Insights, Add Expense dialog, Settings; web-mode 390x844 Dashboard; app-mode Home) and document in NOTES.md.

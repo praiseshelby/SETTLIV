@@ -1,3 +1,4 @@
+import 'settliv_wordmark.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,14 +45,11 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
 
   // 1. Compact Web (< 720): sticky top glass header + drawer, NO bottom bar
   Widget _buildCompactWeb(BuildContext context, SettlivThemeExtension theme) {
-    final currentBranch = widget.navigationShell.currentIndex;
-    final titles = ['Dashboard', 'Groups', 'Records', 'Insights'];
-    final title = currentBranch < titles.length ? titles[currentBranch] : 'Settliv';
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.canvas,
-      endDrawer: _buildWebDrawer(context, theme),
+      drawer: _buildWebDrawer(context, theme),
       body: AuroraBackground(
         child: Column(
           children: [
@@ -68,17 +66,16 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                   ),
                   child: Row(
                     children: [
-                      // Logomark
-                      _buildLogoMark(theme, size: 28),
-                      const SizedBox(width: 10),
-                      Text(
-                        title,
-                        style: AppTypography.titleLarge.copyWith(
-                          color: theme.ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
+                      // Menu trigger on left
+                      IconButton(
+                        icon: const Icon(Icons.menu_rounded),
+                        color: theme.ink,
+                        tooltip: 'Menu',
+                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
+                      const SizedBox(width: 8),
+                      // Wordmark beside menu button
+                      const SettlivWordmark(fontSize: 16),
                       const Spacer(),
                       // Add button
                       IconButton(
@@ -86,13 +83,6 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                         color: theme.ink,
                         tooltip: 'Add expense',
                         onPressed: () => context.push('/add'),
-                      ),
-                      // Menu trigger
-                      IconButton(
-                        icon: const Icon(Icons.menu_rounded),
-                        color: theme.ink,
-                        tooltip: 'Menu',
-                        onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                       ),
                     ],
                   ),
@@ -158,9 +148,9 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   }
 
   Widget _buildSidebar(BuildContext context, SettlivThemeExtension theme) {
+    final currentBranch = widget.navigationShell.currentIndex;
     final repo = ref.watch(appRepositoryProvider);
     final user = repo.currentUser;
-    final currentBranch = widget.navigationShell.currentIndex;
 
     return Container(
       width: 264,
@@ -177,25 +167,11 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header: Logomark + SETTLIV wordmark
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      _buildLogoMark(theme, size: 32),
-                      const SizedBox(width: 12),
-                      Text(
-                        'SETTLIV',
-                        style: AppTypography.wordmark.copyWith(
-                          fontSize: 16,
-                          letterSpacing: 3.5,
-                          color: theme.ink,
-                        ),
-                      ),
-                    ],
-                  ),
+                // Header: SETTLIV wordmark (~18px, left-aligned with nav items' text column)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  child: SettlivWordmark(fontSize: 18),
                 ),
-                const SizedBox(height: 24),
 
                 // Primary "Add expense" button
                 ElevatedButton.icon(
@@ -359,9 +335,14 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 20),
-          _buildLogoMark(theme, size: 30),
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
+          const Center(
+            child: SettlivWordmark(
+              fontSize: 13,
+              rotated: true,
+            ),
+          ),
+          const SizedBox(height: 28),
           IconButton(
             icon: const Icon(Icons.add_rounded),
             color: theme.accent,
@@ -433,19 +414,9 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  _buildLogoMark(theme, size: 32),
-                  const SizedBox(width: 12),
-                  Text(
-                    'SETTLIV',
-                    style: AppTypography.wordmark.copyWith(
-                      fontSize: 16,
-                      letterSpacing: 3.5,
-                      color: theme.ink,
-                    ),
-                  ),
-                ],
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: SettlivWordmark(fontSize: 18),
               ),
               const SizedBox(height: 28),
               ListTile(
@@ -590,25 +561,5 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     );
   }
 
-  Widget _buildLogoMark(SettlivThemeExtension theme, {required double size}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: theme.accent,
-        borderRadius: BorderRadius.circular(size * 0.28),
-      ),
-      child: Center(
-        child: Text(
-          'S',
-          style: TextStyle(
-            fontFamily: AppTypography.fontFamily,
-            color: theme.white,
-            fontWeight: FontWeight.w900,
-            fontSize: size * 0.6,
-          ),
-        ),
-      ),
-    );
-  }
+
 }

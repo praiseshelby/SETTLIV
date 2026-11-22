@@ -1,3 +1,5 @@
+import 'widgets/group_detail_web_view.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -125,6 +127,24 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final userNetPaise = summary.netBalances[currentUserId] ?? 0;
     final groupMembers =
         allPeople.where((p) => group.memberIds.contains(p.id)).toList();
+
+    final effective = ref.watch(effectiveExperienceProvider);
+    if (effective == EffectiveExperience.web) {
+      final tripProgress = _calculateTripProgress(group);
+      return AuroraBackground(
+        child: Scaffold(
+          backgroundColor: theme.transparent,
+          body: GroupDetailWebView(
+            group: group,
+            expenses: expenses,
+            summary: summary,
+            groupMembers: groupMembers,
+            currentUserId: currentUserId,
+            tripProgress: tripProgress,
+          ),
+        ),
+      );
+    }
 
     return AuroraBackground(
       child: Scaffold(

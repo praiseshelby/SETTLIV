@@ -1,3 +1,4 @@
+import '../../../core/widgets/settliv_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -832,10 +833,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 28),
 
-            // About / Version
+            // About / Version with large wordmark
             Center(
               child: Column(
                 children: [
+                  const SettlivWordmark(fontSize: 24),
+                  const SizedBox(height: 8),
                   Text(
                     'Settliv v0.2.0',
                     style: AppTypography.caption.copyWith(

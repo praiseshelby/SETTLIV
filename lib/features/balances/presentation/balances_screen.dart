@@ -1,7 +1,9 @@
+import '../../../core/layout/adaptive_layout.dart';
+import '../../../core/navigation/back_navigation.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -172,116 +174,215 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                onBack: () => context.pop(),
+                onBack: () => BackNavigation.handleBack(context, currentPath: '/balances'),
               ),
 
-              // Segmented Control & Sort Row
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                child: Row(
-                  children: [
-                    // Segmented Control
-                    Expanded(
-                      child: Container(
-                        height: 44,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: theme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: theme.hairline, width: 1.0),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _buildSegmentButton(
-                                label: 'Owed to you (${owedToUserList.length})',
-                                isSelected: _selectedTab == BalanceTab.owedToUser,
-                                onTap: () => setState(() => _selectedTab = BalanceTab.owedToUser),
-                                theme: theme,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: _buildSegmentButton(
-                                label: 'You owe (${userOwesList.length})',
-                                isSelected: _selectedTab == BalanceTab.userOwes,
-                                onTap: () => setState(() => _selectedTab = BalanceTab.userOwes),
-                                theme: theme,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Sort toggle button
-                    IconButton(
-                      icon: Icon(
-                        _sort == BalanceSort.byAmount ? Icons.sort_rounded : Icons.sort_by_alpha_rounded,
-                        color: theme.muted,
-                      ),
-                      tooltip: _sort == BalanceSort.byAmount ? 'Sorted by amount' : 'Sorted by name',
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _sort = _sort == BalanceSort.byAmount ? BalanceSort.byName : BalanceSort.byAmount;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              Builder(
+                builder: (ctx) {
+                  final effective = ref.watch(effectiveExperienceProvider);
+                  final layout = AdaptiveLayout.of(ctx);
 
-              // Main List
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                  children: [
-                    if (currentList.isEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 48),
-                        child: EmptyState(
-                          title: _selectedTab == BalanceTab.owedToUser
-                              ? 'No one owes you right now'
-                              : "You don't owe anyone right now",
-                          subtitle: _selectedTab == BalanceTab.owedToUser
-                              ? 'When friends owe you their share of group expenses, they will appear here.'
-                              : 'All your group debts are cleared and settled up!',
-                        ),
-                      ),
-                    ] else ...[
-                      for (final summary in currentList) ...[
-                        _buildPersonRow(summary, theme),
-                        const SizedBox(height: 12),
-                      ],
-                    ],
+                  if (effective == EffectiveExperience.web) {
+                    final isCompact = layout == LayoutClass.compact;
 
-                    // Settled Recently Section
-                    if (_sessionSettlements.isNotEmpty) ...[
-                      const SizedBox(height: 28),
-                      Text(
-                        'SETTLED RECENTLY',
-                        style: AppTypography.eyebrow.copyWith(
-                          color: theme.muted,
-                          fontSize: 11,
+                    return Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 20 : 32,
+                          vertical: 16,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1200),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (isCompact) ...[
+                                  // Compact Web: Stacked sections
+                                  _buildWebBalanceColumn(
+                                    title: 'OWED TO YOU (${owedToUserList.length})',
+                                    list: owedToUserList,
+                                    emptyTitle: 'No one owes you right now',
+                                    emptySubtitle: 'When friends owe you their share of group expenses, they will appear here.',
+                                    theme: theme,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildWebBalanceColumn(
+                                    title: 'YOU OWE (${userOwesList.length})',
+                                    list: userOwesList,
+                                    emptyTitle: "You don't owe anyone right now",
+                                    emptySubtitle: 'All your group debts are cleared and settled up!',
+                                    theme: theme,
+                                  ),
+                                ] else ...[
+                                  // Medium & Expanded Web: Two columns side by side
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: _buildWebBalanceColumn(
+                                          title: 'OWED TO YOU (${owedToUserList.length})',
+                                          list: owedToUserList,
+                                          emptyTitle: 'No one owes you right now',
+                                          emptySubtitle: 'When friends owe you their share of group expenses, they will appear here.',
+                                          theme: theme,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 24),
+                                      Expanded(
+                                        child: _buildWebBalanceColumn(
+                                          title: 'YOU OWE (${userOwesList.length})',
+                                          list: userOwesList,
+                                          emptyTitle: "You don't owe anyone right now",
+                                          emptySubtitle: 'All your group debts are cleared and settled up!',
+                                          theme: theme,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+
+                                // Settled Recently Section
+                                if (_sessionSettlements.isNotEmpty) ...[
+                                  const SizedBox(height: 32),
+                                  Text(
+                                    'SETTLED RECENTLY',
+                                    style: AppTypography.eyebrow.copyWith(
+                                      color: theme.muted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SectionCard(
+                                    padding: EdgeInsets.zero,
+                                    child: Column(
+                                      children: [
+                                        for (int i = 0; i < _sessionSettlements.length; i++) ...[
+                                          _buildRecentSettlementRow(_sessionSettlements[i], repo, theme),
+                                          if (i < _sessionSettlements.length - 1)
+                                            Divider(height: 1, color: theme.hairline),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      SectionCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            for (int i = 0; i < _sessionSettlements.length; i++) ...[
-                              _buildRecentSettlementRow(_sessionSettlements[i], repo, theme),
-                              if (i < _sessionSettlements.length - 1)
-                                Divider(height: 1, color: theme.hairline),
+                    );
+                  }
+
+                  // Mobile Experience: Segmented Control & List
+                  return Expanded(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 44,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: theme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: theme.hairline, width: 1.0),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildSegmentButton(
+                                          label: 'Owed to you (${owedToUserList.length})',
+                                          isSelected: _selectedTab == BalanceTab.owedToUser,
+                                          onTap: () => setState(() => _selectedTab = BalanceTab.owedToUser),
+                                          theme: theme,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: _buildSegmentButton(
+                                          label: 'You owe (${userOwesList.length})',
+                                          isSelected: _selectedTab == BalanceTab.userOwes,
+                                          onTap: () => setState(() => _selectedTab = BalanceTab.userOwes),
+                                          theme: theme,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              IconButton(
+                                icon: Icon(
+                                  _sort == BalanceSort.byAmount ? Icons.sort_rounded : Icons.sort_by_alpha_rounded,
+                                  color: theme.muted,
+                                ),
+                                tooltip: _sort == BalanceSort.byAmount ? 'Sorted by amount' : 'Sorted by name',
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _sort = _sort == BalanceSort.byAmount ? BalanceSort.byName : BalanceSort.byAmount;
+                                  });
+                                },
+                              ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                            children: [
+                              if (currentList.isEmpty) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 48),
+                                  child: EmptyState(
+                                    title: _selectedTab == BalanceTab.owedToUser
+                                        ? 'No one owes you right now'
+                                        : "You don't owe anyone right now",
+                                    subtitle: _selectedTab == BalanceTab.owedToUser
+                                        ? 'When friends owe you their share of group expenses, they will appear here.'
+                                        : 'All your group debts are cleared and settled up!',
+                                  ),
+                                ),
+                              ] else ...[
+                                for (final summary in currentList) ...[
+                                  _buildPersonRow(summary, theme),
+                                  const SizedBox(height: 12),
+                                ],
+                              ],
+                              if (_sessionSettlements.isNotEmpty) ...[
+                                const SizedBox(height: 28),
+                                Text(
+                                  'SETTLED RECENTLY',
+                                  style: AppTypography.eyebrow.copyWith(
+                                    color: theme.muted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SectionCard(
+                                  padding: EdgeInsets.zero,
+                                  child: Column(
+                                    children: [
+                                      for (int i = 0; i < _sessionSettlements.length; i++) ...[
+                                        _buildRecentSettlementRow(_sessionSettlements[i], repo, theme),
+                                        if (i < _sessionSettlements.length - 1)
+                                          Divider(height: 1, color: theme.hairline),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -326,6 +427,38 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWebBalanceColumn({
+    required String title,
+    required List<PersonDebtSummary> list,
+    required String emptyTitle,
+    required String emptySubtitle,
+    required SettlivThemeExtension theme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTypography.eyebrow.copyWith(color: theme.muted),
+        ),
+        const SizedBox(height: 12),
+        if (list.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: EmptyState(
+              title: emptyTitle,
+              subtitle: emptySubtitle,
+            ),
+          )
+        else
+          ...list.map((summary) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildPersonRow(summary, theme),
+              )),
+      ],
     );
   }
 
