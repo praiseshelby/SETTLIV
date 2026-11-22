@@ -93,7 +93,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // 3. "Needs attention" check:
     // a) Overdue balances / counterparties owing 7+ days
     // b) Due recurring bills (if any)
-    int attentionCount = 0;
     String? attentionMessage;
     VoidCallback? attentionAction;
 
@@ -110,7 +109,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (oldest != null) {
             final daysAgo = now.difference(oldest.date).inDays;
             if (daysAgo >= 7) {
-              attentionCount++;
               if (attentionMessage == null) {
                 final debtorPerson = repo.getPerson(debt.fromPersonId);
                 final dName = NameNormalizer.normalize(debtorPerson?.name ?? 'Someone');
@@ -123,11 +121,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
-    // 4. Header date line & live status: "Saturday, 21 Nov · All settled" or "· 2 need attention"
+    // 4. Header date line: weekday + date only
     final dateStr = DateFormat('EEEE, d MMM').format(now);
-    final statusStr = attentionCount == 0
-        ? 'All settled'
-        : '$attentionCount need attention';
 
     // 5. Recent activity rule: pure function RecentActivityEngine
     final recentActivityResult = RecentActivityEngine.computeRecentActivity(
@@ -148,12 +143,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return ScreenScaffold(
       header: ScreenHeader(
-        leading: DayPeriodTile(now: now),
         title: getTimeGreeting(now),
         subtitle: Text(
-          '$dateStr · $statusStr',
+          dateStr,
           style: AppTypography.caption.copyWith(
-            color: attentionCount > 0 ? theme.textCoral : theme.muted,
+            color: theme.muted,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -459,6 +453,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 24),
+              // Quiet compatibility footer
+              InkWell(
+                onTap: () => context.push('/settings'),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(
+                      'Also runs as a mobile app and a website · See versions in Settings ›',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import 'aurora_background.dart';
 
-class ScreenScaffold extends StatelessWidget {
+class ScreenScaffold extends ConsumerWidget {
   final Widget? header;
   final Widget? body;
   final List<Widget>? children;
@@ -23,12 +25,17 @@ class ScreenScaffold extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = context.settliv;
     final media = MediaQuery.of(context);
     final topPadding = media.padding.top + 12.0;
+
+    // Check if app bottom bar is active
+    final effective = ref.watch(effectiveExperienceProvider);
+    final showBottomBarPadding = hasBottomBar && effective == EffectiveExperience.app;
+
     // Bottom padding lives inside scroll content: bar height (64) + safe area + 16
-    final bottomScrollPadding = (hasBottomBar ? 64.0 : 0.0) + media.padding.bottom + 16.0;
+    final bottomScrollPadding = (showBottomBarPadding ? 64.0 : 0.0) + media.padding.bottom + 16.0;
 
     return Scaffold(
       backgroundColor: theme.transparent,
@@ -64,7 +71,7 @@ class ScreenScaffold extends StatelessWidget {
             else if (slivers != null)
               ...slivers!,
 
-            // Bottom scroll padding inside scroll content so content scrolls above docked bar
+            // Bottom scroll padding inside scroll content
             SliverToBoxAdapter(
               child: SizedBox(height: bottomScrollPadding),
             ),

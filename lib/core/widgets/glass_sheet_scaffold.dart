@@ -1,3 +1,4 @@
+import 'adaptive_presenter.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -24,20 +25,16 @@ class GlassSheetScaffold extends StatelessWidget {
     required String title,
     required Widget child,
     Widget? trailing,
+    PresentationType type = PresentationType.formOrConfirmation,
     bool isScrollControlled = true,
   }) {
-    final theme = context.settliv;
-    return showModalBottomSheet<T>(
+    return AdaptivePresenter.show<T>(
       context: context,
-      useRootNavigator: true,
+      title: title,
+      trailing: trailing,
+      type: type,
       isScrollControlled: isScrollControlled,
-      backgroundColor: theme.transparent,
-      barrierColor: theme.scrim,
-      builder: (context) => GlassSheetScaffold(
-        title: title,
-        trailing: trailing,
-        child: child,
-      ),
+      child: child,
     );
   }
 

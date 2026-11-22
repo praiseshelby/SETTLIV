@@ -10,8 +10,7 @@ import '../features/add_expense/presentation/add_expense_screen.dart';
 import '../features/group_detail/presentation/group_detail_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/recurring_expenses_screen.dart';
-import '../core/widgets/phone_frame.dart';
-import '../core/widgets/app_shell.dart';
+import '../core/widgets/experience_shell.dart';
 import '../core/widgets/gradient_primary_button.dart';
 import '../core/theme/app_typography.dart';
 import '../core/theme/app_theme.dart';
@@ -24,8 +23,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
   initialLocation: initialLocation,
   errorBuilder: (context, state) {
     final theme = context.settliv;
-    return PhoneFrame(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: theme.surface,
         body: Center(
           child: Padding(
@@ -58,17 +56,14 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ),
         ),
-      ),
-    );
+      );
   },
   routes: [
     // 4-Tab Navigation Shell: Home, Groups, Records, Insights (+ is centre button)
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return PhoneFrame(
-          child: AppShell(
-            navigationShell: navigationShell,
-          ),
+        return ExperienceShell(
+          navigationShell: navigationShell,
         );
       },
       branches: [
@@ -131,9 +126,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/balances',
-      builder: (context, state) => const PhoneFrame(
-        child: BalancesScreen(),
-      ),
+      builder: (context, state) => const BalancesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -147,13 +140,11 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
 
         return CustomTransitionPage<String?>(
           key: state.pageKey,
-          child: PhoneFrame(
-            child: AddExpenseScreen(
+          child: AddExpenseScreen(
               initialExpense: initialExpense,
               initialText: initialText,
               preselectedGroupId: preselectedGroupId,
               initialTabIndex: initialTabIndex,
-            ),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
@@ -173,24 +164,18 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
       path: '/group/:id',
       builder: (context, state) {
         final groupId = state.pathParameters['id'] ?? '';
-        return PhoneFrame(
-          child: GroupDetailScreen(groupId: groupId),
-        );
+        return GroupDetailScreen(groupId: groupId);
       },
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/settings',
-      builder: (context, state) => const PhoneFrame(
-        child: SettingsScreen(),
-      ),
+      builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/settings/recurring',
-      builder: (context, state) => const PhoneFrame(
-        child: RecurringExpensesScreen(),
-      ),
+      builder: (context, state) => const RecurringExpensesScreen(),
     ),
   ],
 );

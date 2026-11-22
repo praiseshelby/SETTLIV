@@ -305,3 +305,68 @@
 - [x] **D. Verification & Test Suite**:
   - `flutter analyze`: **0 issues found**.
   - `flutter test`: **129/129 tests passing** across entire project.
+
+
+---
+
+## PRIORITY TASK: Settliv Experiences (App + Web)
+
+> **IMPORTANT**: Set 2 and Set 3 are placed ON HOLD until Part W3 completes and the user says "continue".
+> When Set 2 and Set 3 resume, every screen they add (Groups hub, IOU notes, scan sheet, Budgets, Settings sections, Help forms, lock screen) must be implemented for BOTH experiences (App and Web) using the adaptive architecture established in Part W1.
+
+### Part W1: Engine, AdaptiveWebShell, AdaptivePresenter, Experience Settings & Back Navigation (COMPLETED)
+- [x] **Small Fix (App Home Header)**:
+  - Removed day-period icon tile and live status text (`"· N need attention"` / `"· All settled"`) from Home header in the App experience.
+  - Subline is strictly `weekday + date` only (`DateFormat('EEEE, d MMM').format(now)`).
+- [x] **DeviceProfile & Detection Engine (`lib/core/profile/`)**:
+  - `DeviceClass`: `desktop` vs `touch`.
+  - Web detector (`device_detector_web.dart`): evaluates `pointer: coarse` + `hover: none`, mobile/tablet UA, and iPadOS (`Macintosh` + `maxTouchPoints > 1`). Includes debug-only `?device=desktop|touch` query parameter override (`kDebugMode` only).
+  - Stub detector (`device_detector_stub.dart`): defaults to `DeviceClass.touch` for mobile/tests.
+  - Hardware concurrency and device memory detection for performance tuning.
+- [x] **Experience Mode Resolution (`lib/core/profile/experience_mode.dart`)**:
+  - Mode = `auto`, `app`, `web`.
+  - **Strict Invariant**: Desktop ALWAYS gets Web (`EffectiveExperience.web`), regardless of window size or saved preference; App experience is strictly unreachable on desktop.
+  - Touch devices default to App (`EffectiveExperience.app`), and can toggle to Web (`EffectiveExperience.web`). Choice is persisted per device in `SharedPreferences` (`settliv_experience_mode`).
+- [x] **Adaptive Layout & Motion Tokens (`lib/core/layout/`, `lib/core/theme/`)**:
+  - `AdaptiveLayout`: `compact` (<720), `medium` (720-1099), `expanded` (>=1100).
+  - `MotionTokens`: standard durations (120, 240, 360, 280, 300ms cross-fade), cubic curves, and `isLiteEffects` detection (reduced motion / hardware constraints).
+- [x] **AdaptivePresenter (`lib/core/widgets/adaptive_presenter.dart`)**:
+  - Unified dialog/sheet presentation:
+    - App experience and compact Web = bottom sheet (`GlassSheetScaffold`).
+    - Medium/expanded Web = centered modal dialog (max width 560) for `formOrConfirmation`, right-side drawer (max width 440) for `detailView`.
+    - Includes scrim, Esc keyboard shortcut, close button, focus trap, and focus restoration.
+- [x] **Adaptive Navigation Shell (`lib/core/widgets/adaptive_web_shell.dart`, `experience_shell.dart`)**:
+  - `AdaptiveWebShell`:
+    - Expanded (>=1100): 264px glass sidebar with logomark, SETTLIV wordmark, "+ Add expense" primary CTA, sliding active nav pill, version micro-card, user avatar -> settings, and theme toggle.
+    - Medium (720-1099): 76px compact icon rail with tooltips.
+    - Compact (<720): 60px sticky glass top header + drawer (includes "Switch to app view" for touch devices). No bottom bar.
+  - `ExperienceShell`: Instant smooth 300ms fade transition switching between `AppShell` and `AdaptiveWebShell`, safely maintaining single `navigationShell` instance and preserving current route and all state.
+  - Removed `PhoneFrame` desktop frame wrapper and bottom bar on desktop.
+- [x] **Back Navigation & ScreenHeader (`lib/core/navigation/`, `lib/core/widgets/`)**:
+  - Centralized route hierarchy in `BackNavigation` with parent route resolution and fallback.
+  - `ScreenHeader`: Renders `‹ Parent` text link on desktop, circular glass back button on compact/touch.
+- [x] **Settings "Experience" Section (`lib/features/settings/presentation/widgets/`)**:
+  - Placed immediately before `PRIVACY & DATA`.
+  - Touch devices: Segmented control (`App` | `Web`) with custom-painted schematic phone and browser thumbnails (`PhoneThumbnailPainter`, `BrowserThumbnailPainter`), colored dynamically from `theme.accent`.
+  - Desktop devices: Informational card explaining Web is active and optimized for mobile/touch.
+  - Explanatory architecture note: "One codebase, two experiences. Settliv is built with Flutter, so the same product can ship as a mobile app (for Play Store-style distribution) and as a responsive website for desktop and mobile browsers."
+- [x] **Compatibility Mentions**:
+  - Quiet footer at bottom of Home/Dashboard: "Also runs as a mobile app and a website · See versions in Settings ›".
+- [x] **Verification & Test Suite**:
+  - Added `test/part_w1_test.dart` covering device profile fake detection, mode resolution table, route table back affordance and fallbacks, AdaptivePresenter variants per layout class, Esc dismissal, viewport overflow tests across 8 resolutions (including 1.3 text scale compact), and route/state preservation on mode switch.
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **145/145 tests passing** (100%).
+
+---
+
+### Part W2: Desktop & Web Layouts for Core Screens (PENDING USER "CONTINUE")
+- [ ] Dashboard (Home) Web View: 2-column or 3-column responsive grid, expanded hero, quick actions, side rail.
+- [ ] Groups Hub Web View: Responsive group cards grid + members summary sidebar.
+- [ ] Records Web View: Split view or master-detail with filter bar, search, and detail pane.
+- [ ] Insights Web View: Side-by-side spend breakdown, trends, and category charts.
+- [ ] Add Expense Web Dialog: 2-column layout for Manual tab, centered form presentation.
+- [ ] Settings Web View: Categorized multi-column layout.
+
+---
+
+### Part W3: Motion, Polish, Shortcuts, Browser Integrations & Screenshots (PENDING)

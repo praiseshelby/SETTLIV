@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import 'widgets/experience_settings_section.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
@@ -745,6 +746,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 28),
+
+            // Experience Section
+            const ExperienceSettingsSection(),
             const SizedBox(height: 28),
 
             // Privacy & Data

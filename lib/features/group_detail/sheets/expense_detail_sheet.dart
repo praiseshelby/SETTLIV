@@ -1,3 +1,4 @@
+import '../../../core/widgets/adaptive_presenter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
@@ -33,6 +34,7 @@ class ExpenseDetailSheet extends ConsumerWidget {
     GlassSheetScaffold.show(
       context: context,
       title: 'Expense Details',
+      type: PresentationType.detailView,
       child: ExpenseDetailSheet(
         expense: expense,
         onEdit: onEdit,
