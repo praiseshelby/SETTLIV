@@ -1,3 +1,4 @@
+import '../../../core/navigation/back_navigation.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -252,11 +253,12 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
     return ScreenScaffold(
       header: ScreenHeader(
-        title: 'Plan',
+        title: 'Budgets & Limits',
         subtitle: Text(
           'Budgets and spending limits',
           style: AppTypography.caption.copyWith(color: theme.muted),
         ),
+        onBack: () => BackNavigation.handleBack(context, currentPath: '/insights/budgets'),
         actions: [
           OutlinedButton(
             style: OutlinedButton.styleFrom(

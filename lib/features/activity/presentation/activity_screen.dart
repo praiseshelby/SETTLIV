@@ -1,3 +1,5 @@
+import 'widgets/records_web_view.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +36,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final effective = ref.watch(effectiveExperienceProvider);
+    if (effective == EffectiveExperience.web) {
+      return const RecordsWebView();
+    }
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final allExpenses = ref.watch(allExpensesProvider);

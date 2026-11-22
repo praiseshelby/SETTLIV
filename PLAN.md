@@ -406,10 +406,39 @@
 
 ---
 
-### Part W3: Records, Insights, Add Expense Dialog, Settings Two-Pane, First Impression & QA (PENDING USER "CONTINUE")
-- [ ] Records Web View: toolbar (search, Filters opening popover dialog, summary line), full-width table with sticky header, hover row, tabular amounts, detail in right drawer; compact = card list.
-- [ ] Insights (+ Budgets nested) Web View: bento of larger charts with hover tooltips, same data and reconciliation with Records; Budgets keeps all current content in the new layout.
-- [ ] Add Expense Web Dialog: centered dialog (~960x680) with two panes: composer/manual form left, single draft/preview card right (never duplicate info); compact web = full-screen sheet. All validations/parsers unchanged; Esc/Enter handled.
-- [ ] Settings Web View: two-pane with section list on left (scroll-spy) and content on right; includes Experience; end brand block with large wordmark.
-- [ ] First Impression & Web Meta: branded loading screen in `web/index.html` (wordmark, subtle pulse, light/dark aware, tagline "One codebase. Every screen."), page title, meta description, og tags, theme-color, favicon/manifest name.
-- [ ] Final QA & Screenshots Pass: take screenshots (desktop 1440x900 light+dark for Dashboard, Groups, Records, Insights, Add Expense dialog, Settings; web-mode 390x844 Dashboard; app-mode Home) and document in NOTES.md.
+### Part W3: Records, Insights, Add Expense Dialog, Settings Two-Pane, First Impression & QA (COMPLETED)
+- [x] **First Impression & Web Meta ([web/index.html](file:///C:/Users/shelb/Downloads/SETTLIV-X/web/index.html), [web/manifest.json](file:///C:/Users/shelb/Downloads/SETTLIV-X/web/manifest.json))**:
+  - Branded loading screen with `SETTLIV` wordmark ONLY, subtle pulse animation, light/dark aware, tagline `"One codebase. Every screen."`, automatically removed on `flutter-first-frame`.
+  - Updated page title (`<title>Settliv — Expense Sharing & Group Ledger</title>`), meta description, OpenGraph tags, and theme-color definitions.
+- [x] **Records Web View ([records_web_view.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/activity/presentation/widgets/records_web_view.dart))**:
+  - Toolbar with live text search, "Filters" popover dialog (Group & Category filter chips), and filter summary line with "Clear filters".
+  - Full-width table: Description, Group, Paid by, Date, Category, Total, Your share with Sora tabular figures.
+  - Hover highlights on table rows; clicking any row opens `ExpenseDetailSheet` in an `AdaptivePresenter` right drawer.
+  - Empty/no-result states with clear action. Compact web renders responsive card list.
+- [x] **Insights Web View ([insights_web_view.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/insights/presentation/widgets/insights_web_view.dart))**:
+  - Period selector chips ('This month', 'Last month', '3M', '6M', 'Year').
+  - Bento charts: Spend summary card (reconciled with Records), Debts & settlements card, Category breakdown with light/dark contrast compliant icons, Habits & daily average with peak weekday bars.
+  - "Budgets & Limits" button navigates to `/insights/budgets`.
+  - `PlanScreen` updated with desktop `‹ Insights` back navigation affordance.
+- [x] **Add Expense Web Dialog ([add_expense_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/add_expense/presentation/add_expense_screen.dart))**:
+  - Centered dialog presentation with `maxWidth: 960` on desktop web.
+  - Cycling placeholder examples, live parse preview, split validation rules preserved.
+  - Esc key dismisses dialog via `BackNavigation.handleBack`.
+- [x] **Settings Web View ([settings_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/settings/presentation/settings_screen.dart))**:
+  - Desktop two-pane layout: Left section rail ('Account & Theme', 'Experience', 'Recurring Bills', 'Privacy & Data') and right content pane.
+  - Experience card: "Responsive Website (ACTIVE)" with multi-platform explanation.
+  - End brand block featuring large 24px `SettlivWordmark` and version line. `‹ Home` back control.
+- [x] **Verification & Test Suite**:
+  - Added `test/part_w3_test.dart` (7 tests covering HTML/manifest metadata, records table/filters/drawer, compact records, insights bento & budgets navigation, add expense dialog & Esc key, settings two-pane & wordmark).
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **161/161 tests passing** (100%).
+- [x] **Final QA & Screenshots Pass**:
+  - Captured full screenshot suite via Chrome CDP across Desktop 1440x900 (Dashboard, Groups, Records, Insights, Add Expense dialog, Settings in Light & Dark modes), Compact Web (390x844), and App Mode (390x844 touch with mobile nav bar).
+  - Inspected for clipped text, truncated currency, invisible icons, misalignment, and contrast. Documented in `NOTES.md`.
+
+---
+
+## Next Steps: Resume Task 4 (Set 2 & Set 3)
+*Note: With Parts W1, W2, and W3 complete, all subsequent screens added in Set 2 and Set 3 will be built adaptively for both the App and Web experiences.*
+- [ ] **Set 2**: Scan sheet, Budgets hub, Recurring bills manager, and IOU notes.
+- [ ] **Set 3**: Settings sections expansion, Help & support forms, Pin lock screen, and final release polish.

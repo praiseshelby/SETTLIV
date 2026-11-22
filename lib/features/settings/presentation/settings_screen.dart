@@ -1,3 +1,6 @@
+import '../../../core/layout/adaptive_layout.dart';
+import '../../../core/navigation/back_navigation.dart';
+import '../../../core/profile/experience_mode.dart';
 import '../../../core/widgets/settliv_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -394,20 +397,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeMode = ref.watch(themeModeProvider);
     final repo = ref.watch(appRepositoryProvider);
     final user = repo.currentUser;
+    final effective = ref.watch(effectiveExperienceProvider);
+    final layout = AdaptiveLayout.of(context);
+    final isDesktopWeb = effective == EffectiveExperience.web && layout != LayoutClass.compact;
 
-    return ScreenScaffold(
-      hasBottomBar: false,
-      header: ScreenHeader(
-        title: 'Profile & Settings',
-        onBack: () => context.pop(),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // User Profile Card
+    final settingsContent = [
+      // User Profile Card
             GlassSurface(
               level: GlassLevel.level1,
               borderRadius: 24,
@@ -859,12 +854,95 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 32),
+    ];
+
+    return ScreenScaffold(
+      hasBottomBar: false,
+      header: ScreenHeader(
+        title: 'Profile & Settings',
+        onBack: () => BackNavigation.handleBack(context, currentPath: '/settings'),
+      ),
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktopWeb ? 32 : 20,
+            vertical: isDesktopWeb ? 16 : 0,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isDesktopWeb ? 1000 : 600),
+              child: isDesktopWeb
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 220,
+                          child: GlassSurface(
+                            level: GlassLevel.level2,
+                            borderRadius: 20,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildNavPill('Account & Theme', Icons.person_outline_rounded, true, theme),
+                                const SizedBox(height: 8),
+                                _buildNavPill('Experience', Icons.devices_rounded, false, theme),
+                                const SizedBox(height: 8),
+                                _buildNavPill('Recurring Bills', Icons.repeat_rounded, false, theme, onTap: () => context.push('/settings/recurring')),
+                                const SizedBox(height: 8),
+                                _buildNavPill('Privacy & Data', Icons.shield_outlined, false, theme),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 28),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: settingsContent,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: settingsContent,
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+}
+
+  Widget _buildNavPill(String title, IconData icon, bool isSelected, SettlivThemeExtension theme, {VoidCallback? onTap}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.accent.withValues(alpha: 0.12) : theme.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: isSelected ? theme.accent : theme.muted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: AppTypography.bodySemiBold.copyWith(
+                  color: isSelected ? theme.accent : theme.ink,
+                  fontSize: 13,
+                ),
+              ),
+            ),
           ],
         ),
       ),
-    ],
-  );
-}
+    );
+  }
 
   Widget _buildThemeButton({
     required String label,

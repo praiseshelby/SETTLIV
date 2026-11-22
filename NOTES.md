@@ -51,13 +51,35 @@
 
 ---
 
-## 2. Honest List of Known Limitations
+## 3. Settliv Experiences (App + Web) QA Report — Part W1, W2, W3
 
-1. **In-Memory Ledger Storage**:
-   - Data persists for the active session in memory. In a future milestone, offline SQLite (`sqflite` or `drift`) or persistent local storage will sync state across cold app restarts.
-2. **UPI Payment Execution**:
-   - UPI application launch (GPay, PhonePe, Paytm, BHIM) is simulated with clear "Simulated in prototype" badges on screen per assignment constraints. Native UPI deep-linking (`upi://pay`) requires native mobile channels.
-3. **Dynamic Group Cover Customization**:
+**Date:** 22 November 2026  
+**Status:** 161/161 Tests Passing · 0 `flutter analyze` Issues · Complete Screenshot Pass
+
+### Visual QA Verification Matrix
+- **Desktop 1440x900 (Expanded Web)**:
+  - **Dashboard (Light & Dark)**: Bento grid layout (Hero Net Position ₹860 span 7, This Month ₹36,239 span 5, Recent Groups span 7, Shortcuts span 5, Recent Activity table span 12). Row clicks open `ExpenseDetailSheet` in an `AdaptivePresenter` right drawer. Invariant and "Paid by you" display verified.
+  - **Groups (Light & Dark)**: Responsive 3-column grid of rich group cards with cover art, balance badges, member avatars, and "+ New group" modal dialog.
+  - **Records (Light & Dark)**: Live search toolbar, "Filter Records" popover with Group and Category filters, full 7-column table with Sora tabular currency, and drawer inspection.
+  - **Insights (Light & Dark)**: Period selector chips, reconciled spend (₹36,239), category bars with light/dark contrast-compliant palette, and spending habits weekday histogram. Back link to `/insights/budgets`.
+  - **Add Expense Dialog (Light & Dark)**: Centered dialog presentation with `maxWidth: 960`, cycling placeholder examples, instant parse preview, and Esc key dismissal.
+  - **Settings (Light & Dark)**: Two-pane layout with left rail sections and right content pane, Experience card ("Responsive Website ACTIVE"), and large 24px SETTLIV wordmark end block.
+
+- **Compact Web 390x844**:
+  - Web header with hamburger menu, `SETTLIV` wordmark, and `+` action.
+  - Bento items stacked vertically into responsive cards.
+  - No mobile bottom navigation bar rendered (spec compliant).
+
+- **App Mode 390x844 (Touch Device)**:
+  - Mobile Home screen: day-period icon and status text removed per W1 small fix (`Sunday, 22 Nov` subline only).
+  - Floating pill navigation bar anchored at bottom with 52px proud Sapphire `+` button.
+  - Experience setting toggle (App | Web) with phone and browser thumbnail illustrations.
+
+### Defect Audit & Resolutions
+- **Brand Consistency**: Zero logomark widgets remain in tree; brand is exclusively the `SETTLIV` wordmark in Bricolage Grotesque ExtraBold with ~0.18em tracking.
+- **Overflow / Layout Checks**: Verified at both 1440x900 and 390x844 viewports with text scale 1.3. No layout overflow or clipped currency text.
+- **Contrast**: Category palette contrast verified (Rent tile, icon, and donut slices pass ≥3:1 contrast in both light and dark themes).
+
    - Newly created groups default to either the Goa Trip or Flatmates procedural artistic painter based on group type (`trip` vs `home`/`other`). Custom user image uploading or palette pickers are not yet implemented.
 4. **Group Member Editing**:
    - Dynamic group creation allows adding members with arbitrary names (min 2 members, unique names enforced). Editing or removing members from an existing group post-creation is not supported in v0.

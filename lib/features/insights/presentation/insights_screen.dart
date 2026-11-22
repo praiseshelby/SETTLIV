@@ -1,3 +1,5 @@
+import 'widgets/insights_web_view.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -166,6 +168,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     // Active category entries sorted descending
     final activeCategories = categorySpend.entries.where((e) => e.value > 0).toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    final effective = ref.watch(effectiveExperienceProvider);
+    if (effective == EffectiveExperience.web) {
+      return const InsightsWebView();
+    }
 
     return ScreenScaffold(
       header: ScreenHeader(

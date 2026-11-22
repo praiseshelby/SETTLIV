@@ -1,11 +1,11 @@
 {
-    "name": "settliv",
-    "short_name": "settliv",
+    "name": "Settliv",
+    "short_name": "Settliv",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B0F19",
+    "theme_color": "#6366F1",
+    "description": "Expense Sharing & Group Ledger — One codebase. Every screen.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

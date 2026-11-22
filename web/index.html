@@ -1,48 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <title>Settliv — Expense Sharing & Group Ledger</title>
+  <meta name="description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application. One codebase, two experiences.">
 
-  <!--
-    Uncomment the tag below to lay the app out underneath the parts of the
-    screen that the device obstructs, such as a display cutout, the rounded
-    corners of the screen, or a home indicator.
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Settliv — Expense Sharing & Group Ledger">
+  <meta property="og:description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application. One codebase, two experiences.">
 
-    Without it, the browser keeps the app clear of them, and `SafeArea` and
-    `MediaQuery.paddingOf` report no padding. With it, the app covers the whole
-    screen, and it is up to the app to keep its own content out of the way,
-    which is what `SafeArea` is for.
-  -->
+  <!-- Theme color for light and dark -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8FAFC">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0F19">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="settliv">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Settliv">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>settliv</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --accent: #6366F1;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0B0F19;
+        --ink: #F8FAFC;
+        --muted: #94A3B8;
+        --accent: #818CF8;
+      }
+    }
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg);
+      transition: opacity 0.3s ease-out;
+      z-index: 99999;
+    }
+    .loading-wordmark {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      color: var(--ink);
+      text-transform: uppercase;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .loading-tagline {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.75;
+        transform: scale(0.98);
+      }
+    }
+  </style>
+
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -51,17 +96,26 @@
         }
       });
     }
+
+    window.addEventListener('flutter-first-frame', function () {
+      const loading = document.getElementById('loading-screen');
+      if (loading) {
+        loading.style.opacity = '0';
+        setTimeout(function() {
+          if (loading.parentNode) {
+            loading.parentNode.removeChild(loading);
+          }
+        }, 300);
+      }
+    });
   </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="loading-screen">
+    <div class="loading-wordmark">SETTLIV</div>
+    <div class="loading-tagline">One codebase. Every screen.</div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

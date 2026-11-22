@@ -1,3 +1,6 @@
+import '../../../core/layout/adaptive_layout.dart';
+import '../../../core/navigation/back_navigation.dart';
+import '../../../core/profile/experience_mode.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -428,14 +431,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       (g) => g.id == _selectedGroupId,
       orElse: () => groups.first,
     );
+    final effective = ref.watch(effectiveExperienceProvider);
+    final layout = AdaptiveLayout.of(context);
+    final isDesktopWeb = effective == EffectiveExperience.web && layout != LayoutClass.compact;
 
-    return PopScope(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () async {
+          final shouldPop = await _onWillPop();
+          if (shouldPop && context.mounted) {
+            BackNavigation.handleBack(context, currentPath: '/add');
+          }
+        },
+      },
+      child: PopScope(
       canPop: !_hasUnsavedChanges(),
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && context.mounted) {
-          context.pop();
+          BackNavigation.handleBack(context, currentPath: '/add');
         }
       },
       child: Scaffold(
@@ -443,8 +458,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         resizeToAvoidBottomInset: true,
         body: AuroraBackground(
           child: SafeArea(
-            child: Column(
-              children: [
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isDesktopWeb ? 960 : double.infinity),
+                child: Column(
+                  children: [
                 // Top Bar: Glass circular close button + title via ScreenHeader
                 ScreenHeader(
                   title: widget.initialExpense != null
@@ -460,7 +478,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       onTap: () async {
                         final shouldPop = await _onWillPop();
                         if (shouldPop && context.mounted) {
-                          context.pop();
+                          BackNavigation.handleBack(context, currentPath: '/add');
                         }
                       },
                       child: Icon(
@@ -501,7 +519,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+),
+);
   }
 
   // ---------------------------------------------------------------------------
