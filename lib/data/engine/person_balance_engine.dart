@@ -1,6 +1,7 @@
 import '../../core/utils/currency_formatter.dart';
 import '../models/person.dart';
 import '../models/settlement.dart';
+import '../models/iou_note.dart';
 import '../repositories/app_repository.dart';
 
 class GroupDebtLine {
@@ -23,11 +24,13 @@ class PersonDebtSummary {
   final Person person;
   final int netPaise; // positive = person owes user, negative = user owes person
   final List<GroupDebtLine> lines;
+  final List<IouNote> iouNotes;
 
   const PersonDebtSummary({
     required this.person,
     required this.netPaise,
     required this.lines,
+    this.iouNotes = const [],
   });
 
   bool get personOwesUser => netPaise > 0;
@@ -35,20 +38,27 @@ class PersonDebtSummary {
   int get amountPaise => netPaise.abs();
 
   String get breakdownText {
-    return lines.map((l) {
-      return '${l.groupName} ${CurrencyFormatter.formatPaise(l.amountPaise)}';
-    }).join(' · ');
+    final parts = <String>[];
+    for (final l in lines) {
+      parts.add('${l.groupName} ${CurrencyFormatter.formatPaise(l.amountPaise)}');
+    }
+    for (final i in iouNotes) {
+      parts.add('IOU note ${CurrencyFormatter.formatPaise(i.remainingPaise)}');
+    }
+    return parts.join(' · ');
   }
 }
 
 class PersonBalanceEngine {
   const PersonBalanceEngine();
 
-  /// Computes the list of PersonDebtSummary across all groups for current user.
+  /// Computes the list of PersonDebtSummary across all groups and active IOU notes.
   static List<PersonDebtSummary> computePersonSummaries(AppRepository repo) {
     final currentUserId = repo.currentUserId;
     final groups = repo.getGroups().where((g) => !g.isPersonal).toList();
+    final allPeople = repo.getPeople();
     final Map<String, List<GroupDebtLine>> personLines = {};
+    final Map<String, List<IouNote>> personIous = {};
 
     for (final group in groups) {
       final summary = repo.getGroupSummary(group.id);
@@ -56,7 +66,6 @@ class PersonBalanceEngine {
         if (debt.amount <= 0) continue;
 
         if (debt.toPersonId == currentUserId) {
-          // debt.fromPersonId owes current user
           final personId = debt.fromPersonId;
           personLines.putIfAbsent(personId, () => []).add(
                 GroupDebtLine(
@@ -66,7 +75,6 @@ class PersonBalanceEngine {
                 ),
               );
         } else if (debt.fromPersonId == currentUserId) {
-          // current user owes debt.toPersonId
           final personId = debt.toPersonId;
           personLines.putIfAbsent(personId, () => []).add(
                 GroupDebtLine(
@@ -79,22 +87,69 @@ class PersonBalanceEngine {
       }
     }
 
-    final List<PersonDebtSummary> summaries = [];
-    personLines.forEach((personId, lines) {
-      final person = repo.getPerson(personId);
-      if (person == null) return;
+    // Process IOU notes
+    final iouNotes = repo.getAllIouNotes().where((n) => !n.isSettled).toList();
+    final Map<String, Person> syntheticPeople = {};
 
-      final netPaise = lines.fold<int>(0, (sum, line) => sum + line.paise);
-      if (netPaise == 0 && lines.isEmpty) return;
+    for (final note in iouNotes) {
+      final normalizedName = note.personName.trim().toLowerCase();
+      // Try to find matching person in repo
+      Person? match;
+      for (final p in allPeople) {
+        if (p.name.trim().toLowerCase() == normalizedName) {
+          match = p;
+          break;
+        }
+      }
+
+      final String personKey;
+      if (match != null) {
+        personKey = match.id;
+      } else {
+        personKey = 'iou_$normalizedName';
+        syntheticPeople.putIfAbsent(
+          personKey,
+          () => Person(
+            id: personKey,
+            name: note.personName,
+            phone: note.phone,
+          ),
+        );
+      }
+
+      personIous.putIfAbsent(personKey, () => []).add(note);
+    }
+
+    final allPersonKeys = {...personLines.keys, ...personIous.keys};
+    final List<PersonDebtSummary> summaries = [];
+
+    for (final personId in allPersonKeys) {
+      final person = repo.getPerson(personId) ?? syntheticPeople[personId];
+      if (person == null) continue;
+
+      final lines = personLines[personId] ?? const [];
+      final ious = personIous[personId] ?? const [];
+
+      int netPaise = lines.fold<int>(0, (sum, line) => sum + line.paise);
+      for (final iou in ious) {
+        if (iou.direction == IouDirection.owedToMe) {
+          netPaise += iou.remainingPaise;
+        } else {
+          netPaise -= iou.remainingPaise;
+        }
+      }
+
+      if (netPaise == 0 && lines.isEmpty && ious.isEmpty) continue;
 
       summaries.add(
         PersonDebtSummary(
           person: person,
           netPaise: netPaise,
           lines: lines,
+          iouNotes: ious,
         ),
       );
-    });
+    }
 
     return summaries;
   }

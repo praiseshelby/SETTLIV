@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/gradient_primary_button.dart';
+import '../../../add_expense/presentation/widgets/scan_sheet.dart';
 import '../../domain/shortcut_engine.dart';
 import 'split_calculator_sheet.dart';
 
@@ -58,12 +58,7 @@ class _HomeShortcutsRowState extends State<HomeShortcutsRow> {
 
     switch (shortcut.id) {
       case ShortcutId.scanReceipt:
-        _showTidyFallbackSheet(
-          title: 'Scan Receipt',
-          message: 'Smart receipt scanning is coming in the next update. You can add expenses quickly via Quick Add or Manual entry right now.',
-          actionLabel: 'Add Expense',
-          onAction: () => context.push('/add'),
-        );
+        ScanSheet.show(context);
         break;
 
       case ShortcutId.pasteSms:
@@ -79,12 +74,7 @@ class _HomeShortcutsRowState extends State<HomeShortcutsRow> {
         break;
 
       case ShortcutId.iouNotes:
-        _showTidyFallbackSheet(
-          title: 'IOU Notes',
-          message: 'Personal IOU notes are coming in the next update. You can view all outstanding peer balances right now.',
-          actionLabel: 'View Balances',
-          onAction: () => context.push('/balances'),
-        );
+        context.push('/balances');
         break;
 
       case ShortcutId.splitCalculator:
@@ -99,63 +89,6 @@ class _HomeShortcutsRowState extends State<HomeShortcutsRow> {
         context.push('/settings');
         break;
     }
-  }
-
-  void _showTidyFallbackSheet({
-    required String title,
-    required String message,
-    required String actionLabel,
-    required VoidCallback onAction,
-  }) {
-    final theme = context.settliv;
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: theme.surfaceSolid,
-      barrierColor: theme.scrim,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.muted.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: AppTypography.titleLarge.copyWith(color: theme.ink),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                style: AppTypography.body.copyWith(color: theme.muted),
-              ),
-              const SizedBox(height: 24),
-              GradientPrimaryButton(
-                label: actionLabel,
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  onAction();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override

@@ -28,6 +28,7 @@ import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../../data/seed/seed_data.dart';
 import '../logic/quick_expense_parser.dart';
+import 'widgets/scan_sheet.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final Expense? initialExpense;
@@ -183,9 +184,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       }
       final bool reduceMotion =
           MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-      if (_quickFocusNode.hasFocus ||
-          _quickTextController.text.isNotEmpty ||
-          reduceMotion) {
+      // Per spec: typewriter keeps cycling while empty even when focused/tapped
+      if (_quickTextController.text.isNotEmpty || reduceMotion) {
         return;
       }
       setState(() {
@@ -304,6 +304,117 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     setState(() => _selectedTab = 1);
     _amountFocusNode.requestFocus();
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data?.text != null && data!.text!.trim().isNotEmpty) {
+        setState(() {
+          _quickTextController.text = data.text!.trim();
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _showGroupSelectorSheet(BuildContext context, List<Group> groups) {
+    final theme = context.settliv;
+    final personalGroup = groups.firstWhere((g) => g.isPersonal, orElse: () => groups.first);
+    final sharedGroups = groups.where((g) => !g.isPersonal).toList();
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => GlassSheetScaffold(
+        title: 'Select space',
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('PERSONAL', style: AppTypography.sectionLabel.copyWith(color: theme.secondary, letterSpacing: 0.8, fontSize: 11)),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() {
+                    _selectedGroupId = personalGroup.id;
+                    _initMembersForGroup();
+                  });
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: GlassSurface(
+                  level: _selectedGroupId == personalGroup.id ? GlassLevel.level2 : GlassLevel.level1,
+                  borderRadius: 16,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_rounded, size: 20, color: theme.accent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text('Personal space', style: AppTypography.bodySemiBold.copyWith(color: theme.ink)),
+                      ),
+                      if (_selectedGroupId == personalGroup.id)
+                        Icon(Icons.check_rounded, size: 18, color: theme.accent),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(height: 1, color: theme.hairline),
+              const SizedBox(height: 16),
+              Text('GROUPS', style: AppTypography.sectionLabel.copyWith(color: theme.secondary, letterSpacing: 0.8, fontSize: 11)),
+              const SizedBox(height: 8),
+              for (final g in sharedGroups) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      setState(() {
+                        _selectedGroupId = g.id;
+                        _initMembersForGroup();
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: GlassSurface(
+                      level: _selectedGroupId == g.id ? GlassLevel.level2 : GlassLevel.level1,
+                      borderRadius: 16,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            g.type == GroupType.trip
+                                ? Icons.flight_takeoff_rounded
+                                : (g.type == GroupType.home ? Icons.home_rounded : Icons.group_rounded),
+                            size: 20,
+                            color: theme.ink,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(g.name, style: AppTypography.bodySemiBold.copyWith(color: theme.ink), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Text('${g.memberIds.length} members · ${g.type.label}', style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          if (_selectedGroupId == g.id)
+                            Icon(Icons.check_rounded, size: 18, color: theme.accent),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _checkAndSaveExpense(Expense expense) async {
@@ -683,8 +794,74 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   // Live Parse Preview (plain small text rows, not capsules)
                   if (_quickTextController.text.isNotEmpty) ...[
                     Divider(height: 20, color: theme.hairline),
-                    _buildLiveParsePreview(parseResult, theme),
+                    _buildLiveParsePreview(parseResult, theme, groups),
                   ],
+
+                  // Slim input-tools row inside composer card separated by hairline
+                  Divider(height: 16, color: theme.hairline),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => ScanSheet.show(
+                              context,
+                              onPasteSms: _pasteFromClipboard,
+                              onTypeInstead: () {
+                                setState(() => _selectedTab = 1);
+                                _amountFocusNode.requestFocus();
+                              },
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Scan receipt',
+                                    style: AppTypography.caption.copyWith(
+                                      color: theme.ink,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(width: 1, height: 24, color: theme.hairline),
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pasteFromClipboard,
+                            borderRadius: BorderRadius.circular(12),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.content_paste_rounded, size: 18, color: theme.ink),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Paste SMS',
+                                    style: AppTypography.caption.copyWith(
+                                      color: theme.ink,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -725,22 +902,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (parseResult.hint != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      parseResult.hint!,
-                      style: AppTypography.caption.copyWith(
-                        color: hasValidExpense
-                            ? theme.secondary
-                            : (parseResult.isOverCap
-                                ? theme.textCoral
-                                : theme.secondary),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
                 GradientPrimaryButton(
                   label: _showSavedSuccess ? 'Saved!' : ctaLabel,
                   isLoading: _isSaving && !_showSavedSuccess,
@@ -788,7 +949,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   /// Live parse preview under the quick input field: plain small text rows, not capsules.
   Widget _buildLiveParsePreview(
-      QuickParseResult result, SettlivThemeExtension theme) {
+      QuickParseResult result, SettlivThemeExtension theme, List<Group> groups) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -813,13 +974,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           value: result.category.label,
           theme: theme,
         ),
-        if (result.inferredGroup != null)
-          _buildPreviewRow(
+        InkWell(
+          onTap: () => _showGroupSelectorSheet(context, groups),
+          borderRadius: BorderRadius.circular(8),
+          child: _buildPreviewRow(
             icon: Icons.group_work_outlined,
             label: 'Group',
-            value: result.inferredGroup!.name,
+            value: result.inferredGroup != null
+                ? '${result.inferredGroup!.name} (tap to change)'
+                : 'Select space ›',
             theme: theme,
           ),
+        ),
       ],
     );
   }
@@ -1036,6 +1202,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     Group currentGroup,
   ) {
     final theme = context.settliv;
+    final bool isPersonalMode = currentGroup.isPersonal;
+    final sharedGroups = groups.where((g) => !g.isPersonal).toList();
 
     // Parse current entered amount
     final int? enteredPaise =
@@ -1067,52 +1235,103 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 160),
           children: [
-            // 1. Amount hero: digits only, max 2 decimals, live grouping
+            // 0. Shared | Personal toggle
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: GlassSegmented<String>(
+                values: const ['shared', 'personal'],
+                labels: const ['Shared', 'Personal'],
+                selectedValue: isPersonalMode ? 'personal' : 'shared',
+                onValueChanged: (mode) {
+                  if (mode == 'personal') {
+                    final personalGroup = groups.firstWhere(
+                      (g) => g.isPersonal,
+                      orElse: () => groups.first,
+                    );
+                    setState(() {
+                      _selectedGroupId = personalGroup.id;
+                      _initMembersForGroup();
+                    });
+                  } else {
+                    final firstShared = sharedGroups.isNotEmpty
+                        ? sharedGroups.first
+                        : groups.first;
+                    setState(() {
+                      _selectedGroupId = firstShared.id;
+                      _initMembersForGroup();
+                    });
+                  }
+                },
+              ),
+            ),
+
+            // 1. Amount hero: digits only, max 2 decimals, live grouping + scan button
             Center(
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      '₹',
-                      style: AppTypography.titleLarge.copyWith(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: theme.secondary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    IntrinsicWidth(
-                      child: TextField(
-                        controller: _amountController,
-                        focusNode: _amountFocusNode,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*\.?\d{0,2}')),
-                        ],
-                        style: AppTypography.heroMoney.copyWith(
-                          fontSize: 52,
-                          color: theme.ink,
-                          letterSpacing: -1.5,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '0',
-                          hintStyle: AppTypography.heroMoney.copyWith(
-                            fontSize: 52,
-                            color: theme.tertiary.withValues(alpha: 0.35),
-                            letterSpacing: -1.5,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '₹',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: theme.secondary,
                           ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
                         ),
-                        onChanged: (_) => setState(() {}),
+                        const SizedBox(width: 4),
+                        IntrinsicWidth(
+                          child: TextField(
+                            controller: _amountController,
+                            focusNode: _amountFocusNode,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d{0,2}')),
+                            ],
+                            style: AppTypography.heroMoney.copyWith(
+                              fontSize: 52,
+                              color: theme.ink,
+                              letterSpacing: -1.5,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              hintStyle: AppTypography.heroMoney.copyWith(
+                                fontSize: 52,
+                                color: theme.tertiary.withValues(alpha: 0.35),
+                                letterSpacing: -1.5,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Semantics(
+                      button: true,
+                      label: 'Scan receipt',
+                      child: GlassSurface(
+                        level: GlassLevel.level1,
+                        borderRadius: 999,
+                        padding: const EdgeInsets.all(10),
+                        onTap: () => ScanSheet.show(context),
+                        child: Icon(
+                          Icons.document_scanner_rounded,
+                          size: 20,
+                          color: theme.navy,
+                        ),
                       ),
                     ),
                   ],
@@ -1195,118 +1414,195 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             _buildCategoryGrid(),
             const SizedBox(height: 20),
 
-            // Group selector
-            Text(
-              'GROUP',
-              style: AppTypography.sectionLabel.copyWith(
-                color: theme.secondary,
-                letterSpacing: 0.8,
-                fontSize: 11,
+            if (!isPersonalMode) ...[
+              // Group selector
+              Text(
+                'GROUP',
+                style: AppTypography.sectionLabel.copyWith(
+                  color: theme.secondary,
+                  letterSpacing: 0.8,
+                  fontSize: 11,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            GlassSegmented<String>(
-              values: groups.map((g) => g.id).toList(),
-              labels: groups.map((g) => g.isPersonal ? 'Personal (just me)' : g.name).toList(),
-              selectedValue: _selectedGroupId,
-              onValueChanged: (newId) {
-                if (_selectedGroupId != newId) {
-                  setState(() {
-                    _selectedGroupId = newId;
-                    _initMembersForGroup();
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 8),
+              if (sharedGroups.length <= 3)
+                GlassSegmented<String>(
+                  values: sharedGroups.map((g) => g.id).toList(),
+                  labels: sharedGroups.map((g) => g.name).toList(),
+                  selectedValue: _selectedGroupId,
+                  onValueChanged: (newId) {
+                    if (_selectedGroupId != newId) {
+                      setState(() {
+                        _selectedGroupId = newId;
+                        _initMembersForGroup();
+                      });
+                    }
+                  },
+                )
+              else
+                GlassSurface(
+                  level: GlassLevel.level1,
+                  borderRadius: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  onTap: () => _showGroupSelectorSheet(context, groups),
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_rounded, size: 20, color: theme.navy),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Group',
+                              style: AppTypography.caption.copyWith(
+                                color: theme.secondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              currentGroup.name,
+                              style: AppTypography.bodySemiBold.copyWith(
+                                color: theme.ink,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: theme.secondary),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 14),
+            ],
 
             // Date & Paid by Row
-            Row(
-              children: [
-                Expanded(
-                  child: GlassSurface(
-                    level: GlassLevel.level1,
-                    borderRadius: 18,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    onTap: _openDatePickerSheet,
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_rounded,
-                            size: 18, color: theme.navy),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: AppTypography.caption.copyWith(
-                                  color: theme.secondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                DateFormatter.formatRelative(_selectedDate),
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: theme.ink,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+            if (isPersonalMode)
+              GlassSurface(
+                level: GlassLevel.level1,
+                borderRadius: 18,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                onTap: _openDatePickerSheet,
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded,
+                        size: 18, color: theme.navy),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Date',
+                            style: AppTypography.caption.copyWith(
+                              color: theme.secondary,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            DateFormatter.formatRelative(_selectedDate),
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: theme.ink,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassSurface(
+                      level: GlassLevel.level1,
+                      borderRadius: 18,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      onTap: _openDatePickerSheet,
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today_rounded,
+                              size: 18, color: theme.navy),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Date',
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.secondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  DateFormatter.formatRelative(_selectedDate),
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GlassSurface(
-                    level: GlassLevel.level1,
-                    borderRadius: 18,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    onTap: currentGroup.isPersonal
-                        ? null
-                        : () => _openPaidByPickerSheet(people),
-                    child: Row(
-                      children: [
-                        PersonAvatar(person: payer, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Paid by',
-                                style: AppTypography.caption.copyWith(
-                                  color: theme.secondary,
-                                  fontSize: 11,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GlassSurface(
+                      level: GlassLevel.level1,
+                      borderRadius: 18,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      onTap: () => _openPaidByPickerSheet(people),
+                      child: Row(
+                        children: [
+                          PersonAvatar(person: payer, size: 28),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Paid by',
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.secondary,
+                                    fontSize: 11,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                payer.name,
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: theme.ink,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                Text(
+                                  payer.name,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: theme.ink,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             const SizedBox(height: 22),
 
             // Split with + Split mode: hidden for Personal (just me) group

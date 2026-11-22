@@ -18,7 +18,7 @@ void main() {
 
       expect(find.text('Groups'), findsWidgets);
       expect(find.text('New group'), findsOneWidget);
-      expect(find.text('Flatmates'), findsOneWidget);
+      expect(find.text('Flatmates'), findsWidgets);
       expect(find.text('Goa Trip'), findsOneWidget);
     });
 

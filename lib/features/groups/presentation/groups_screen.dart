@@ -1,20 +1,29 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/layout/adaptive_layout.dart';
 import '../../../core/profile/experience_mode.dart';
-import '../../../core/widgets/adaptive_presenter.dart';
-import 'dart:math' as math;
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/group_card.dart';
-import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/glass_segmented.dart';
+import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../data/models/group.dart';
-import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import 'widgets/create_edit_group_sheet.dart';
+import 'widgets/group_hub_card.dart';
+
+enum GroupSortOption {
+  recent('Recent'),
+  balance('Balance'),
+  alphabetical('A-Z');
+
+  final String label;
+  const GroupSortOption(this.label);
+}
 
 class GroupsScreen extends ConsumerStatefulWidget {
   const GroupsScreen({super.key});
@@ -24,12 +33,29 @@ class GroupsScreen extends ConsumerStatefulWidget {
 }
 
 class _GroupsScreenState extends ConsumerState<GroupsScreen> {
-  void _openNewGroupSheet(BuildContext context) {
-    AdaptivePresenter.show<void>(
-      context: context,
-      title: 'New group',
-      type: PresentationType.formOrConfirmation,
-      child: const _NewGroupSheet(),
+  int _selectedTab = 0; // 0 = Active, 1 = Archived
+  GroupSortOption _sortOption = GroupSortOption.recent;
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _openCreateGroupSheet({
+    String? prefillName,
+    GroupType? prefillType,
+    int? prefillCoverIndex,
+    String? prefillSplitMode,
+  }) {
+    CreateEditGroupSheet.show(
+      context,
+      prefillName: prefillName,
+      prefillType: prefillType,
+      prefillCoverThemeIndex: prefillCoverIndex,
+      prefillSplitMode: prefillSplitMode,
     );
   }
 
@@ -38,15 +64,64 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final allGroups = ref.watch(allGroupsProvider);
-    final groups = allGroups.where((g) => !g.isPersonal).toList();
+    final sharedGroups = allGroups.where((g) => !g.isPersonal).toList();
     final people = ref.watch(allPeopleProvider);
+    final allExpenses = ref.watch(allExpensesProvider);
     final currentUserId = repo.currentUserId;
+
+    // Separate active and archived
+    final activeGroups = sharedGroups.where((g) => !g.isArchived).toList();
+    final archivedGroups = sharedGroups.where((g) => g.isArchived).toList();
+
+    // Summary numbers for Active groups
+    int totalOwedToUser = 0;
+    int totalUserOwes = 0;
+    for (final g in activeGroups) {
+      final summary = repo.getGroupSummary(g.id);
+      final net = summary.netBalances[currentUserId] ?? 0;
+      if (net > 0) totalOwedToUser += net;
+      if (net < 0) totalUserOwes += net.abs();
+    }
+
+    // Filter by tab
+    var displayedGroups = _selectedTab == 0 ? activeGroups : archivedGroups;
+
+    // Filter by search query
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      displayedGroups = displayedGroups.where((g) => g.name.toLowerCase().contains(query)).toList();
+    }
+
+    // Sort: Pinned first, then by selected option
+    displayedGroups.sort((a, b) {
+      if (a.isPinned != b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
+      switch (_sortOption) {
+        case GroupSortOption.recent:
+          final aExpenses = repo.getExpensesForGroup(a.id);
+          final bExpenses = repo.getExpensesForGroup(b.id);
+          final aLast = aExpenses.isNotEmpty
+              ? aExpenses.map((e) => e.date).reduce((x, y) => x.isAfter(y) ? x : y)
+              : (a.createdAt ?? DateTime(2024, 1, 1));
+          final bLast = bExpenses.isNotEmpty
+              ? bExpenses.map((e) => e.date).reduce((x, y) => x.isAfter(y) ? x : y)
+              : (b.createdAt ?? DateTime(2024, 1, 1));
+          return bLast.compareTo(aLast);
+        case GroupSortOption.balance:
+          final aNet = (repo.getGroupSummary(a.id).netBalances[currentUserId] ?? 0).abs();
+          final bNet = (repo.getGroupSummary(b.id).netBalances[currentUserId] ?? 0).abs();
+          return bNet.compareTo(aNet);
+        case GroupSortOption.alphabetical:
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      }
+    });
 
     return ScreenScaffold(
       header: ScreenHeader(
         title: 'Groups',
         subtitle: Text(
-          '${groups.length} active ${groups.length == 1 ? 'group' : 'groups'}',
+          '${activeGroups.length} active ${activeGroups.length == 1 ? 'group' : 'groups'}',
           style: AppTypography.caption.copyWith(
             color: theme.muted,
             fontWeight: FontWeight.w500,
@@ -54,11 +129,25 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           ),
         ),
         actions: [
+          // Search toggle button
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            color: theme.ink,
+            tooltip: _isSearching ? 'Close search' : 'Search groups',
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) _searchController.clear();
+              });
+            },
+          ),
+          const SizedBox(width: 4),
+          // New group action
           Semantics(
             button: true,
             label: 'Create new group',
             child: InkWell(
-              onTap: () => _openNewGroupSheet(context),
+              onTap: () => _openCreateGroupSheet(),
               borderRadius: BorderRadius.circular(999),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -99,20 +188,190 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Group List or Empty State
-              if (groups.isEmpty) ...[
-                EmptyState(
-                  title: 'No groups yet',
-                  subtitle:
-                      'Create a group for your apartment, trip, or shared expenses to start splitting.',
-                  action: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryButtonBg,
-                      foregroundColor: theme.primaryButtonText,
+              // Search input if open
+              if (_isSearching) ...[
+                GlassSurface(
+                  level: GlassLevel.level1,
+                  borderRadius: 16,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search_rounded, size: 18, color: theme.muted),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          autofocus: true,
+                          style: AppTypography.bodyMedium.copyWith(color: theme.ink),
+                          decoration: InputDecoration(
+                            hintText: 'Search groups by name...',
+                            hintStyle: AppTypography.body.copyWith(color: theme.tertiary),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      if (_searchController.text.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => setState(() => _searchController.clear()),
+                          child: Icon(Icons.clear_rounded, size: 16, color: theme.muted),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // 1. Summary Strip (Owed to you / You owe / Active groups)
+              GlassSurface(
+                level: GlassLevel.level1,
+                borderRadius: 20,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Owed to you', style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11)),
+                          const SizedBox(height: 2),
+                          Text(
+                            CurrencyFormatter.formatPaise(totalOwedToUser),
+                            style: TextStyle(
+                              fontFamily: AppTypography.fontDisplay,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: theme.textEmerald,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    onPressed: () => _openNewGroupSheet(context),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Create a group'),
+                    Container(width: 1, height: 32, color: theme.hairline),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('You owe', style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              CurrencyFormatter.formatPaise(totalUserOwes),
+                              style: TextStyle(
+                                fontFamily: AppTypography.fontDisplay,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: theme.textCoral,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(width: 1, height: 32, color: theme.hairline),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Active', style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${activeGroups.length}',
+                              style: TextStyle(
+                                fontFamily: AppTypography.fontDisplay,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: theme.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 2. Tab Bar: Active | Archived + Sort Menu
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassSegmented<int>(
+                      values: const [0, 1],
+                      labels: [
+                        'Active (${activeGroups.length})',
+                        'Archived (${archivedGroups.length})',
+                      ],
+                      selectedValue: _selectedTab,
+                      onValueChanged: (val) => setState(() => _selectedTab = val),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Sort Menu
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.surface.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: theme.hairline),
+                    ),
+                    child: PopupMenuButton<GroupSortOption>(
+                      icon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.sort_rounded, size: 16, color: theme.ink),
+                          const SizedBox(width: 4),
+                          Text(
+                            _sortOption.label,
+                            style: AppTypography.caption.copyWith(
+                              color: theme.ink,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down_rounded, size: 16, color: theme.muted),
+                        ],
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      color: theme.raised,
+                      onSelected: (opt) => setState(() => _sortOption = opt),
+                      itemBuilder: (ctx) => GroupSortOption.values.map((opt) {
+                        return PopupMenuItem(
+                          value: opt,
+                          child: Text(opt.label, style: TextStyle(color: theme.ink, fontSize: 13)),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 3. Group Grid / List or Empty State
+              if (displayedGroups.isEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 36),
+                  child: EmptyState(
+                    title: _selectedTab == 0 ? 'No active groups' : 'No archived groups',
+                    subtitle: _selectedTab == 0
+                        ? 'Create a group or pick a template below to start splitting.'
+                        : 'Archived groups will appear here.',
+                    action: _selectedTab == 0
+                        ? ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryButtonBg,
+                              foregroundColor: theme.primaryButtonText,
+                            ),
+                            onPressed: () => _openCreateGroupSheet(),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Create a group'),
+                          )
+                        : null,
                   ),
                 ),
               ] else ...[
@@ -126,24 +385,20 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                       return LayoutBuilder(
                         builder: (context, constraints) {
                           const spacing = 16.0;
-                          final cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+                          final cardWidth =
+                              (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
 
                           return Wrap(
                             spacing: spacing,
                             runSpacing: spacing,
-                            children: groups.map((group) {
+                            children: displayedGroups.map((group) {
                               return SizedBox(
                                 width: cardWidth,
-                                child: GroupCard(
+                                child: GroupHubCard(
                                   group: group,
-                                  members: people
-                                      .where((p) => group.memberIds.contains(p.id))
-                                      .toList(),
-                                  userNetPaise: repo
-                                          .getGroupSummary(group.id)
-                                          .netBalances[currentUserId] ??
-                                      0,
-                                  onTap: () => context.push('/group/${group.id}'),
+                                  members: people.where((p) => group.memberIds.contains(p.id)).toList(),
+                                  summary: repo.getGroupSummary(group.id),
+                                  expenses: allExpenses.where((e) => e.groupId == group.id).toList(),
                                 ),
                               );
                             }).toList(),
@@ -152,21 +407,16 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                       );
                     }
 
-                    // Mobile / compact web: single list
+                    // Mobile / compact web: vertical list
                     return Column(
-                      children: groups.map((group) {
+                      children: displayedGroups.map((group) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
-                          child: GroupCard(
+                          child: GroupHubCard(
                             group: group,
-                            members: people
-                                .where((p) => group.memberIds.contains(p.id))
-                                .toList(),
-                            userNetPaise: repo
-                                    .getGroupSummary(group.id)
-                                    .netBalances[currentUserId] ??
-                                0,
-                            onTap: () => context.push('/group/${group.id}'),
+                            members: people.where((p) => group.memberIds.contains(p.id)).toList(),
+                            summary: repo.getGroupSummary(group.id),
+                            expenses: allExpenses.where((e) => e.groupId == group.id).toList(),
                           ),
                         );
                       }).toList(),
@@ -174,343 +424,108 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   },
                 ),
               ],
+              const SizedBox(height: 32),
+
+              // 4. "Start a new group" with templates (Active tab only)
+              if (_selectedTab == 0) ...[
+                Text(
+                  'START A NEW GROUP',
+                  style: AppTypography.sectionLabel.copyWith(
+                    color: theme.secondary,
+                    letterSpacing: 0.8,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildTemplatesRow(theme),
+                const SizedBox(height: 24),
+              ],
             ],
           ),
         ),
       ],
     );
   }
-}
 
-class _NewGroupSheet extends ConsumerStatefulWidget {
-  const _NewGroupSheet();
+  Widget _buildTemplatesRow(SettlivThemeExtension theme) {
+    const templates = [
+      _GroupTemplate('Trip', Icons.flight_takeoff_rounded, GroupType.trip, 1, 'equal'),
+      _GroupTemplate('Flatmates', Icons.home_rounded, GroupType.home, 0, 'equal'),
+      _GroupTemplate('Couple', Icons.favorite_rounded, GroupType.couple, 2, 'equal'),
+      _GroupTemplate('Event', Icons.celebration_rounded, GroupType.event, 3, 'equal'),
+      _GroupTemplate('Friends', Icons.people_alt_rounded, GroupType.friends, 4, 'equal'),
+    ];
 
-  @override
-  ConsumerState<_NewGroupSheet> createState() => _NewGroupSheetState();
-}
-
-class _NewGroupSheetState extends ConsumerState<_NewGroupSheet> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _memberController = TextEditingController();
-  GroupType _selectedType = GroupType.trip;
-  final List<String> _members = [];
-  String? _nameError;
-  String? _memberError;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _memberController.dispose();
-    super.dispose();
-  }
-
-  void _addMember() {
-    final text = _memberController.text.trim();
-    if (text.isEmpty) return;
-
-    if (_members.any((m) => m.toLowerCase() == text.toLowerCase())) {
-      setState(() => _memberError = 'Member already added');
-      return;
-    }
-
-    setState(() {
-      _members.add(text);
-      _memberController.clear();
-      _memberError = null;
-    });
-  }
-
-  void _removeMember(int index) {
-    setState(() => _members.removeAt(index));
-  }
-
-  void _submit() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      setState(() => _nameError = 'Group name is required');
-      return;
-    }
-
-    final repo = ref.read(appRepositoryProvider);
-    final notifier = ref.read(appStateProvider.notifier);
-    final currentUserId = repo.currentUserId;
-
-    final List<String> memberIds = [currentUserId];
-
-    for (final memberName in _members) {
-      final existing = repo.getPeople().where(
-            (p) => p.name.toLowerCase() == memberName.toLowerCase(),
-          );
-
-      if (existing.isNotEmpty) {
-        memberIds.add(existing.first.id);
-      } else {
-        final newId = 'person_${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(999)}';
-        final newPerson = Person(
-          id: newId,
-          name: memberName,
-        );
-        notifier.addPerson(newPerson);
-        memberIds.add(newId);
-      }
-    }
-
-    final newGroup = Group(
-      id: 'group_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      type: _selectedType,
-      memberIds: memberIds,
-      coverThemeIndex: math.Random().nextInt(6),
-      startDate: DateTime.now(),
-    );
-
-    notifier.addGroup(newGroup);
-    Navigator.of(context).pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.settliv;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.hairline,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'New Group',
-                style: AppTypography.titleLarge.copyWith(
-                  color: theme.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Group Name Field
-              TextField(
-                controller: _nameController,
-                style: TextStyle(
-                  fontFamily: AppTypography.fontBody,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: theme.ink,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'e.g. Flat 402, Manali Trip',
-                  hintStyle: TextStyle(
-                    fontFamily: AppTypography.fontBody,
-                    color: theme.muted,
-                  ),
-                  filled: true,
-                  fillColor: theme.raised,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.hairline),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.hairline),
-                  ),
-                  errorText: _nameError,
-                ),
-                onChanged: (_) {
-                  if (_nameError != null) setState(() => _nameError = null);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: templates.map((tmpl) {
+          final palette = theme.coverThemePalettes[tmpl.coverIndex];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Semantics(
+              button: true,
+              label: '${tmpl.name} template',
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _openCreateGroupSheet(
+                    prefillName: tmpl.name,
+                    prefillType: tmpl.type,
+                    prefillCoverIndex: tmpl.coverIndex,
+                    prefillSplitMode: tmpl.splitMode,
+                  );
                 },
-              ),
-              const SizedBox(height: 16),
-
-              // Type Selector: Home / Trip / Other
-              Row(
-                children: [
-                  _buildTypeChip('Trip', GroupType.trip, Icons.flight_takeoff_rounded),
-                  const SizedBox(width: 8),
-                  _buildTypeChip('Home', GroupType.home, Icons.home_rounded),
-                  const SizedBox(width: 8),
-                  _buildTypeChip('Other', GroupType.other, Icons.groups_rounded),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // Members List & Field
-              Text(
-                'MEMBERS (You are included)',
-                style: AppTypography.caption.copyWith(
-                  color: theme.muted,
-                  letterSpacing: 0.8,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              if (_members.isNotEmpty) ...[
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (int i = 0; i < _members.length; i++)
-                      Chip(
-                        label: Text(_members[i]),
-                        backgroundColor: theme.raised,
-                        labelStyle: TextStyle(
-                          fontFamily: AppTypography.fontBody,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: theme.ink,
-                        ),
-                        deleteIcon: Icon(Icons.close_rounded, size: 16, color: theme.muted),
-                        onDeleted: () => _removeMember(i),
-                        side: BorderSide(color: theme.hairline),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _memberController,
-                      style: TextStyle(
-                        fontFamily: AppTypography.fontBody,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: theme.ink,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Add member by name...',
-                        hintStyle: TextStyle(
-                          fontFamily: AppTypography.fontBody,
-                          color: theme.muted,
-                        ),
-                        filled: true,
-                        fillColor: theme.raised,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: theme.hairline),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: theme.hairline),
-                        ),
-                      ),
-                      onSubmitted: (_) => _addMember(),
-                    ),
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: 120,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.surface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: theme.hairline),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _addMember,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.navy,
-                      foregroundColor: theme.onNavy,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: palette, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(tmpl.icon, color: theme.white, size: 22),
                       ),
-                    ),
-                    child: const Text('Add'),
-                  ),
-                ],
-              ),
-              if (_memberError != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  _memberError!,
-                  style: TextStyle(
-                    color: theme.textCoral,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                      const SizedBox(height: 8),
+                      Text(
+                        tmpl.name,
+                        style: AppTypography.bodySemiBold.copyWith(color: theme.ink, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        tmpl.type.label,
+                        style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 10),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-              const SizedBox(height: 24),
-
-              // Submit button
-              PrimaryButton(
-                label: 'Create group',
-                onPressed: _submit,
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
+}
 
-  Widget _buildTypeChip(String label, GroupType type, IconData icon) {
-    final isSelected = _selectedType == type;
-    final theme = context.settliv;
+class _GroupTemplate {
+  final String name;
+  final IconData icon;
+  final GroupType type;
+  final int coverIndex;
+  final String splitMode;
 
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        child: InkWell(
-          onTap: () => setState(() => _selectedType = type),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected ? theme.navy : theme.raised,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? theme.navy : theme.hairline,
-                width: 1.0,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: isSelected ? theme.onNavy : theme.muted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: AppTypography.fontBody,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? theme.onNavy : theme.ink,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  const _GroupTemplate(this.name, this.icon, this.type, this.coverIndex, this.splitMode);
 }

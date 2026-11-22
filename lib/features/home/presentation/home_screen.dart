@@ -127,6 +127,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
+    // Check overdue IOU notes
+    final iouNotes = repo.getAllIouNotes();
+    for (final note in iouNotes) {
+      if (note.isOverdue(now) && !note.isSettled) {
+        if (attentionMessage == null) {
+          if (note.isOwedToMe) {
+            attentionMessage = '${note.counterpartyName} is overdue on ${CurrencyFormatter.formatPaise(note.remainingPaise)} IOU';
+          } else {
+            attentionMessage = 'You have an overdue ${CurrencyFormatter.formatPaise(note.remainingPaise)} IOU to ${note.counterpartyName}';
+          }
+          attentionAction = () => context.push('/balances');
+          break;
+        }
+      }
+    }
+
     // 4. Header date line: weekday + date only
     final dateStr = DateFormat('EEEE, d MMM').format(now);
 

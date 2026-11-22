@@ -3,6 +3,7 @@ import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
+import '../models/iou_note.dart';
 import '../engine/balance_engine.dart';
 
 abstract class AppRepository {
@@ -33,6 +34,14 @@ abstract class AppRepository {
   List<Settlement> getSettlementsForGroup(String groupId);
   void addSettlement(Settlement settlement);
   void deleteSettlement(String id); // for undo
+
+  List<IouNote> getAllIouNotes();
+  IouNote? getIouNote(String id);
+  void addIouNote(IouNote note);
+  void updateIouNote(IouNote note);
+  void deleteIouNote(String id); // soft delete
+  void restoreIouNote(String id); // undo delete
+  void recordIouPayment(String noteId, int amountPaise);
 
   List<RecurringTemplate> getRecurringTemplates();
   void addRecurringTemplate(RecurringTemplate template);

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/glass_sheet_scaffold.dart';
 import '../../../core/widgets/group_cover_art.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import '../../groups/presentation/widgets/create_edit_group_sheet.dart';
 
 class EditGroupSheet extends ConsumerStatefulWidget {
   final Group group;
@@ -19,12 +19,7 @@ class EditGroupSheet extends ConsumerStatefulWidget {
     required BuildContext context,
     required Group group,
   }) {
-    GlassSheetScaffold.show(
-      context: context,
-      title: 'Edit group',
-      isScrollControlled: true,
-      child: EditGroupSheet(group: group),
-    );
+    CreateEditGroupSheet.show(context, initialGroup: group);
   }
 
   @override

@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 enum GroupType {
   home('Home'),
   trip('Trip'),
+  couple('Couple'),
+  event('Event'),
+  friends('Friends'),
   other('Other');
 
   final String label;
@@ -19,6 +22,8 @@ class Group {
   final List<String> memberIds;
   final int coverThemeIndex; // 0..5 index into theme.coverThemePalettes
   final bool isArchived;
+  final bool isPinned;
+  final String defaultSplitMode;
   final DateTime? createdAt;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -30,6 +35,8 @@ class Group {
     required this.memberIds,
     this.coverThemeIndex = 0,
     this.isArchived = false,
+    this.isPinned = false,
+    this.defaultSplitMode = 'equal',
     this.createdAt,
     this.startDate,
     this.endDate,
@@ -53,6 +60,8 @@ class Group {
     List<String>? memberIds,
     int? coverThemeIndex,
     bool? isArchived,
+    bool? isPinned,
+    String? defaultSplitMode,
     DateTime? createdAt,
     DateTime? startDate,
     DateTime? endDate,
@@ -68,6 +77,8 @@ class Group {
               ? (coverType == GroupCoverType.flatmates ? 0 : (coverType == GroupCoverType.goaTrip ? 1 : 2))
               : this.coverThemeIndex),
       isArchived: isArchived ?? this.isArchived,
+      isPinned: isPinned ?? this.isPinned,
+      defaultSplitMode: defaultSplitMode ?? this.defaultSplitMode,
       createdAt: createdAt ?? this.createdAt,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
@@ -81,6 +92,8 @@ class Group {
         'memberIds': memberIds,
         'coverThemeIndex': coverThemeIndex,
         'isArchived': isArchived,
+        'isPinned': isPinned,
+        'defaultSplitMode': defaultSplitMode,
         'createdAt': effectiveCreatedAt.toIso8601String(),
         if (startDate != null) 'startDate': startDate!.toIso8601String(),
         if (endDate != null) 'endDate': endDate!.toIso8601String(),
@@ -99,6 +112,8 @@ class Group {
       memberIds: (json['memberIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
       coverThemeIndex: (json['coverThemeIndex'] as int?) ?? 0,
       isArchived: (json['isArchived'] as bool?) ?? false,
+      isPinned: (json['isPinned'] as bool?) ?? false,
+      defaultSplitMode: (json['defaultSplitMode'] as String?) ?? 'equal',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime(2024, 1, 1)
           : DateTime(2024, 1, 1),
@@ -118,6 +133,8 @@ class Group {
           listEquals(memberIds, other.memberIds) &&
           coverThemeIndex == other.coverThemeIndex &&
           isArchived == other.isArchived &&
+          isPinned == other.isPinned &&
+          defaultSplitMode == other.defaultSplitMode &&
           createdAt == other.createdAt &&
           startDate == other.startDate &&
           endDate == other.endDate;
@@ -130,6 +147,8 @@ class Group {
       Object.hashAll(memberIds) ^
       coverThemeIndex.hashCode ^
       isArchived.hashCode ^
+      isPinned.hashCode ^
+      defaultSplitMode.hashCode ^
       createdAt.hashCode ^
       startDate.hashCode ^
       endDate.hashCode;

@@ -20,6 +20,8 @@ import '../../../data/models/settlement.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../group_detail/sheets/nudge_sheet.dart';
 import '../../group_detail/sheets/settle_sheet.dart';
+import '../sheets/create_edit_iou_sheet.dart';
+import '../sheets/iou_detail_sheet.dart';
 
 enum BalanceTab { owedToUser, userOwes }
 enum BalanceSort { byAmount, byName }
@@ -174,6 +176,22 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: theme.hairline),
+                        foregroundColor: theme.ink,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      onPressed: () => CreateEditIouSheet.show(context),
+                      icon: Icon(Icons.add_rounded, size: 18, color: theme.ink),
+                      label: const Text('Add IOU', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    ),
+                  ),
+                ],
                 onBack: () => BackNavigation.handleBack(context, currentPath: '/balances'),
               ),
 
@@ -519,8 +537,19 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Primary action button (Nudge / Settle)
-                  if (isOwedToUser)
+                  // Primary action button (Nudge / Settle / IOU)
+                  if (summary.lines.isEmpty && summary.iouNotes.isNotEmpty)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryButtonBg,
+                        foregroundColor: theme.primaryButtonText,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      ),
+                      onPressed: () => IouDetailSheet.show(context, note: summary.iouNotes.first),
+                      child: Text(isOwedToUser ? 'View IOU' : 'Settle', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    )
+                  else if (isOwedToUser)
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: theme.hairline),
@@ -622,6 +651,78 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                  for (final iou in summary.iouNotes) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: InkWell(
+                        onTap: () => IouDetailSheet.show(context, note: iou),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: theme.surface,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: theme.hairline, width: 0.5),
+                                        ),
+                                        child: Text(
+                                          'IOU note',
+                                          style: AppTypography.caption.copyWith(
+                                            color: theme.secondary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          iou.note.isNotEmpty ? iou.note : 'Personal loan',
+                                          style: AppTypography.bodySemiBold.copyWith(
+                                            color: theme.ink,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${iou.isOwedToMe ? 'Owes you' : 'You owe'} ${CurrencyFormatter.formatPaise(iou.remainingPaise)}${iou.dueDate != null ? ' · ${iou.dueLabel(DateTime.now())}' : ''}',
+                                    style: AppTypography.caption.copyWith(
+                                      color: iou.isOwedToMe ? theme.textEmerald : theme.textCoral,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => IouDetailSheet.show(context, note: iou),
+                              child: Text(
+                                iou.isOwedToMe ? 'Manage' : 'Pay',
+                                style: TextStyle(
+                                  color: theme.accent,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

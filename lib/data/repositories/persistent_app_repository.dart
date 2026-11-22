@@ -6,6 +6,7 @@ import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
+import '../models/iou_note.dart';
 import '../engine/balance_engine.dart';
 import '../engine/split_calculator.dart';
 import '../seed/seed_data.dart';
@@ -26,6 +27,7 @@ class PersistentAppRepository implements AppRepository {
   late List<Expense> _expenses;
   late List<Settlement> _settlements;
   late List<RecurringTemplate> _recurringTemplates;
+  late List<IouNote> _iouNotes;
 
   bool _wasCorruptDataRecovered = false;
   Timer? _debounceTimer;
@@ -60,6 +62,7 @@ class PersistentAppRepository implements AppRepository {
     _expenses = List.from(SeedData.expenses);
     _settlements = List.from(SeedData.settlements);
     _recurringTemplates = [];
+    _iouNotes = [];
   }
 
   bool _loadFromJsonString(String rawJson) {
@@ -93,6 +96,10 @@ class PersistentAppRepository implements AppRepository {
           [];
       final recurringList = (data['recurringTemplates'] as List<dynamic>?)
               ?.map((r) => RecurringTemplate.fromJson(r as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final iouList = (data['iouNotes'] as List<dynamic>?)
+              ?.map((i) => IouNote.fromJson(i as Map<String, dynamic>))
               .toList() ??
           [];
 
@@ -161,6 +168,7 @@ class PersistentAppRepository implements AppRepository {
       _expenses = expensesList;
       _settlements = settlementsList;
       _recurringTemplates = recurringList;
+      _iouNotes = iouList;
       _wasCorruptDataRecovered = false;
       return true;
     } catch (e) {
@@ -195,6 +203,7 @@ class PersistentAppRepository implements AppRepository {
         'expenses': _expenses.map((e) => e.toJson()).toList(),
         'settlements': _settlements.map((s) => s.toJson()).toList(),
         'recurringTemplates': _recurringTemplates.map((r) => r.toJson()).toList(),
+        'iouNotes': _iouNotes.map((i) => i.toJson()).toList(),
       };
       await _prefs.setString(storageKey, jsonEncode(data));
     } catch (_) {
@@ -372,6 +381,71 @@ class PersistentAppRepository implements AppRepository {
   }
 
   @override
+  List<IouNote> getAllIouNotes() => List.unmodifiable(
+        _iouNotes.where((i) => !i.isDeleted).toList()
+          ..sort((a, b) => b.date.compareTo(a.date)),
+      );
+
+  @override
+  IouNote? getIouNote(String id) {
+    try {
+      return _iouNotes.firstWhere((i) => i.id == id && !i.isDeleted);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void addIouNote(IouNote note) {
+    _iouNotes.insert(0, note);
+    _scheduleSave();
+  }
+
+  @override
+  void updateIouNote(IouNote note) {
+    final idx = _iouNotes.indexWhere((i) => i.id == note.id);
+    if (idx != -1) {
+      _iouNotes[idx] = note;
+      _scheduleSave();
+    }
+  }
+
+  @override
+  void deleteIouNote(String id) {
+    final idx = _iouNotes.indexWhere((i) => i.id == id);
+    if (idx != -1) {
+      _iouNotes[idx] = _iouNotes[idx].copyWith(deletedAt: _clock());
+      _scheduleSave();
+    }
+  }
+
+  @override
+  void restoreIouNote(String id) {
+    final idx = _iouNotes.indexWhere((i) => i.id == id);
+    if (idx != -1) {
+      _iouNotes[idx] = _iouNotes[idx].copyWith(clearDeletedAt: true);
+      _scheduleSave();
+    }
+  }
+
+  @override
+  void recordIouPayment(String noteId, int amountPaise) {
+    final idx = _iouNotes.indexWhere((i) => i.id == noteId);
+    if (idx != -1) {
+      final note = _iouNotes[idx];
+      final newPayment = IouPayment(
+        id: 'ioup_${DateTime.now().millisecondsSinceEpoch}',
+        amountPaise: amountPaise,
+        date: _clock(),
+      );
+      _iouNotes[idx] = note.copyWith(
+        payments: [...note.payments, newPayment],
+      );
+      _scheduleSave();
+    }
+  }
+
+  @override
   List<RecurringTemplate> getRecurringTemplates() => List.unmodifiable(_recurringTemplates);
 
   @override
@@ -500,6 +574,7 @@ class PersistentAppRepository implements AppRepository {
       'expenses': _expenses.map((e) => e.toJson()).toList(),
       'settlements': _settlements.map((s) => s.toJson()).toList(),
       'recurringTemplates': _recurringTemplates.map((r) => r.toJson()).toList(),
+      'iouNotes': _iouNotes.map((i) => i.toJson()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(data);
   }
@@ -567,6 +642,10 @@ class PersistentAppRepository implements AppRepository {
               ?.map((r) => RecurringTemplate.fromJson(r as Map<String, dynamic>))
               .toList() ??
           [];
+      final iouList = (data['iouNotes'] as List<dynamic>?)
+              ?.map((i) => IouNote.fromJson(i as Map<String, dynamic>))
+              .toList() ??
+          [];
 
       // Validate invariants
       final peopleIds = peopleList.map((p) => p.id).toSet();
@@ -603,6 +682,7 @@ class PersistentAppRepository implements AppRepository {
       _expenses = expensesList;
       _settlements = settlementsList;
       _recurringTemplates = recurringList;
+      _iouNotes = iouList;
       _wasCorruptDataRecovered = false;
       _saveToStorageImmediate();
       return true;
@@ -632,6 +712,7 @@ class PersistentAppRepository implements AppRepository {
       groupMembersMap: groupMap,
       expenses: _expenses,
       settlements: _settlements,
+      iouNotes: _iouNotes,
     );
   }
 

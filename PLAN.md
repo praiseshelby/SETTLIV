@@ -438,7 +438,37 @@
 
 ---
 
-## Next Steps: Resume Task 4 (Set 2 & Set 3)
-*Note: With Parts W1, W2, and W3 complete, all subsequent screens added in Set 2 and Set 3 will be built adaptively for both the App and Web experiences.*
-- [ ] **Set 2**: Scan sheet, Budgets hub, Recurring bills manager, and IOU notes.
-- [ ] **Set 3**: Settings sections expansion, Help & support forms, Pin lock screen, and final release polish.
+## Task 4 (Resumed): Set 2 — Groups Hub, IOU Notes, Add Expense Polish, and Scan Sheet (COMPLETED)
+- [x] **IOU Notes Model, Repository & Ledger Integration**:
+  - Created `IouNote` and `IouPayment` models in [lib/data/models/iou_note.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/data/models/iou_note.dart) supporting direction (`owedToMe`, `iOwe`), amount in integer paise, remaining paise, payment history, overdue tracking with `isOverdue(now)` and `dueLabel(now)`, and soft deletion.
+  - Added full IOU persistence methods to `AppRepository`, `PersistentAppRepository`, and `InMemoryAppRepository` with JSON export/restore and Riverpod provider `allIouNotesProvider`.
+  - Updated `BalanceEngine` and `PersonBalanceEngine` to integrate active IOU remaining amounts into user net balance and merged `PersonDebtSummary` lines while keeping group debt settlements distinct from IOU payment workflows.
+- [x] **Scan Sheet ([scan_sheet.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/add_expense/presentation/widgets/scan_sheet.dart))**:
+  - Implemented custom-painted viewfinder with corner brackets, "Coming with the Android app" pill, honest explanation, and real actions: "Paste bank SMS" and "Type it instead".
+  - Accessible >= 48px touch targets, full keyboard and dismiss support.
+- [x] **IOU Sheets & Balances Screen Integration**:
+  - Created `CreateEditIouSheet` ([lib/features/balances/sheets/create_edit_iou_sheet.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/balances/sheets/create_edit_iou_sheet.dart)) with direction toggle, person name, amount in paise, note/reason, optional phone, and optional due date picker.
+  - Created `IouDetailSheet` ([lib/features/balances/sheets/iou_detail_sheet.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/balances/sheets/iou_detail_sheet.dart)) with remaining/paid breakdown, partial/full payment recording, WhatsApp nudge with prefilled text (`https://wa.me/`), edit note, and delete with 5-second Undo snackbar.
+  - Integrated "Add IOU" action into `ScreenHeader` in [lib/features/balances/presentation/balances_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/balances/presentation/balances_screen.dart) and rendered IOU notes in the expanded breakdown and primary action buttons.
+- [x] **Groups Hub & Template Sheets**:
+  - Created `CreateEditGroupSheet` ([lib/features/groups/presentation/widgets/create_edit_group_sheet.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/groups/presentation/widgets/create_edit_group_sheet.dart)) supporting template prefilling, unique normalized names, 6 cover swatches, member management (min 2, title-cased), and default split modes.
+  - Created `GroupHubCard` ([lib/features/groups/presentation/widgets/group_hub_card.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/groups/presentation/widgets/group_hub_card.dart)) with drawn cover, pinned badge, 3-dots overflow menu, balance sentence, 6-week spend sparkline, and inline actions row wrapped with `Wrap` to prevent any RenderFlex overflow.
+  - Revamped `GroupsScreen` ([lib/features/groups/presentation/groups_screen.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/lib/features/groups/presentation/groups_screen.dart)) with search toolbar, 3-column summary strip, rectangular segmented control `Active | Archived`, sort menu (`Recent | Balance | A-Z`), pinned groups first, responsive grid, empty states with actions, and "Start a new group" template row (Trip, Flatmates, Couple, Event, Friends).
+- [x] **Add Expense Polish**:
+  - Manual tab: Top segmented control `GlassSegmented<String>` (`Shared | Personal`). Personal mode cleanly hides Group, Paid by, Participants, and Split with full-width date and "Save ₹X · personal".
+  - Amount hero: Integrated quick scan icon button opening `ScanSheet.show(context)`.
+  - Typewriter timer: Cycling continues on focus/tap; pauses only when text is entered, resumes when cleared.
+  - Group selector sheet: Integrated `_showGroupSelectorSheet` with Personal section above hairline, then shared Groups.
+- [x] **Needs Attention & Shortcuts Wiring**:
+  - Overdue IOU notes feed directly into the "Needs attention" message and action on both `HomeScreen` and `DashboardWebView`.
+  - `ShortcutId.scanReceipt` opens `ScanSheet.show(context)`; `ShortcutId.iouNotes` opens `/balances`.
+- [x] **Verification & Test Suite**:
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **166/166 tests passing** (100%).
+  - Added `test/set2_verification_test.dart` with 10 comprehensive tests.
+  - Web build compiled cleanly: `flutter build web` (0 errors).
+
+---
+
+## Next Steps: Resume Task 4 (Set 3)
+- [ ] **Set 3**: Settings sections expansion (Help & Support forms, WebAuthn Device Lock, recurring bills polish, export/import verification), Motion polish, Release polish, and final QA.

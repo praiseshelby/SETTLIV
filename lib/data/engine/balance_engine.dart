@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import '../models/expense.dart';
 import '../models/settlement.dart';
+import '../models/iou_note.dart';
 
 class SimplifiedDebt {
   final String fromPersonId;
@@ -110,6 +111,7 @@ class BalanceEngine {
     required Map<String, List<String>> groupMembersMap,
     required List<Expense> expenses,
     required List<Settlement> settlements,
+    List<IouNote>? iouNotes,
   }) {
     int totalNet = 0;
     int totalOwedToUser = 0;
@@ -133,6 +135,19 @@ class BalanceEngine {
         totalOwedToUser += userNetInGroup;
       } else if (userNetInGroup < 0) {
         totalUserOwes += userNetInGroup.abs();
+      }
+    }
+
+    if (iouNotes != null) {
+      for (final note in iouNotes) {
+        if (note.isDeleted || note.isSettled) continue;
+        if (note.direction == IouDirection.owedToMe) {
+          totalOwedToUser += note.remainingPaise;
+          totalNet += note.remainingPaise;
+        } else {
+          totalUserOwes += note.remainingPaise;
+          totalNet -= note.remainingPaise;
+        }
       }
     }
 

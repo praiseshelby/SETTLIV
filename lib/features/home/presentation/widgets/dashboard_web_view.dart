@@ -19,6 +19,7 @@ import '../../../../data/engine/balance_engine.dart';
 import '../../../../data/models/group.dart';
 import '../../../../data/models/person.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
+import '../../../add_expense/presentation/widgets/scan_sheet.dart';
 import '../../../group_detail/sheets/expense_detail_sheet.dart';
 import '../../domain/recent_activity_engine.dart';
 import '../../domain/shortcut_engine.dart';
@@ -132,6 +133,50 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       });
     final top2Groups = recentGroups.take(2).toList();
 
+    // Needs attention check:
+    String? attentionMessage;
+    VoidCallback? attentionAction;
+
+    for (final group in sharedGroups) {
+      final summary = repo.getGroupSummary(group.id);
+      for (final debt in summary.debts) {
+        if (debt.toPersonId == currentUserId && debt.amount > 0) {
+          final debtorExpenses = allExpenses.where((e) =>
+            !e.isDeleted && e.groupId == group.id && (e.computedShares[debt.fromPersonId] ?? 0) > 0
+          ).toList();
+          final oldest = debtorExpenses.isNotEmpty
+              ? debtorExpenses.reduce((a, b) => a.date.isBefore(b.date) ? a : b)
+              : null;
+          if (oldest != null) {
+            final daysAgo = now.difference(oldest.date).inDays;
+            if (daysAgo >= 7) {
+              if (attentionMessage == null) {
+                final debtorPerson = repo.getPerson(debt.fromPersonId);
+                final dName = debtorPerson?.name ?? 'Someone';
+                attentionMessage = '$dName owes you ${CurrencyFormatter.formatPaise(debt.amount)} for $daysAgo days';
+                attentionAction = () => context.push('/balances');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    final iouNotes = repo.getAllIouNotes();
+    for (final note in iouNotes) {
+      if (note.isOverdue(now) && !note.isSettled) {
+        if (attentionMessage == null) {
+          if (note.isOwedToMe) {
+            attentionMessage = '${note.counterpartyName} is overdue on ${CurrencyFormatter.formatPaise(note.remainingPaise)} IOU';
+          } else {
+            attentionMessage = 'You have an overdue ${CurrencyFormatter.formatPaise(note.remainingPaise)} IOU to ${note.counterpartyName}';
+          }
+          attentionAction = () => context.push('/balances');
+          break;
+        }
+      }
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
         horizontal: isCompact ? 16 : 32,
@@ -145,7 +190,45 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
             children: [
               // 1. Web Header: large display greeting + date, theme toggle
               _buildHeader(context, theme, now),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              if (attentionMessage != null) ...[
+                Semantics(
+                  button: true,
+                  label: 'Needs attention: $attentionMessage',
+                  child: InkWell(
+                    onTap: attentionAction,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: theme.coral.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: theme.coral.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 18, color: theme.coral),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              attentionMessage,
+                              style: AppTypography.caption.copyWith(
+                                color: theme.ink,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded, size: 18, color: theme.muted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ] else ...[
+                const SizedBox(height: 8),
+              ],
 
               // 2. Bento Grid (or single-column on compact)
               if (isCompact) ...[
@@ -537,13 +620,19 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
         SplitCalculatorSheet.show(context);
         break;
       case ShortcutId.scanReceipt:
-        context.push('/add');
+        ScanSheet.show(context);
+        break;
+      case ShortcutId.pasteSms:
+        context.push('/add', extra: {'initialTabIndex': 0});
         break;
       case ShortcutId.budgets:
         context.go('/insights/budgets');
         break;
       case ShortcutId.recurring:
         context.push('/settings/recurring');
+        break;
+      case ShortcutId.iouNotes:
+        context.push('/balances');
         break;
       default:
         context.push('/add');

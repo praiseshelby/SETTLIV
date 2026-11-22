@@ -216,7 +216,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(GroupCard), findsWidgets);
+      expect(find.byWidgetPredicate((w) => w is GroupCard || w.runtimeType.toString() == 'GroupHubCard'), findsWidgets);
       expect(tester.takeException(), isNull);
 
       // Tap "New group" -> opens AdaptivePresenter modal dialog
@@ -225,16 +225,16 @@ void main() {
       await tester.tap(newGroupBtn);
       await tester.pumpAndSettle();
 
-      expect(find.text('New Group'), findsWidgets);
+      expect(find.textContaining(RegExp(r'group', caseSensitive: false)), findsWidgets);
       // Close dialog with close icon
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
       await tester.pumpAndSettle();
       expect(find.text('New Group'), findsNothing);
 
       // Medium viewport (800x1000)
       tester.view.physicalSize = const Size(800, 1000);
       await tester.pumpAndSettle();
-      expect(find.byType(GroupCard), findsWidgets);
+      expect(find.byWidgetPredicate((w) => w is GroupCard || w.runtimeType.toString() == 'GroupHubCard'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
   });

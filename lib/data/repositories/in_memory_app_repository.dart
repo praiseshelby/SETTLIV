@@ -5,6 +5,7 @@ import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
+import '../models/iou_note.dart';
 import '../engine/balance_engine.dart';
 import 'app_repository.dart';
 import 'persistent_app_repository.dart';
@@ -110,6 +111,31 @@ class AppStateNotifier extends Notifier<int> {
     notifyChange();
   }
 
+  void addIouNote(IouNote note) {
+    repository.addIouNote(note);
+    notifyChange();
+  }
+
+  void updateIouNote(IouNote note) {
+    repository.updateIouNote(note);
+    notifyChange();
+  }
+
+  void deleteIouNote(String id) {
+    repository.deleteIouNote(id);
+    notifyChange();
+  }
+
+  void restoreIouNote(String id) {
+    repository.restoreIouNote(id);
+    notifyChange();
+  }
+
+  void recordIouPayment(String noteId, int amountPaise) {
+    repository.recordIouPayment(noteId, amountPaise);
+    notifyChange();
+  }
+
   int processDueRecurringExpenses({DateTime? asOf}) {
     final generated = repository.processDueRecurringExpenses(asOf: asOf);
     if (generated.isNotEmpty) {
@@ -206,4 +232,9 @@ final personProvider = Provider.family<Person?, String>((ref, personId) {
 final allRecurringTemplatesProvider = Provider<List<RecurringTemplate>>((ref) {
   final repo = ref.watch(appRepositoryProvider);
   return repo.getRecurringTemplates();
+});
+
+final allIouNotesProvider = Provider<List<IouNote>>((ref) {
+  final repo = ref.watch(appRepositoryProvider);
+  return repo.getAllIouNotes();
 });
