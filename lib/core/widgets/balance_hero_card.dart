@@ -289,6 +289,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
 
                           // Two columns: "Owed to you ₹X · N people" / "You owe ₹Y · M people"
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Text(
@@ -297,14 +298,15 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                     color: theme.white.withOpacity(0.75),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
+                                    height: 1.25,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Container(
                                 width: 1,
-                                height: 12,
+                                height: 14,
                                 margin: const EdgeInsets.symmetric(horizontal: 8),
                                 color: theme.white.withOpacity(0.20),
                               ),
@@ -315,8 +317,9 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                     color: theme.white.withOpacity(0.75),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
+                                    height: 1.25,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
