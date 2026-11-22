@@ -36,12 +36,12 @@ class _DockedNavBarState extends State<DockedNavBar> {
     const plusRaise = 12.0;
     final totalHeight = barBodyHeight + plusRaise + bottomPadding;
 
-    // 5 slots: Slot 0 (Home), Slot 1 (Records), Slot 2 (+), Slot 3 (Insights), Slot 4 (Plan)
+    // 5 slots: Slot 0 (Home), Slot 1 (Groups), Slot 2 (+), Slot 3 (Records), Slot 4 (Insights)
     // Map widget.currentIndex (0, 1, 2, 3) to slot center fractions:
-    // 0 -> 0.10
-    // 1 -> 0.30
-    // 2 -> 0.70
-    // 3 -> 0.90
+    // 0 (Home) -> 0.10
+    // 1 (Groups) -> 0.30
+    // 2 (Records) -> 0.70
+    // 3 (Insights) -> 0.90
     double targetFraction = 0.10;
     if (widget.currentIndex == 1) targetFraction = 0.30;
     if (widget.currentIndex == 2) targetFraction = 0.70;
@@ -116,12 +116,12 @@ class _DockedNavBarState extends State<DockedNavBar> {
                                   theme: theme,
                                 ),
                               ),
-                              // Slot 1: Records
+                              // Slot 1: Groups
                               Expanded(
                                 child: _buildTabItem(
-                                  label: 'Records',
-                                  icon: Icons.receipt_long_outlined,
-                                  activeIcon: Icons.receipt_long_rounded,
+                                  label: 'Groups',
+                                  icon: Icons.groups_outlined,
+                                  activeIcon: Icons.groups_rounded,
                                   isActive: widget.currentIndex == 1,
                                   onTap: () => _onTabTapped(1),
                                   theme: theme,
@@ -131,23 +131,23 @@ class _DockedNavBarState extends State<DockedNavBar> {
                               const Expanded(
                                 child: SizedBox.shrink(),
                               ),
-                              // Slot 3: Insights
+                              // Slot 3: Records
                               Expanded(
                                 child: _buildTabItem(
-                                  label: 'Insights',
-                                  icon: Icons.insights_outlined,
-                                  activeIcon: Icons.insights_rounded,
+                                  label: 'Records',
+                                  icon: Icons.receipt_long_outlined,
+                                  activeIcon: Icons.receipt_long_rounded,
                                   isActive: widget.currentIndex == 2,
                                   onTap: () => _onTabTapped(2),
                                   theme: theme,
                                 ),
                               ),
-                              // Slot 4: Plan
+                              // Slot 4: Insights
                               Expanded(
                                 child: _buildTabItem(
-                                  label: 'Plan',
-                                  icon: Icons.pie_chart_outline_rounded,
-                                  activeIcon: Icons.pie_chart_rounded,
+                                  label: 'Insights',
+                                  icon: Icons.insights_outlined,
+                                  activeIcon: Icons.insights_rounded,
                                   isActive: widget.currentIndex == 3,
                                   onTap: () => _onTabTapped(3),
                                   theme: theme,
@@ -256,7 +256,7 @@ class _DockedNavBarState extends State<DockedNavBar> {
                   label,
                   style: AppTypography.tabLabel.copyWith(
                     color: color,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

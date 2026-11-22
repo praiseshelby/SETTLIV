@@ -8,6 +8,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/person_avatar.dart';
+import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/engine/balance_engine.dart';
@@ -159,43 +160,19 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Top Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_back_rounded, color: theme.ink),
-                      onPressed: () => context.pop(),
-                      tooltip: 'Back',
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Balances',
-                            style: AppTypography.titleLarge.copyWith(
-                              color: theme.ink,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            netSentence,
-                            style: AppTypography.caption.copyWith(
-                              color: theme.muted,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              ScreenHeader(
+                title: 'Balances',
+                subtitle: Text(
+                  netSentence,
+                  style: AppTypography.caption.copyWith(
+                    color: theme.muted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                onBack: () => context.pop(),
               ),
 
               // Segmented Control & Sort Row

@@ -7,6 +7,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
+import '../../../../core/widgets/screen_header.dart';
+import '../../../../core/widgets/screen_scaffold.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -391,30 +393,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final repo = ref.watch(appRepositoryProvider);
     final user = repo.currentUser;
 
-    return Scaffold(
-      backgroundColor: theme.canvas,
-      appBar: AppBar(
-        backgroundColor: theme.canvas,
-        elevation: 0,
-        surfaceTintColor: theme.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: theme.ink),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Profile & Settings',
-          style: AppTypography.screenTitle.copyWith(
-            color: theme.ink,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: false,
+    return ScreenScaffold(
+      hasBottomBar: false,
+      header: ScreenHeader(
+        title: 'Profile & Settings',
+        onBack: () => context.pop(),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          children: [
-            // User Profile Card
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // User Profile Card
             GlassSurface(
               level: GlassLevel.level1,
               borderRadius: 24,
@@ -836,31 +827,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 28),
 
-            // Design System Gallery Shortcut
-            Text(
-              'DESIGN SYSTEM',
-              style: AppTypography.caption.copyWith(
-                color: theme.muted,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 10),
-            GlassSurface(
-              level: GlassLevel.level1,
-              borderRadius: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.palette_outlined, color: theme.ink),
-                title: Text('Component Gallery', style: TextStyle(color: theme.ink, fontWeight: FontWeight.w600)),
-                subtitle: Text('Preview design system in light & dark', style: TextStyle(color: theme.muted)),
-                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.muted),
-                onTap: () => context.push('/gallery'),
-              ),
-            ),
-            const SizedBox(height: 28),
-
             // About / Version
             Center(
               child: Column(
@@ -888,8 +854,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
-    );
-  }
+    ],
+  );
+}
 
   Widget _buildThemeButton({
     required String label,

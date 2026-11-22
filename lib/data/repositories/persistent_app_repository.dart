@@ -14,7 +14,7 @@ import 'app_repository.dart';
 class PersistentAppRepository implements AppRepository {
   static const String storageKey = 'settliv_ledger_v2';
   static const int schemaVersion = 2;
-  static const int seedVersion = 2;
+  static const int seedVersion = 3;
 
   final BalanceEngine _engine = const BalanceEngine();
   final SharedPreferences? _prefs;

@@ -5,6 +5,7 @@ import '../../data/models/group.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/name_normalizer.dart';
 import 'category_badge.dart';
 
 class ExpenseTile extends StatefulWidget {
@@ -41,7 +42,13 @@ class _ExpenseTileState extends State<ExpenseTile> {
   Widget build(BuildContext context) {
     final theme = context.settliv;
 
-    final payerName = widget.payer?.name ?? 'Someone';
+    // Calculate Arjun's personal share and payer relationship
+    final bool isPayer = widget.expense.paidBy == widget.currentUserId ||
+        (widget.payer != null && widget.payer!.id == widget.currentUserId);
+    final String payerName = isPayer
+        ? 'you'
+        : NameNormalizer.normalize(widget.payer?.name ?? 'Someone');
+
     final isPersonalGroup = widget.group?.isPersonal ?? false;
     final groupName = (widget.showGroupName && widget.group != null && !isPersonalGroup)
         ? widget.group!.name
@@ -55,8 +62,6 @@ class _ExpenseTileState extends State<ExpenseTile> {
       subtitle = 'Paid by $payerName';
     }
 
-    // Calculate Arjun's personal share in this expense
-    final bool isPayer = widget.expense.paidBy == widget.currentUserId;
     final int userShare = widget.expense.shares[widget.currentUserId] ?? 0;
 
     final String shareLabel;
@@ -93,15 +98,16 @@ class _ExpenseTileState extends State<ExpenseTile> {
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
           onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: _isPressed ? 0.98 : 1.0,
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOutCubic,
-            child: Container(
-              color: widget.isHighlighted
-                  ? theme.navy.withOpacity(0.10)
-                  : (_isHovered ? theme.raised.withOpacity(0.40) : theme.transparent),
-              child: Column(
+          child: Container(
+            decoration: BoxDecoration(
+              color: _isPressed
+                  ? theme.ink.withOpacity(theme.isDark ? 0.08 : 0.04)
+                  : (widget.isHighlighted
+                      ? theme.navy.withOpacity(0.10)
+                      : (_isHovered ? theme.raised.withOpacity(0.40) : theme.transparent)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
                 children: [
                   SizedBox(
                     height: 64,
@@ -203,7 +209,6 @@ class _ExpenseTileState extends State<ExpenseTile> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

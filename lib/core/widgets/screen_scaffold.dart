@@ -4,66 +4,71 @@ import 'aurora_background.dart';
 
 class ScreenScaffold extends StatelessWidget {
   final Widget? header;
-  final Widget body;
+  final Widget? body;
+  final List<Widget>? children;
+  final List<Widget>? slivers;
   final Widget? floatingActionButton;
+  final ScrollController? scrollController;
   final bool hasBottomBar;
-  final EdgeInsets? padding;
 
   const ScreenScaffold({
     super.key,
     this.header,
-    required this.body,
+    this.body,
+    this.children,
+    this.slivers,
     this.floatingActionButton,
+    this.scrollController,
     this.hasBottomBar = true,
-    this.padding,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
-    final mediaQuery = MediaQuery.of(context);
-    final topSafeArea = mediaQuery.padding.top;
-    final bottomSafeArea = mediaQuery.padding.bottom;
-
-    // Bottom padding = bar height (~72) + safe area + 16px (when hasBottomBar is true)
-    final bottomPadding = hasBottomBar
-        ? (72.0 + bottomSafeArea + 16.0)
-        : (bottomSafeArea + 24.0);
+    final media = MediaQuery.of(context);
+    final topPadding = media.padding.top + 12.0;
+    // Bottom padding lives inside scroll content: bar height (64) + safe area + 16
+    final bottomScrollPadding = (hasBottomBar ? 64.0 : 0.0) + media.padding.bottom + 16.0;
 
     return Scaffold(
       backgroundColor: theme.transparent,
       floatingActionButton: floatingActionButton,
       body: AuroraBackground(
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: topSafeArea + 12.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (header != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: header!,
-                  ),
-                  const SizedBox(height: 16.0),
-                ],
-                Expanded(
-                  child: Padding(
-                    padding: padding ?? EdgeInsets.only(bottom: bottomPadding),
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeTop: true,
-                      child: body,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        child: CustomScrollView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
+          slivers: [
+            // Top safe-area + 12 padding
+            SliverToBoxAdapter(
+              child: SizedBox(height: topPadding),
+            ),
+
+            // Header is the first sliver and scrolls away with the content (nothing pinned)
+            if (header != null) ...[
+              SliverToBoxAdapter(child: header!),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ],
+
+            // Content
+            if (children != null)
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => children![index],
+                  childCount: children!.length,
+                ),
+              )
+            else if (body != null)
+              SliverToBoxAdapter(child: body!)
+            else if (slivers != null)
+              ...slivers!,
+
+            // Bottom scroll padding inside scroll content so content scrolls above docked bar
+            SliverToBoxAdapter(
+              child: SizedBox(height: bottomScrollPadding),
+            ),
+          ],
         ),
       ),
     );

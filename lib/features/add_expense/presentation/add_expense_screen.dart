@@ -15,6 +15,7 @@ import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/gradient_primary_button.dart';
 import '../../../core/widgets/member_chip.dart';
 import '../../../core/widgets/person_avatar.dart';
+import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/engine/repeat_suggestion_engine.dart';
 import '../../../data/engine/split_calculator.dart';
@@ -444,44 +445,30 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // Top Bar: Glass circular close button + title
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    children: [
-                      Semantics(
-                        button: true,
-                        label: 'Close',
-                        child: GlassSurface(
-                          level: GlassLevel.level1,
-                          borderRadius: 999,
-                          padding: const EdgeInsets.all(8),
-                          onTap: () async {
-                            final shouldPop = await _onWillPop();
-                            if (shouldPop && context.mounted) {
-                              context.pop();
-                            }
-                          },
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: theme.ink,
-                            size: 20,
-                          ),
-                        ),
+                // Top Bar: Glass circular close button + title via ScreenHeader
+                ScreenHeader(
+                  title: widget.initialExpense != null
+                      ? 'Edit expense'
+                      : 'New expense',
+                  leading: Semantics(
+                    button: true,
+                    label: 'Close',
+                    child: GlassSurface(
+                      level: GlassLevel.level1,
+                      borderRadius: 999,
+                      padding: const EdgeInsets.all(8),
+                      onTap: () async {
+                        final shouldPop = await _onWillPop();
+                        if (shouldPop && context.mounted) {
+                          context.pop();
+                        }
+                      },
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: theme.ink,
+                        size: 20,
                       ),
-                      const SizedBox(width: 14),
-                      Text(
-                        widget.initialExpense != null
-                            ? 'Edit expense'
-                            : 'New expense',
-                        style: AppTypography.titleLarge.copyWith(
-                          color: theme.ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
 

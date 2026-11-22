@@ -282,11 +282,11 @@ abstract class SeedData {
       amount: 282000, // ₹2,820
       date: now.subtract(const Duration(days: 1)),
       paidBy: 'person_arjun',
-      splitMode: SplitMode.percent,
+      splitMode: SplitMode.equal,
       shares: const {
-        'person_arjun': 56400,
-        'person_meera': 112800,
-        'person_kabir': 112800,
+        'person_arjun': 94000,
+        'person_meera': 94000,
+        'person_kabir': 94000,
       },
     ),
     Expense(
@@ -299,9 +299,9 @@ abstract class SeedData {
       paidBy: 'person_meera',
       splitMode: SplitMode.exact,
       shares: const {
-        'person_arjun': 116000,
-        'person_kabir': 58000,
-        'person_meera': 0,
+        'person_arjun': 78400,
+        'person_kabir': 76800,
+        'person_meera': 18800,
       },
     ),
 

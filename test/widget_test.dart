@@ -19,7 +19,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(child: SettlivApp(router: createAppRouter())));
     await tester.pumpAndSettle();
 
-    expect(find.text("NET ACROSS GROUPS"), findsOneWidget);
+    expect(find.text("NET POSITION"), findsOneWidget);
     final flatmatesFinder = find.text('Flatmates');
     await tester.scrollUntilVisible(flatmatesFinder, 150);
     await tester.pumpAndSettle();

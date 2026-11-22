@@ -34,7 +34,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('NET POSITION'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

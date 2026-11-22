@@ -4,7 +4,7 @@ import 'package:settliv/data/models/settlement.dart';
 import 'package:settliv/features/home/domain/recent_activity_engine.dart';
 
 void main() {
-  group('RecentActivityEngine Pure Function Unit Tests', () {
+  group('RecentActivityEngine Pure Function Unit Tests (Max 3 items)', () {
     final baseNow = DateTime(2026, 11, 20, 15, 0);
 
     Expense makeExpense({
@@ -49,6 +49,7 @@ void main() {
       );
       expect(res.items, isEmpty);
       expect(res.hasMoreToday, isFalse);
+      expect(res.moreTodayCount, equals(0));
     });
 
     test('Excludes soft-deleted expenses', () {
@@ -62,11 +63,12 @@ void main() {
       );
       expect(res.items.length, equals(1));
       expect(res.items.first.id, equals('e1'));
+      expect(res.moreTodayCount, equals(0));
     });
 
-    test('Today has >= 5 items: shows today only (up to 10), sets hasMoreToday if > 10', () {
+    test('Today has > 3 items: shows 3 items only, moreTodayCount = count - 3', () {
       final todayItems = List.generate(
-        12,
+        6,
         (i) => makeExpense(id: 'e_$i', date: baseNow.subtract(Duration(minutes: i))),
       );
       final yesterdayItem = makeExpense(id: 'yesterday', date: baseNow.subtract(const Duration(days: 1)));
@@ -77,35 +79,47 @@ void main() {
         now: baseNow,
       );
 
-      // Only today items (max 10)
-      expect(res.items.length, equals(10));
+      // Max 3 items shown
+      expect(res.items.length, equals(3));
       expect(res.hasMoreToday, isTrue);
+      expect(res.moreTodayCount, equals(3));
       expect(res.spansMultipleDays, isFalse);
       expect(res.items.any((item) => item.id == 'yesterday'), isFalse);
     });
 
-    test('Today has < 5 items: adds earlier days one whole day at a time until >= 3 items, then keeps 5 newest', () {
-      // 1 item today
-      final today1 = makeExpense(id: 'today1', date: baseNow);
-      // 1 item yesterday
-      final yest1 = makeExpense(id: 'yest1', date: baseNow.subtract(const Duration(days: 1)));
-      // 2 items 2 days ago
-      final twoDaysAgo1 = makeExpense(id: 'twodays1', date: baseNow.subtract(const Duration(days: 2, hours: 1)));
-      final twoDaysAgo2 = makeExpense(id: 'twodays2', date: baseNow.subtract(const Duration(days: 2, hours: 2)));
-      // 1 item 4 days ago
-      final fourDaysAgo = makeExpense(id: 'fourdays', date: baseNow.subtract(const Duration(days: 4)));
+    test('Today has exactly 3 items: shows all 3, moreTodayCount = 0', () {
+      final todayItems = List.generate(
+        3,
+        (i) => makeExpense(id: 'e_$i', date: baseNow.subtract(Duration(minutes: i))),
+      );
 
       final res = RecentActivityEngine.computeRecentActivity(
-        expenses: [today1, yest1, twoDaysAgo1, twoDaysAgo2, fourDaysAgo],
+        expenses: todayItems,
         settlements: [],
         now: baseNow,
       );
 
-      // Today (1) + Yesterday (1) = 2 (<3). Add 2 days ago (2) -> total 4 (>=3).
-      // Keeps 4 items (up to 5 newest). 4 days ago is not added.
-      expect(res.items.length, equals(4));
+      expect(res.items.length, equals(3));
+      expect(res.hasMoreToday, isFalse);
+      expect(res.moreTodayCount, equals(0));
+    });
+
+    test('Today has < 3 items: adds earlier days up to 7 back until 3 are shown', () {
+      final today1 = makeExpense(id: 'today1', date: baseNow);
+      final yest1 = makeExpense(id: 'yest1', date: baseNow.subtract(const Duration(days: 1)));
+      final twoDaysAgo1 = makeExpense(id: 'twodays1', date: baseNow.subtract(const Duration(days: 2, hours: 1)));
+      final twoDaysAgo2 = makeExpense(id: 'twodays2', date: baseNow.subtract(const Duration(days: 2, hours: 2)));
+
+      final res = RecentActivityEngine.computeRecentActivity(
+        expenses: [today1, yest1, twoDaysAgo1, twoDaysAgo2],
+        settlements: [],
+        now: baseNow,
+      );
+
+      // Takes max 3 items
+      expect(res.items.length, equals(3));
       expect(res.spansMultipleDays, isTrue);
-      expect(res.items.map((i) => i.id).toList(), equals(['today1', 'yest1', 'twodays1', 'twodays2']));
+      expect(res.items.map((i) => i.id).toList(), equals(['today1', 'yest1', 'twodays1']));
     });
 
     test('Combines settlements and expenses chronologically', () {

@@ -10,7 +10,6 @@ import '../features/add_expense/presentation/add_expense_screen.dart';
 import '../features/group_detail/presentation/group_detail_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/recurring_expenses_screen.dart';
-import '../features/gallery/component_gallery_screen.dart';
 import '../core/widgets/phone_frame.dart';
 import '../core/widgets/app_shell.dart';
 import '../core/widgets/gradient_primary_button.dart';
@@ -63,7 +62,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     );
   },
   routes: [
-    // 4-Tab Navigation Shell: Home, Records, [+], Insights, Plan (NO Groups tab)
+    // 4-Tab Navigation Shell: Home, Groups, Records, Insights (+ is centre button)
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return PhoneFrame(
@@ -82,7 +81,16 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ],
         ),
-        // Tab 1: Records
+        // Tab 1: Groups
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/groups',
+              builder: (context, state) => const GroupsScreen(),
+            ),
+          ],
+        ),
+        // Tab 2: Records
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -91,31 +99,32 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ],
         ),
-        // Tab 2: Insights
+        // Tab 3: Insights
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/insights',
               builder: (context, state) => const InsightsScreen(),
-            ),
-          ],
-        ),
-        // Tab 3: Plan
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/plan',
-              builder: (context, state) => const PlanScreen(),
+              routes: [
+                GoRoute(
+                  path: 'budgets',
+                  builder: (context, state) => const PlanScreen(),
+                ),
+              ],
             ),
           ],
         ),
       ],
     ),
 
-    // Backward-compatibility redirect for /activity -> /records
+    // Backward-compatibility redirects
     GoRoute(
       path: '/activity',
       redirect: (context, state) => '/records',
+    ),
+    GoRoute(
+      path: '/plan',
+      redirect: (context, state) => '/insights/budgets',
     ),
 
     // Pushed routes (ABOVE the shell, docked bar is never shown on them)
@@ -124,13 +133,6 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
       path: '/balances',
       builder: (context, state) => const PhoneFrame(
         child: BalancesScreen(),
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: '/groups',
-      builder: (context, state) => const PhoneFrame(
-        child: GroupsScreen(),
       ),
     ),
     GoRoute(
@@ -188,13 +190,6 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
       path: '/settings/recurring',
       builder: (context, state) => const PhoneFrame(
         child: RecurringExpensesScreen(),
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: '/gallery',
-      builder: (context, state) => const PhoneFrame(
-        child: ComponentGalleryScreen(),
       ),
     ),
   ],

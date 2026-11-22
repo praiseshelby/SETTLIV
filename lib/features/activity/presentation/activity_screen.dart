@@ -4,10 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
 import '../../../core/widgets/glass_surface.dart';
+import '../../../core/widgets/screen_header.dart';
+import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
@@ -68,33 +69,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       grouped.putIfAbsent(header, () => []).add(exp);
     }
 
-    return Scaffold(
-      backgroundColor: theme.transparent,
-      body: AuroraBackground(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
+    return ScreenScaffold(
+      header: ScreenHeader(
+        title: 'Records',
+        subtitle: Text(
+          'All transaction records across your groups and personal expenses',
+          style: AppTypography.caption.copyWith(
+            color: theme.muted,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
-              Text(
-                'Records',
-                style: AppTypography.screenTitle.copyWith(
-                  color: theme.ink,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'All transaction records across your groups and personal expenses',
-                style: AppTypography.caption.copyWith(
-                  color: theme.muted,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 18),
-
               // Search Bar
               TextField(
                 controller: _searchController,
@@ -267,7 +259,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

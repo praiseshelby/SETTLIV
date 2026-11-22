@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/category_palette.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/models/expense.dart';
@@ -166,41 +168,37 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return ScreenScaffold(
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Insights',
-            style: AppTypography.screenTitle.copyWith(color: theme.ink),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your spending and debt analytics',
-            style: AppTypography.caption.copyWith(color: theme.muted),
-          ),
-        ],
+      header: ScreenHeader(
+        title: 'Insights',
+        subtitle: Text(
+          'Your spending and debt analytics',
+          style: AppTypography.caption.copyWith(color: theme.muted),
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
-        children: [
-          // 1. Period Selector
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPeriodChip('This month', InsightPeriod.thisMonth, theme),
-                const SizedBox(width: 8),
-                _buildPeriodChip('Last month', InsightPeriod.lastMonth, theme),
-                const SizedBox(width: 8),
-                _buildPeriodChip('3M', InsightPeriod.threeMonths, theme),
-                const SizedBox(width: 8),
-                _buildPeriodChip('6M', InsightPeriod.sixMonths, theme),
-                const SizedBox(width: 8),
-                _buildPeriodChip('Year', InsightPeriod.year, theme),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Period Selector
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildPeriodChip('This month', InsightPeriod.thisMonth, theme),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('Last month', InsightPeriod.lastMonth, theme),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('3M', InsightPeriod.threeMonths, theme),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('6M', InsightPeriod.sixMonths, theme),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('Year', InsightPeriod.year, theme),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
           if (currentExpenses.isEmpty || totalYourSpend == 0) ...[
             const Padding(
@@ -411,18 +409,23 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: _getCategoryColor(entry.key, theme).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _getCategoryIcon(entry.key),
-                                color: _getCategoryColor(entry.key, theme),
-                                size: 18,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final catColors = CategoryPalette.getColors(entry.key, isDark: theme.isDark);
+                                return Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: catColors.tile,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    _getCategoryIcon(entry.key),
+                                    color: catColors.icon,
+                                    size: 18,
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -549,9 +552,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 ],
               ),
             ),
-          ],
-        ],
-      ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -599,40 +604,23 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         children: [
           Icon(icon, size: 20, color: theme.muted),
           const SizedBox(width: 12),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 13),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              label,
-              style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 13),
+              value,
+              style: AppTypography.bodySemiBold.copyWith(color: theme.ink, fontSize: 13),
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            value,
-            style: AppTypography.bodySemiBold.copyWith(color: theme.ink, fontSize: 13),
           ),
         ],
       ),
     );
-  }
-
-  Color _getCategoryColor(ExpenseCategory category, SettlivThemeExtension theme) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return theme.saffron;
-      case ExpenseCategory.rent:
-        return theme.navy;
-      case ExpenseCategory.travel:
-        return theme.teal;
-      case ExpenseCategory.stay:
-        return theme.accent;
-      case ExpenseCategory.groceries:
-        return theme.emerald;
-      case ExpenseCategory.bills:
-        return theme.orchid;
-      case ExpenseCategory.fun:
-        return theme.coral;
-      case ExpenseCategory.other:
-        return theme.muted;
-    }
   }
 
   IconData _getCategoryIcon(ExpenseCategory category) {
@@ -704,24 +692,7 @@ class _CategoryDonutPainter extends CustomPainter {
   }
 
   Color _getCatColor(ExpenseCategory category, SettlivThemeExtension theme) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return theme.saffron;
-      case ExpenseCategory.rent:
-        return theme.navy;
-      case ExpenseCategory.travel:
-        return theme.teal;
-      case ExpenseCategory.stay:
-        return theme.accent;
-      case ExpenseCategory.groceries:
-        return theme.emerald;
-      case ExpenseCategory.bills:
-        return theme.orchid;
-      case ExpenseCategory.fun:
-        return theme.coral;
-      case ExpenseCategory.other:
-        return theme.muted;
-    }
+    return CategoryPalette.getColors(category, isDark: theme.isDark).base;
   }
 
   @override

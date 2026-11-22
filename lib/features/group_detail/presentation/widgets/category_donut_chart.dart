@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/category_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/expense.dart';
@@ -19,14 +20,8 @@ class CategoryDonutChart extends StatelessWidget {
 
   static Map<ExpenseCategory, Color> buildCategoryColors(SettlivThemeExtension theme) {
     return {
-      ExpenseCategory.food: theme.saffron,
-      ExpenseCategory.rent: theme.navy,
-      ExpenseCategory.travel: theme.teal,
-      ExpenseCategory.stay: theme.orchid,
-      ExpenseCategory.groceries: theme.emerald,
-      ExpenseCategory.bills: theme.coral,
-      ExpenseCategory.fun: theme.orchid,
-      ExpenseCategory.other: theme.muted,
+      for (final cat in ExpenseCategory.values)
+        cat: CategoryPalette.getColors(cat, isDark: theme.isDark).base,
     };
   }
 

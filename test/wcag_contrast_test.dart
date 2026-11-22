@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:settliv/core/theme/app_theme.dart';
+import 'package:settliv/core/theme/category_palette.dart';
+import 'package:settliv/data/models/expense.dart';
 
 double _linearize(double component) {
   return component <= 0.04045
@@ -22,6 +24,14 @@ double contrastRatio(Color foreground, Color background) {
   final lighter = math.max(l1, l2);
   final darker = math.min(l1, l2);
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+Color compositeOver(Color fg, Color bg) {
+  final alpha = fg.opacity;
+  final r = (fg.red * alpha + bg.red * (1.0 - alpha)).round().clamp(0, 255);
+  final g = (fg.green * alpha + bg.green * (1.0 - alpha)).round().clamp(0, 255);
+  final b = (fg.blue * alpha + bg.blue * (1.0 - alpha)).round().clamp(0, 255);
+  return Color.fromARGB(255, r, g, b);
 }
 
 void main() {
@@ -97,6 +107,40 @@ void main() {
 
         expect(ratioButton, greaterThanOrEqualTo(4.5), reason: 'button text in dark mode');
       });
+    });
+
+    group('Category Contrast Verification (Bug 4)', () {
+      for (final isDark in [false, true]) {
+        final theme = isDark ? dark : light;
+        final modeName = isDark ? 'Dark Mode' : 'Light Mode';
+
+        test('All categories: icon vs tile >= 3:1 in $modeName', () {
+          for (final category in ExpenseCategory.values) {
+            final catColors = CategoryPalette.getColors(category, isDark: isDark);
+            final effectiveTile = compositeOver(catColors.tile, theme.surface);
+            final ratio = contrastRatio(catColors.icon, effectiveTile);
+
+            expect(
+              ratio,
+              greaterThanOrEqualTo(3.0),
+              reason: '${category.name} icon vs tile in $modeName ($ratio:1)',
+            );
+          }
+        });
+
+        test('All categories: slice vs surface >= 3:1 in $modeName', () {
+          for (final category in ExpenseCategory.values) {
+            final catColors = CategoryPalette.getColors(category, isDark: isDark);
+            final ratio = contrastRatio(catColors.base, theme.surface);
+
+            expect(
+              ratio,
+              greaterThanOrEqualTo(3.0),
+              reason: '${category.name} slice vs surface in $modeName ($ratio:1)',
+            );
+          }
+        });
+      }
     });
   });
 }

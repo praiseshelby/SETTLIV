@@ -254,9 +254,10 @@ void main() {
       // Soft delete expense
       repo.deleteExpense(exp.id);
       final afterDeleteOverall = repo.getUserOverallBalance();
-      // Arjun's share of exp_fm_14 was 116000 owed to Meera.
-      // Deleting it means Arjun owes 116000 less -> net balance increases by 116000!
-      expect(afterDeleteOverall.netBalance, equals(initialOverall.netBalance + 116000));
+      // Arjun's share of exp_fm_14 in Flatmates
+      final arjunShare = exp.shares[SeedData.currentUserId] ?? 0;
+      // Deleting it means Arjun owes arjunShare less -> net balance increases by arjunShare!
+      expect(afterDeleteOverall.netBalance, equals(initialOverall.netBalance + arjunShare));
 
       // Restore expense (undo)
       repo.restoreExpense(exp.id);

@@ -27,15 +27,18 @@ class BalanceHeroCard extends StatefulWidget {
   });
 
   static bool hasCountedUpThisSession = false;
+  static bool hasSweptThisSession = false;
 
   @override
   State<BalanceHeroCard> createState() => _BalanceHeroCardState();
 }
 
 class _BalanceHeroCardState extends State<BalanceHeroCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _countUpController;
   late Animation<double> _countUpAnimation;
+  late AnimationController _sweepController;
+  late Animation<double> _sweepAnimation;
   bool _isPressed = false;
 
   @override
@@ -50,11 +53,25 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
       curve: Curves.easeOutCubic,
     );
 
+    _sweepController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _sweepAnimation = CurvedAnimation(
+      parent: _sweepController,
+      curve: Curves.easeInOutCubic,
+    );
+
     if (BalanceHeroCard.hasCountedUpThisSession) {
       _countUpController.value = 1.0;
     } else {
       BalanceHeroCard.hasCountedUpThisSession = true;
-      _countUpController.forward();
+      _countUpController.forward().then((_) {
+        if (!BalanceHeroCard.hasSweptThisSession && mounted) {
+          BalanceHeroCard.hasSweptThisSession = true;
+          _sweepController.forward();
+        }
+      });
     }
   }
 
@@ -69,6 +86,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
   @override
   void dispose() {
     _countUpController.dispose();
+    _sweepController.dispose();
     super.dispose();
   }
 
@@ -79,16 +97,17 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
     final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (disableAnimations) {
       _countUpController.value = 1.0;
+      _sweepController.value = 0.0;
     }
 
     final String headlineSentence;
     Color? statusDotColor;
     if (widget.netPaise > 0) {
       headlineSentence = "You're owed";
-      statusDotColor = theme.textEmerald; // On dark: 4FE3B8
+      statusDotColor = theme.textEmerald;
     } else if (widget.netPaise < 0) {
       headlineSentence = "You owe";
-      statusDotColor = theme.textCoral; // On dark: FF8D7C
+      statusDotColor = theme.textCoral;
     } else {
       headlineSentence = "All settled up";
       statusDotColor = null;
@@ -101,7 +120,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
 
     return Semantics(
       button: true,
-      label: 'Net balance across groups. Tap to view breakdown.',
+      label: 'Net position across groups. Tap to view breakdown.',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (_) => setState(() => _isPressed = true),
@@ -112,96 +131,107 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
           widget.onTap?.call();
         },
         child: AnimatedScale(
-          scale: _isPressed ? 0.99 : 1.0,
+          scale: _isPressed ? 0.97 : 1.0,
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOut,
           child: RepaintBoundary(
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isDark ? theme.hairline : theme.white.withOpacity(0.15),
+                  color: isDark ? theme.hairline : theme.white.withOpacity(0.18),
                   width: 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadow.withOpacity(isDark ? 0.45 : 0.18),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: theme.shadow.withOpacity(isDark ? 0.40 : 0.16),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(22),
                 child: Stack(
                   children: [
-                    // 1. Deep Indigo-Navy Mesh with faint violet corner glow
+                    // 1. Layered navy mesh with faint topographic contour arcs on the right & grain
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: _HeroMeshPainter(
+                        painter: _HeroMeshTopographicPainter(
                           startColor: theme.heroMeshStart,
                           endColor: theme.heroMeshEnd,
                           accentColor: theme.heroMeshAccent,
+                          whiteColor: theme.white,
                           isDark: isDark,
                         ),
                       ),
                     ),
 
-                    // 2. 1px inner top highlight
+                    // 2. 1px inner hairline top highlight
                     Positioned(
                       top: 0,
                       left: 12,
                       right: 12,
                       height: 1.0,
                       child: Container(
-                        color: theme.white.withOpacity(0.20),
+                        color: theme.white.withOpacity(0.22),
                       ),
                     ),
 
-                    // 3. Card Content
+                    // 3. Card Content (compact vertical sizing, total height <= 176px at 390w)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Eyebrow: "NET ACROSS GROUPS" (never "Your balance")
+                          // Header: Eyebrow "NET POSITION" + Sentence + Status Dot
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'NET ACROSS GROUPS',
-                                style: AppTypography.eyebrow.copyWith(
-                                  color: theme.white.withValues(alpha: 0.70),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'NET POSITION',
+                                    style: AppTypography.eyebrow.copyWith(
+                                      color: theme.white.withValues(alpha: 0.70),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (statusDotColor != null) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: statusDotColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  headlineSentence,
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.white.withValues(alpha: 0.85),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.end,
                                 ),
                               ),
-                              if (statusDotColor != null) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: statusDotColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                           const SizedBox(height: 4),
 
-                          // Headline sentence: "You're owed" / "You owe" / "All settled up"
-                          Text(
-                            headlineSentence,
-                            style: AppTypography.body.copyWith(
-                              color: theme.white.withValues(alpha: 0.85),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Big amount in WHITE Sora 40-44/800 with count-up, NO minus sign, never red/green text on navy
+                          // Big amount in white Sora 38-40px with count-up, NO minus sign, never coloured on navy
                           AnimatedBuilder(
                             animation: _countUpAnimation,
                             builder: (context, _) {
@@ -214,152 +244,110 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   absolute: true,
                                 ),
                                 style: AppTypography.moneyHero.copyWith(
-                                  fontSize: 42,
+                                  fontSize: 38,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: -1.2,
-                                  color: theme.white, // Strictly white on navy!
+                                  letterSpacing: -1.0,
+                                  color: theme.white,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               );
                             },
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 8),
 
-                          // Thin diverging proportional split bar
+                          // Thin diverging proportional split bar that animates in
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(2.5),
+                            borderRadius: BorderRadius.circular(2),
                             child: SizedBox(
-                              height: 4,
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    flex: (owedRatio * 100).round(),
-                                    child: Container(
-                                      color: theme.emerald,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Flexible(
-                                    flex: ((1.0 - owedRatio) * 100).round(),
-                                    child: Container(
-                                      color: theme.coral,
-                                    ),
-                                  ),
-                                ],
+                              height: 3,
+                              child: AnimatedBuilder(
+                                animation: _countUpAnimation,
+                                builder: (context, _) {
+                                  final animRatio = owedRatio * _countUpAnimation.value + (1.0 - _countUpAnimation.value) * 0.5;
+                                  return Row(
+                                    children: [
+                                      Flexible(
+                                        flex: (animRatio * 100).round(),
+                                        child: Container(
+                                          color: theme.emerald,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Flexible(
+                                        flex: ((1.0 - animRatio) * 100).round(),
+                                        child: Container(
+                                          color: theme.coral,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 8),
 
-                          // Two columns separated by a hairline:
-                          // "Owed to you ₹X · from N people" and "You owe ₹Y · to M people"
-                          IntrinsicHeight(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Owed to you',
-                                        style: AppTypography.caption.copyWith(
-                                          color: theme.white.withOpacity(0.70),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        CurrencyFormatter.formatPaise(widget.totalOwedToUserPaise),
-                                        style: AppTypography.titleMedium.copyWith(
-                                          color: theme.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                          fontFeatures: const [FontFeature.tabularFigures()],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 1),
-                                      Text(
-                                        'from ${widget.owedFromCount} ${widget.owedFromCount == 1 ? "person" : "people"}',
-                                        style: AppTypography.caption.copyWith(
-                                          color: theme.white.withOpacity(0.65),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                          // Two columns: "Owed to you ₹X · N people" / "You owe ₹Y · M people"
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Owed to you ${CurrencyFormatter.formatPaise(widget.totalOwedToUserPaise)} · ${widget.owedFromCount} ${widget.owedFromCount == 1 ? "person" : "people"}',
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.white.withOpacity(0.75),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                Container(
-                                  width: 1,
-                                  margin: const EdgeInsets.symmetric(horizontal: 14),
-                                  color: theme.white.withOpacity(0.15),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'You owe',
-                                        style: AppTypography.caption.copyWith(
-                                          color: theme.white.withOpacity(0.70),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        CurrencyFormatter.formatPaise(widget.totalUserOwesPaise),
-                                        style: AppTypography.titleMedium.copyWith(
-                                          color: theme.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                          fontFeatures: const [FontFeature.tabularFigures()],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 1),
-                                      Text(
-                                        'to ${widget.owesToCount} ${widget.owesToCount == 1 ? "person" : "people"}',
-                                        style: AppTypography.caption.copyWith(
-                                          color: theme.white.withOpacity(0.65),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                              ),
+                              Container(
+                                width: 1,
+                                height: 12,
+                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                color: theme.white.withOpacity(0.20),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'You owe ${CurrencyFormatter.formatPaise(widget.totalUserOwesPaise)} · ${widget.owesToCount} ${widget.owesToCount == 1 ? "person" : "people"}',
+                                  style: AppTypography.caption.copyWith(
+                                    color: theme.white.withOpacity(0.75),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 10),
 
                           // Hairline divider above footer
                           Container(
                             height: 1,
                             color: theme.white.withOpacity(0.12),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 8),
 
-                          // Footer row: stack of up to 3 avatars (largest counterparties) and "View breakdown ›"
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 6,
+                          // Footer row: counterparty avatars + "View breakdown ›"
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               if (widget.counterparties.isNotEmpty)
                                 SizedBox(
-                                  height: 28,
+                                  height: 24,
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       for (int i = 0; i < widget.counterparties.take(3).length; i++)
                                         Align(
-                                          widthFactor: 0.75,
+                                          widthFactor: 0.72,
                                           child: PersonAvatar(
                                             person: widget.counterparties[i],
-                                            size: 26,
+                                            size: 24,
                                           ),
                                         ),
                                     ],
@@ -375,13 +363,13 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                     style: AppTypography.caption.copyWith(
                                       color: theme.white.withOpacity(0.85),
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 2),
                                   Icon(
                                     Icons.chevron_right_rounded,
-                                    size: 18,
+                                    size: 16,
                                     color: theme.white.withOpacity(0.85),
                                   ),
                                 ],
@@ -390,6 +378,26 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                           ),
                         ],
                       ),
+                    ),
+
+                    // 4. Soft light sweep across the card (once per session)
+                    AnimatedBuilder(
+                      animation: _sweepAnimation,
+                      builder: (context, _) {
+                        if (_sweepAnimation.value <= 0.0 || _sweepAnimation.value >= 1.0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Positioned.fill(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: _LightSweepPainter(
+                                progress: _sweepAnimation.value,
+                                whiteColor: theme.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -402,16 +410,18 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
   }
 }
 
-class _HeroMeshPainter extends CustomPainter {
+class _HeroMeshTopographicPainter extends CustomPainter {
   final Color startColor;
   final Color endColor;
   final Color accentColor;
+  final Color whiteColor;
   final bool isDark;
 
-  const _HeroMeshPainter({
+  const _HeroMeshTopographicPainter({
     required this.startColor,
     required this.endColor,
     required this.accentColor,
+    required this.whiteColor,
     required this.isDark,
   });
 
@@ -437,30 +447,64 @@ class _HeroMeshPainter extends CustomPainter {
         center: const Alignment(0.85, -0.85),
         radius: 1.0,
         colors: [
-          accentColor.withOpacity(0.35),
+          accentColor.withOpacity(0.28),
           startColor.withOpacity(0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), glowPaint);
 
-    // Secondary subtle cyan/blue glow bottom-left
-    final secondaryGlow = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.85, 0.95),
-        radius: 0.9,
-        colors: [
-          accentColor.withOpacity(0.18),
-          endColor.withOpacity(0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), secondaryGlow);
+    // Faint topographic contour arcs on the right
+    final arcPaint = Paint()
+      ..color = whiteColor.withOpacity(0.04)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final center = Offset(size.width + 20, size.height / 2);
+    for (int r = 40; r <= 160; r += 24) {
+      canvas.drawCircle(center, r.toDouble(), arcPaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _HeroMeshPainter oldDelegate) {
+  bool shouldRepaint(covariant _HeroMeshTopographicPainter oldDelegate) {
     return oldDelegate.startColor != startColor ||
         oldDelegate.endColor != endColor ||
         oldDelegate.accentColor != accentColor ||
+        oldDelegate.whiteColor != whiteColor ||
         oldDelegate.isDark != isDark;
+  }
+}
+
+class _LightSweepPainter extends CustomPainter {
+  final double progress;
+  final Color whiteColor;
+
+  const _LightSweepPainter({
+    required this.progress,
+    required this.whiteColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Sweep line moves across from left to right
+    final x = (size.width + 100) * progress - 50;
+    final sweepPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          whiteColor.withOpacity(0.0),
+          whiteColor.withOpacity(0.12),
+          whiteColor.withOpacity(0.0),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(x - 40, 0, 80, size.height));
+
+    canvas.drawRect(Rect.fromLTWH(x - 40, 0, 80, size.height), sweepPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LightSweepPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.whiteColor != whiteColor;
   }
 }

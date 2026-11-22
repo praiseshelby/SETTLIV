@@ -5,11 +5,12 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/category_badge.dart';
 import '../../../core/widgets/glass_sheet_scaffold.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/screen_header.dart';
+import '../../../core/widgets/screen_scaffold.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/models/recurring_template.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
@@ -110,64 +111,44 @@ class _RecurringExpensesScreenState
     final groups = ref.watch(allGroupsProvider);
     final groupMap = {for (final g in groups) g.id: g.name};
 
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: theme.transparent,
-        appBar: AppBar(
-          backgroundColor: theme.transparent,
-          elevation: 0,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-              child: Semantics(
-                button: true,
-                label: 'Back',
-                child: InkWell(
-                  onTap: () => context.pop(),
-                  borderRadius: BorderRadius.circular(999),
-                  child: GlassSurface(
-                    level: GlassLevel.level1,
-                    borderRadius: 999,
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.arrow_back_rounded,
-                      color: theme.ink,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
+    return ScreenScaffold(
+      hasBottomBar: false,
+      floatingActionButton: templates.isNotEmpty
+          ? FloatingActionButton.extended(
+              backgroundColor: theme.primaryButtonBg,
+              foregroundColor: theme.primaryButtonText,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('New recurring'),
+              onPressed: () => _showAddTemplateSheet(context),
+            )
+          : null,
+      header: ScreenHeader(
+        title: 'Recurring Expenses',
+        onBack: () => context.pop(),
+        actions: [
+          if (templates.isNotEmpty)
+            IconButton(
+              tooltip: 'Process due now',
+              onPressed: _isProcessing ? null : _processDue,
+              icon: _isProcessing
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.navy,
+                      ),
+                    )
+                  : Icon(Icons.sync_rounded, color: theme.ink),
             ),
-          ),
-          title: Text(
-            'Recurring Expenses',
-            style: AppTypography.titleLarge.copyWith(
-              color: theme.ink,
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-            ),
-          ),
-          actions: [
-            if (templates.isNotEmpty)
-              IconButton(
-                tooltip: 'Process due now',
-                onPressed: _isProcessing ? null : _processDue,
-                icon: _isProcessing
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.navy,
-                        ),
-                      )
-                    : Icon(Icons.sync_rounded, color: theme.ink),
-              ),
-          ],
-        ),
-        body: templates.isEmpty
-            ? Center(
-                child: Padding(
+        ],
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: templates.isEmpty
+              ? Center(
+                  child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -436,16 +417,8 @@ class _RecurringExpensesScreenState
                   ],
                 ],
               ),
-        floatingActionButton: templates.isNotEmpty
-            ? FloatingActionButton.extended(
-                backgroundColor: theme.primaryButtonBg,
-                foregroundColor: theme.primaryButtonText,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Add Rule'),
-                onPressed: () => _showAddTemplateSheet(context),
-              )
-            : null,
-      ),
+        ),
+      ],
     );
   }
 }

@@ -158,7 +158,7 @@ void main() {
 
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
       expect(decoded['version'], 2);
-      expect(decoded['seedVersion'], 2);
+      expect(decoded['seedVersion'], 3);
       expect(decoded['people'], isA<List>());
       expect(decoded['groups'], isA<List>());
       expect(decoded['expenses'], isA<List>());

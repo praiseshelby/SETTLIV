@@ -274,3 +274,34 @@
 
 
 
+
+
+---
+
+## Task 4: Final Front-End Polish (In Progress)
+
+### Set 1: Shell, Home Revamp & Foundation Fixes (COMPLETED)
+- [x] **A. Foundation Fixes (Bugs 1-7 foundations)**:
+  - **ScreenScaffold & ScreenHeader**: Shared single `CustomScrollView` with header scrolling away (no pinned headers, no blank gaps), top padding = safe area + 12, bottom padding inside scroll content = bar height + safe area + 16. Applied across Home, Groups, Records, Insights, Balances, Settings, Plan, and Add Expense.
+  - **Brand Fonts & Typography**: Installed Bricolage Grotesque (Bold 700 & ExtraBold 800 TTFs) for screen titles (30/800 tight tracking -0.8), section titles (17/700 sentence case), and SETTLIV wordmark. Money and big numbers preserved in Sora tabular figures. Body/labels in Plus Jakarta Sans. Eyebrow 11/700 +0.6 tracking (the only all-caps).
+  - **Component Gallery Removal**: Deleted `/gallery` route, screen, navigation references, and settings tile.
+  - **Pressed States & No Layout Shift**: Replaced animated scale on list rows with bounded background tint; scale 0.97 reserved exclusively for standalone buttons/cards.
+  - **Category Palette per Theme**: Assigned separate light and dark colors for all 8 categories (Rent uses periwinkle/indigo `#4338CA` light / `#818CF8` dark, eliminating dark mode navy-on-navy invisibility). Added contrast tests in `test/wcag_contrast_test.dart` (icon vs tile >= 3:1, slice vs surface >= 3:1) - all 12 pass.
+  - **Name Normalisation & "Paid by you"**: All member names normalized on input (trimmed, collapsed whitespace, title case). Current user consistently displays as "you" / "Paid by you" across all cards, rows, and sheets.
+  - **Seed Data Audit**: Fixed "House party brew ₹2,820" in 3-person Flatmates so Arjun lent ₹1,880 (equal split ₹940 each). Verified all 25 seed expenses sum to exact totals, participants are group members, and lent/owe amounts match splits.
+- [x] **B. Navigation Shell**:
+  - 4 tabs + centre action: Home (`/`), Groups (`/groups`), `[+]` (`/add`), Records (`/records`), Insights (`/insights`).
+  - Groups is now a `StatefulShellBranch` tab.
+  - `/plan` redirects to `/insights/budgets`.
+  - `DockedNavBar`: 5 slots with filled active icon, 3x20 active indicator line, 11/600 labels always visible, raised 52x52 rounded-square `+` button. Hidden on pushed routes (`/balances`, `/settings`, `/add`) and when keyboard is visible.
+- [x] **C. Home Screen Revamp**:
+  - **1. Header**: Time-aware greeting (`Good morning` / `Good afternoon` / `Good evening` / `Good night`) in Bricolage Grotesque. Subline: weekday + date + live status (`Saturday, 21 Nov · All settled`). Left: 44px drawn day-period tile (`DayPeriodTile` sunrise/sun/sunset/moon CustomPainter with cached one-time rise). Right: 44px avatar button -> Settings.
+  - **2. Hero Card (`BalanceHeroCard`)**: Eyebrow "NET POSITION", sentence, big white count-up Sora 38px (no minus sign, never coloured text on navy), two columns ("Owed to you ₹X · N people" / "You owe ₹Y · M people"), thin diverging split bar, footer with counterparty avatars and "View breakdown ›" -> `/balances`. Layered navy mesh with subtle topographic contour arcs, hairline inner highlight, and single soft light sweep on session start.
+  - **3. Shortcuts Row (`HomeShortcutsRow`)**: 5 equal tiles, 44px rounded-16 tile + 11px label. Usage score ranking (halves every 14 days, pure function `ShortcutEngine`, persisted). Integrated `SplitCalculatorSheet` for exact-paise split calculation.
+  - **4. Needs Attention**: Compact alert card shown only when items exist (overdue balances, recurring bills). Hidden when empty.
+  - **5. This Month**: Compact card with spend vs last month and arrow indicator -> `/insights`.
+  - **6. Recent Groups**: Max 2 groups by last activity, compact (~96px) with 56px drawn cover art, full-width balance sentence, and "All groups ›" row switching to Groups tab.
+  - **7. Recent Activity**: Placed below groups, max 3 rows (expenses + settlements, soft-deleted excluded). Rule: today's items + earlier days (up to 7 back) until 3 shown. "N more today · See all" -> `/records` when today has > 3 items. Hairline dividers, category icon tile with fixed dark-mode colors, title, subtitle ("Paid by you" / payer), amount in words. Tap row -> `ExpenseDetailSheet`.
+- [x] **D. Verification & Test Suite**:
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **129/129 tests passing** across entire project.

@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/aurora_background.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/group_card.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/screen_header.dart';
+import '../../../core/widgets/screen_scaffold.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
@@ -41,88 +42,63 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     final people = ref.watch(allPeopleProvider);
     final currentUserId = repo.currentUserId;
 
-    return Scaffold(
-      backgroundColor: theme.transparent,
-      body: AuroraBackground(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-            children: [
-              // Header Row: Title + "New Group" Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Groups',
-                          style: AppTypography.screenTitle.copyWith(
-                            color: theme.ink,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${groups.length} active ${groups.length == 1 ? 'group' : 'groups'}',
-                          style: AppTypography.caption.copyWith(
-                            color: theme.muted,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+    return ScreenScaffold(
+      header: ScreenHeader(
+        title: 'Groups',
+        subtitle: Text(
+          '${groups.length} active ${groups.length == 1 ? 'group' : 'groups'}',
+          style: AppTypography.caption.copyWith(
+            color: theme.muted,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+        actions: [
+          Semantics(
+            button: true,
+            label: 'Create new group',
+            child: InkWell(
+              onTap: () => _openNewGroupSheet(context),
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.primaryButtonBg,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.shadow.withValues(alpha: theme.isDark ? 0.3 : 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Semantics(
-                    button: true,
-                    label: 'Create new group',
-                    child: InkWell(
-                      onTap: () => _openNewGroupSheet(context),
-                      borderRadius: BorderRadius.circular(999),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: theme.primaryButtonBg,
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.shadow.withValues(alpha: theme.isDark ? 0.3 : 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add_rounded, size: 18, color: theme.primaryButtonText),
-                            const SizedBox(width: 4),
-                            Text(
-                              'New group',
-                              style: AppTypography.chip.copyWith(
-                                color: theme.primaryButtonText,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 18, color: theme.primaryButtonText),
+                    const SizedBox(width: 4),
+                    Text(
+                      'New group',
+                      style: AppTypography.chip.copyWith(
+                        color: theme.primaryButtonText,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-
+            ),
+          ),
+        ],
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               // Group List or Empty State
               if (groups.isEmpty) ...[
                 EmptyState(
@@ -158,7 +134,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

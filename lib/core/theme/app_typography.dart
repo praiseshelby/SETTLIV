@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 
 abstract class AppTypography {
+  static const String fontBrand = 'BricolageGrotesque';
+  static const String fontDisplay = 'BricolageGrotesque';
   static const String fontHeading = 'Sora';
   static const String fontBody = 'PlusJakartaSans';
   static const String fontFamily = fontBody;
   static const List<String> fontFamilyFallback = bodyFallback;
+
+  static const List<String> brandFallback = [
+    'Sora',
+    'PlusJakartaSans',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'Roboto',
+    'sans-serif',
+  ];
 
   static const List<String> headingFallback = [
     'PlusJakartaSans',
@@ -23,21 +35,31 @@ abstract class AppTypography {
     'sans-serif',
   ];
 
-  /// Screen titles: 28 / 700 (Sora)
+  /// Brand wordmark: SETTLIV (Bricolage Grotesque)
+  static const TextStyle wordmark = TextStyle(
+    fontFamily: fontBrand,
+    fontFamilyFallback: brandFallback,
+    fontSize: 20,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -0.5,
+    height: 1.1,
+  );
+
+  /// Screen titles: 30 / 800 tight tracking (Bricolage Grotesque)
   static const TextStyle screenTitle = TextStyle(
-    fontFamily: fontHeading,
-    fontFamilyFallback: headingFallback,
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -0.6,
-    height: 1.2,
+    fontFamily: fontBrand,
+    fontFamilyFallback: brandFallback,
+    fontSize: 30,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -0.8,
+    height: 1.15,
   );
   static const TextStyle titleLarge = screenTitle;
 
-  /// Section titles: 17 / 700 (Sora)
+  /// Section titles: 17 / 700 sentence case (Bricolage Grotesque)
   static const TextStyle sectionTitle = TextStyle(
-    fontFamily: fontHeading,
-    fontFamilyFallback: headingFallback,
+    fontFamily: fontBrand,
+    fontFamilyFallback: brandFallback,
     fontSize: 17,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
@@ -46,11 +68,11 @@ abstract class AppTypography {
   static const TextStyle sectionHeader = sectionTitle;
   static const TextStyle titleMedium = sectionTitle;
 
-  /// Subheading / card titles: 19 / 700 (Sora)
+  /// Subheading / card titles: 18 / 700 (Bricolage Grotesque)
   static const TextStyle titleCard = TextStyle(
-    fontFamily: fontHeading,
-    fontFamilyFallback: headingFallback,
-    fontSize: 19,
+    fontFamily: fontBrand,
+    fontFamilyFallback: brandFallback,
+    fontSize: 18,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.4,
     height: 1.25,

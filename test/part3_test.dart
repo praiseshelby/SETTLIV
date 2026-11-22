@@ -18,7 +18,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially on Home screen
-      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('NET POSITION'), findsOneWidget);
       expect(find.text('Records'), findsOneWidget);
 
       // Tap Records slot in nav bar
@@ -40,7 +40,7 @@ void main() {
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('NET POSITION'), findsOneWidget);
     });
 
     testWidgets('Tapping center + button in floating bar opens /add',
@@ -76,7 +76,7 @@ void main() {
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('NET POSITION'), findsOneWidget);
     });
 
     testWidgets('Invalid group id shows friendly Group not found state',
@@ -96,7 +96,7 @@ void main() {
       await tester.tap(find.text('Back to Home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('NET ACROSS GROUPS'), findsOneWidget);
+      expect(find.text('NET POSITION'), findsOneWidget);
     });
   });
 

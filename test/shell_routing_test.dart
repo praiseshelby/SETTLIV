@@ -6,7 +6,7 @@ import 'package:settliv/routes/app_router.dart';
 import 'package:settliv/core/theme/app_theme.dart';
 
 void main() {
-  testWidgets('DockedNavBar is shown on shell tabs and hidden on pushed routes', (tester) async {
+  testWidgets('DockedNavBar is shown on all 4 shell tabs and hidden on pushed routes', (tester) async {
     final router = createAppRouter(initialLocation: '/');
 
     await tester.pumpWidget(
@@ -19,39 +19,42 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // On '/' (Home), DockedNavBar is visible
+    // Tab 0: Home ('/') -> DockedNavBar visible
     expect(find.byType(DockedNavBar), findsOneWidget);
 
-    // Navigate to '/records' tab
+    // Tab 1: Groups ('/groups') -> DockedNavBar visible
+    router.go('/groups');
+    await tester.pumpAndSettle();
+    expect(find.byType(DockedNavBar), findsOneWidget);
+
+    // Tab 2: Records ('/records') -> DockedNavBar visible
     router.go('/records');
     await tester.pumpAndSettle();
     expect(find.byType(DockedNavBar), findsOneWidget);
 
-    // Navigate to '/insights' tab
+    // Tab 3: Insights ('/insights') -> DockedNavBar visible
     router.go('/insights');
     await tester.pumpAndSettle();
     expect(find.byType(DockedNavBar), findsOneWidget);
 
-    // Navigate to '/plan' tab
+    // /plan redirects to /insights/budgets
     router.go('/plan');
     await tester.pumpAndSettle();
-    expect(find.byType(DockedNavBar), findsOneWidget);
-
-    // Push '/groups' (pushed route above shell, NO nav bar)
-    router.push('/groups');
-    await tester.pumpAndSettle();
-    expect(find.byType(DockedNavBar), findsNothing);
+    expect(router.state.uri.toString(), equals('/insights/budgets'));
 
     // Push '/balances' (pushed route above shell, NO nav bar)
     router.push('/balances');
     await tester.pumpAndSettle();
     expect(find.byType(DockedNavBar), findsNothing);
 
-    // Push '/settings' (which uses parentNavigatorKey: rootNavigatorKey)
+    // Push '/settings' (pushed route above shell, NO nav bar)
     router.push('/settings');
     await tester.pumpAndSettle();
+    expect(find.byType(DockedNavBar), findsNothing);
 
-    // DockedNavBar must be completely hidden / not present on settings screen
+    // Push '/add' (pushed route above shell, NO nav bar)
+    router.push('/add');
+    await tester.pumpAndSettle();
     expect(find.byType(DockedNavBar), findsNothing);
   });
 }

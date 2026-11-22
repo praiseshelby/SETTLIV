@@ -49,24 +49,25 @@ class SettlementActivityItem extends ActivityItem {
 
 class RecentActivityResult {
   final List<ActivityItem> items;
-  final bool hasMoreToday;
+  final int moreTodayCount;
   final bool spansMultipleDays;
 
   const RecentActivityResult({
     required this.items,
-    this.hasMoreToday = false,
+    this.moreTodayCount = 0,
     this.spansMultipleDays = false,
   });
+
+  bool get hasMoreToday => moreTodayCount > 0;
 }
 
 class RecentActivityEngine {
   const RecentActivityEngine();
 
   /// Pure function computing recent activity items according to the strict rule:
-  /// - items = expenses + settlements, newest first, soft-deleted excluded.
-  /// - If today has >= 5 items show today's items only (max 10, then a "See all in Records" flag).
-  /// - Otherwise take today's items, then add earlier days one whole day at a time (up to 7 days back)
-  ///   until at least 3 items, then keep the 5 newest.
+  /// - max 3 rows (newest first, expenses + settlements, soft-deleted excluded).
+  /// - Rule: take today's items; if fewer than 3, add earlier days (up to 7 back) until 3 are shown.
+  /// - If there are more items today than shown, show a small caption "N more today · See all" -> Records.
   static RecentActivityResult computeRecentActivity({
     required List<Expense> expenses,
     required List<Settlement> settlements,
@@ -101,17 +102,17 @@ class RecentActivityEngine {
 
     final todayItems = dayBuckets[todayKey] ?? [];
 
-    if (todayItems.length >= 5) {
-      final hasMore = todayItems.length > 10;
-      final taken = todayItems.take(10).toList();
+    if (todayItems.length >= 3) {
+      final moreCount = todayItems.length - 3;
+      final taken = todayItems.take(3).toList();
       return RecentActivityResult(
         items: taken,
-        hasMoreToday: hasMore,
+        moreTodayCount: moreCount,
         spansMultipleDays: false,
       );
     }
 
-    // Today has < 5 items. Take today's items, then add earlier days one whole day at a time (up to 7 days back)
+    // Today has < 3 items. Take today's items, then add earlier days (up to 7 back) until 3 are shown.
     final candidateItems = <ActivityItem>[...todayItems];
 
     for (int dayOffset = 1; dayOffset <= 7; dayOffset++) {
@@ -128,9 +129,9 @@ class RecentActivityEngine {
       }
     }
 
-    // Keep the 5 newest
+    // Keep up to 3 newest
     candidateItems.sort();
-    final resultItems = candidateItems.take(5).toList();
+    final resultItems = candidateItems.take(3).toList();
 
     // Check if result spans multiple calendar days
     final distinctDays = resultItems.map((item) =>
@@ -139,7 +140,7 @@ class RecentActivityEngine {
 
     return RecentActivityResult(
       items: resultItems,
-      hasMoreToday: false,
+      moreTodayCount: 0,
       spansMultipleDays: distinctDays.length > 1,
     );
   }

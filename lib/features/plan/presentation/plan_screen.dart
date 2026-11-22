@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/models/expense.dart';
@@ -250,28 +251,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final int projectedSpendPaise = dailyRatePaise * daysInMonth;
 
     return ScreenScaffold(
-      header: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Plan',
-                  style: AppTypography.screenTitle.copyWith(color: theme.ink),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Budgets and spending limits',
-                  style: AppTypography.caption.copyWith(color: theme.muted),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
+      header: ScreenHeader(
+        title: 'Plan',
+        subtitle: Text(
+          'Budgets and spending limits',
+          style: AppTypography.caption.copyWith(color: theme.muted),
+        ),
+        actions: [
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: theme.hairline),
@@ -286,11 +272,14 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
-        children: [
-          // 1. Header with monthly budget overview
-          SectionCard(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Header with monthly budget overview
+              SectionCard(
             title: 'MONTHLY BUDGET',
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -414,7 +403,9 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           ),
         ],
       ),
-    );
+    ),
+  ],
+);
   }
 
   Widget _buildCategoryLimitRow({
