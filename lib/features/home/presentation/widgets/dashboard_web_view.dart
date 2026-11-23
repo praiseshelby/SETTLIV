@@ -1,5 +1,7 @@
+import 'dart:math' as math;
 import '../../../../core/profile/experience_mode.dart';
 import 'day_period_tile.dart';
+import 'month_dial.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,11 +10,10 @@ import '../../../../core/layout/adaptive_layout.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/category_palette.dart';
-import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/name_normalizer.dart';
 import '../../../../core/widgets/balance_hero_card.dart';
-import '../../../../core/widgets/balance_pill.dart';
+import '../../../../core/widgets/web_balance_badge.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/group_cover_art.dart';
 import '../../../../data/engine/balance_engine.dart';
@@ -66,49 +67,69 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     final currentUserId = repo.currentUserId;
     final now = DateTime.now();
 
-    // Counterparties
-    final peopleOwingUser = <Person>[];
-    final peopleUserOwes = <Person>[];
-    for (final g in sharedGroups) {
-      final summary = repo.getGroupSummary(g.id);
-      for (final debt in summary.debts) {
-        if (debt.toPersonId == currentUserId) {
-          final p = repo.getPerson(debt.fromPersonId);
-          if (p != null && !peopleOwingUser.any((item) => item.id == p.id)) {
-            peopleOwingUser.add(p);
-          }
-        } else if (debt.fromPersonId == currentUserId) {
-          final p = repo.getPerson(debt.toPersonId);
-          if (p != null && !peopleUserOwes.any((item) => item.id == p.id)) {
-            peopleUserOwes.add(p);
-          }
-        }
-      }
-    }
-    final allCounterparties = [...peopleOwingUser, ...peopleUserOwes];
+    // Counterparties across groups + IOUs
+    final allPeople = ref.watch(allPeopleProvider);
+    final peopleMap = {for (final p in allPeople) p.id: p};
+    final groupMembersMap = {for (final g in allGroups) g.id: g.memberIds};
+    final iouNotes = repo.getAllIouNotes();
 
-    // This month spend
+    final counterpartyNets = const BalanceEngine().computeCounterpartyNets(
+      currentUserId: currentUserId,
+      groups: allGroups,
+      groupMembersMap: groupMembersMap,
+      expenses: allExpenses,
+      settlements: settlements,
+      iouNotes: iouNotes,
+      peopleMap: peopleMap,
+    );
+
+    final peopleOwingUser = counterpartyNets.where((c) => c.netPaise > 0).map((c) => c.person).toList();
+    final peopleUserOwes = counterpartyNets.where((c) => c.netPaise < 0).map((c) => c.person).toList();
+    final allCounterparties = [...peopleOwingUser, ...peopleUserOwes];
+    final owedFromCount = overall.totalOwedToUser > 0
+        ? math.max(1, peopleOwingUser.length)
+        : peopleOwingUser.length;
+    final owesToCount = overall.totalUserOwes > 0
+        ? math.max(1, peopleUserOwes.length)
+        : peopleUserOwes.length;
+
+    // This month spend: Compare month-to-date with the SAME period last month
     final startOfThisMonth = DateTime(now.year, now.month, 1);
+    final daysInLastMonth = DateTime(now.year, now.month, 0).day;
+    final lastMonthDay = math.min(now.day, daysInLastMonth);
     final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
-    final endOfLastMonth = DateTime(now.year, now.month, 0, 23, 59, 59);
+    final samePeriodLastMonthEnd = DateTime(
+      now.year,
+      now.month - 1,
+      lastMonthDay,
+      now.hour,
+      now.minute,
+      now.second,
+    );
 
     int thisMonthYourSpend = 0;
     int lastMonthYourSpend = 0;
 
     for (final exp in allExpenses) {
       if (!exp.isDeleted) {
-        final share = exp.shares[currentUserId] ?? 0;
-        if (exp.date.isAfter(startOfThisMonth.subtract(const Duration(seconds: 1)))) {
+        final share = exp.computedShares[currentUserId] ?? exp.shares[currentUserId] ?? 0;
+        if (exp.date.isAfter(startOfThisMonth.subtract(const Duration(seconds: 1))) &&
+            !exp.date.isAfter(now)) {
           thisMonthYourSpend += share;
         } else if (exp.date.isAfter(startOfLastMonth.subtract(const Duration(seconds: 1))) &&
-            exp.date.isBefore(endOfLastMonth.add(const Duration(seconds: 1)))) {
+            !exp.date.isAfter(samePeriodLastMonthEnd)) {
           lastMonthYourSpend += share;
         }
       }
     }
 
+    final int diffSpend = thisMonthYourSpend - lastMonthYourSpend;
+    final bool showAbsolute = lastMonthYourSpend < 100000 || // baseline under ₹1,000
+        lastMonthYourSpend == 0 ||
+        (diffSpend.abs() / lastMonthYourSpend) > 3.0; // change exceeds 300%
+
     final double spendChangePercent = lastMonthYourSpend > 0
-        ? ((thisMonthYourSpend - lastMonthYourSpend) / lastMonthYourSpend) * 100.0
+        ? (diffSpend / lastMonthYourSpend) * 100.0
         : 0.0;
 
     // Recent Activity
@@ -141,28 +162,26 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       final summary = repo.getGroupSummary(group.id);
       for (final debt in summary.debts) {
         if (debt.toPersonId == currentUserId && debt.amount > 0) {
-          final debtorExpenses = allExpenses.where((e) =>
-            !e.isDeleted && e.groupId == group.id && (e.computedShares[debt.fromPersonId] ?? 0) > 0
-          ).toList();
-          final oldest = debtorExpenses.isNotEmpty
-              ? debtorExpenses.reduce((a, b) => a.date.isBefore(b.date) ? a : b)
-              : null;
-          if (oldest != null) {
-            final daysAgo = now.difference(oldest.date).inDays;
-            if (daysAgo >= 7) {
-              if (attentionMessage == null) {
-                final debtorPerson = repo.getPerson(debt.fromPersonId);
-                final dName = debtorPerson?.name ?? 'Someone';
-                attentionMessage = '$dName owes you ${CurrencyFormatter.formatPaise(debt.amount)} for $daysAgo days';
-                attentionAction = () => context.push('/balances');
-              }
+          final daysAgo = const BalanceEngine().computeDebtAgeInDays(
+            debtorId: debt.fromPersonId,
+            creditorId: currentUserId,
+            groupId: group.id,
+            expenses: allExpenses,
+            settlements: settlements,
+            now: now,
+          );
+          if (daysAgo >= 7) {
+            if (attentionMessage == null) {
+              final debtorPerson = repo.getPerson(debt.fromPersonId);
+              final dName = debtorPerson?.name ?? 'Someone';
+              attentionMessage = '$dName owes you ${CurrencyFormatter.formatPaise(debt.amount)} for $daysAgo days';
+              attentionAction = () => context.push('/balances');
             }
           }
         }
       }
     }
 
-    final iouNotes = repo.getAllIouNotes();
     for (final note in iouNotes) {
       if (note.isOverdue(now) && !note.isSettled) {
         if (attentionMessage == null) {
@@ -188,54 +207,20 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Web Header: large display greeting + date, theme toggle
-              _buildHeader(context, theme, now),
-              const SizedBox(height: 16),
-
-              if (attentionMessage != null) ...[
-                Semantics(
-                  button: true,
-                  label: 'Needs attention: $attentionMessage',
-                  child: InkWell(
-                    onTap: attentionAction,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: theme.coral.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.coral.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline_rounded, size: 18, color: theme.coral),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              attentionMessage,
-                              style: AppTypography.caption.copyWith(
-                                color: theme.ink,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Icon(Icons.chevron_right_rounded, size: 18, color: theme.muted),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ] else ...[
-                const SizedBox(height: 8),
-              ],
+              // 1. Web Header: large display greeting + date, month dial (visual only)
+              _buildHeader(context, theme, now, isCompact: isCompact),
+              const SizedBox(height: 24),
 
               // 2. Bento Grid (or single-column on compact)
               if (isCompact) ...[
                 // Stacked layout
-                _buildHeroCard(context, overall, allCounterparties, isLarge: false),
+                _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: false),
                 const SizedBox(height: 16),
-                _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, spendChangePercent, isCompact: isCompact),
+                _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, diffSpend, spendChangePercent, showAbsolute, isCompact: isCompact),
+                if (attentionMessage != null) ...[
+                  const SizedBox(height: 16),
+                  _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                ],
                 const SizedBox(height: 16),
                 _buildRecentGroupsCard(context, theme, top2Groups, isCompact: isCompact),
                 const SizedBox(height: 16),
@@ -243,37 +228,49 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                 const SizedBox(height: 16),
                 _buildRecentActivitySection(context, theme, recentResult, isCompact: true),
               ] else ...[
-                // Row 1: Hero (span 7) + This Month (span 5)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: _buildHeroCard(context, overall, allCounterparties, isLarge: true),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      flex: 5,
-                      child: _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, spendChangePercent, isCompact: isCompact),
-                    ),
-                  ],
+                // Row 1: Hero (span 7) + This Month (span 5) stretched to equal height
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 7,
+                        child: _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: true),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        flex: 5,
+                        child: _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, diffSpend, spendChangePercent, showAbsolute, isCompact: isCompact),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
 
-                // Row 2: Recent Groups (span 7) + Shortcuts (span 5)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: _buildRecentGroupsCard(context, theme, top2Groups, isCompact: isCompact),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      flex: 5,
-                      child: _buildShortcutsCard(context, theme, isCompact: isCompact),
-                    ),
-                  ],
+                // Attention strip moves directly BELOW Net position + This month row
+                if (attentionMessage != null) ...[
+                  const SizedBox(height: 20),
+                  _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  const SizedBox(height: 20),
+                ],
+
+                // Row 2: Recent Groups (span 7) + Shortcuts (span 5) stretched to equal height
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 7,
+                        child: _buildRecentGroupsCard(context, theme, top2Groups, isCompact: isCompact),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        flex: 5,
+                        child: _buildShortcutsCard(context, theme, isCompact: isCompact),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -292,11 +289,55 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     );
   }
 
-  // Header: Large display greeting + date, no icon, no status; theme toggle
-  Widget _buildHeader(BuildContext context, SettlivThemeExtension theme, DateTime now) {
+  Widget _buildAttentionStrip(
+    BuildContext context,
+    SettlivThemeExtension theme,
+    String attentionMessage,
+    VoidCallback? attentionAction,
+  ) {
+    return Semantics(
+      button: true,
+      label: 'Needs attention: $attentionMessage',
+      child: InkWell(
+        onTap: attentionAction,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.coral.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.coral.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 18, color: theme.coral),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  attentionMessage,
+                  style: AppTypography.caption.copyWith(
+                    color: theme.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 18, color: theme.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Header: Large display greeting + date, no icon, no status; drawn month dial
+  Widget _buildHeader(
+    BuildContext context,
+    SettlivThemeExtension theme,
+    DateTime now, {
+    required bool isCompact,
+  }) {
     final greeting = getTimeGreeting(now);
     final dateStr = DateFormat('EEEE, d MMMM').format(now);
-    final isDark = theme.isDark;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,34 +374,27 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
-        // Theme toggle button
-        IconButton(
-          tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-          icon: Icon(
-            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-            color: theme.ink,
-          ),
-          onPressed: () {
-            ref.read(themeModeProvider.notifier).toggleTheme();
-          },
-        ),
+        if (!isCompact) ...[
+          const SizedBox(width: 16),
+          MonthDial(now: now),
+        ],
       ],
     );
   }
-
   Widget _buildHeroCard(
     BuildContext context,
     UserOverallBalance overall,
-    List<Person> counterparties, {
+    List<Person> counterparties,
+    int owedFromCount,
+    int owesToCount, {
     required bool isLarge,
   }) {
     return BalanceHeroCard(
       netPaise: overall.netBalance,
       totalOwedToUserPaise: overall.totalOwedToUser,
       totalUserOwesPaise: overall.totalUserOwes,
-      owedFromCount: counterparties.where((p) => overall.netBalance > 0).length,
-      owesToCount: counterparties.where((p) => overall.netBalance < 0).length,
+      owedFromCount: owedFromCount,
+      owesToCount: owesToCount,
       counterparties: counterparties,
       onTap: () => context.push('/balances'),
     );
@@ -371,8 +405,11 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     SettlivThemeExtension theme,
     int thisMonthSpend,
     int lastMonthSpend,
+    int diffSpend,
     double changePercent,
-    {required bool isCompact}) {
+    bool showAbsolute, {
+    required bool isCompact,
+  }) {
     return GlassSurface(
       level: GlassLevel.level2,
       borderRadius: 24,
@@ -382,56 +419,84 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
         onTap: () => context.go('/insights'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'THIS MONTH',
-                  style: AppTypography.eyebrow.copyWith(color: theme.muted),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'This month',
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontBrand,
+                        fontFamilyFallback: AppTypography.brandFallback,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: theme.ink,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_rounded, size: 16, color: theme.muted),
+                  ],
                 ),
-                Icon(Icons.arrow_forward_rounded, size: 16, color: theme.muted),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              CurrencyFormatter.formatPaise(thisMonthSpend),
-              style: TextStyle(
-                fontFamily: AppTypography.fontFamily,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: theme.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (lastMonthSpend > 0)
-              Row(
-                children: [
-                  Icon(
-                    changePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                    size: 14,
-                    color: changePercent > 0 ? theme.coral : theme.emerald,
+                const SizedBox(height: 14),
+                Text(
+                  CurrencyFormatter.formatPaise(thisMonthSpend),
+                  style: TextStyle(
+                    fontFamily: AppTypography.fontFamily,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: theme.ink,
                   ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      '${changePercent.abs().toStringAsFixed(0)}% vs last month',
+                ),
+                const SizedBox(height: 8),
+                if (lastMonthSpend > 0) ...[
+                  if (showAbsolute) ...[
+                    Text(
+                      diffSpend >= 0
+                          ? '${CurrencyFormatter.formatPaise(diffSpend, absolute: true)} more than last month'
+                          : '${CurrencyFormatter.formatPaise(diffSpend.abs(), absolute: true)} less than last month',
                       style: AppTypography.caption.copyWith(
-                        color: changePercent > 0 ? theme.coral : theme.emerald,
+                        color: diffSpend > 0 ? theme.coral : theme.emerald,
                         fontWeight: FontWeight.w700,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ] else ...[
+                    Row(
+                      children: [
+                        Icon(
+                          changePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                          size: 14,
+                          color: changePercent > 0 ? theme.coral : theme.emerald,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${changePercent.abs().toStringAsFixed(0)}% vs last month',
+                            style: AppTypography.caption.copyWith(
+                              color: changePercent > 0 ? theme.coral : theme.emerald,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ] else ...[
+                  Text(
+                    'First month on Settliv',
+                    style: AppTypography.caption.copyWith(color: theme.muted),
                   ),
                 ],
-              )
-            else
-              Text(
-                'First month on Settliv',
-                style: AppTypography.caption.copyWith(color: theme.muted),
-              ),
-            const SizedBox(height: 20),
+              ],
+            ),
+            const SizedBox(height: 16),
             // Spend indicator bar
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
@@ -453,8 +518,9 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
   Widget _buildRecentGroupsCard(
     BuildContext context,
     SettlivThemeExtension theme,
-    List<Group> groups,
-    {required bool isCompact}) {
+    List<Group> groups, {
+    required bool isCompact,
+  }) {
     final repo = ref.watch(appRepositoryProvider);
 
     return GlassSurface(
@@ -463,95 +529,109 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'RECENT GROUPS',
-                  style: AppTypography.eyebrow.copyWith(color: theme.muted),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              InkWell(
-                onTap: () => context.go('/groups'),
-                child: Row(
-                  children: [
-                    Text(
-                      'All groups',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.accent,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Recent groups',
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontBrand,
+                        fontFamilyFallback: AppTypography.brandFallback,
+                        fontSize: 17,
                         fontWeight: FontWeight.w700,
+                        color: theme.ink,
+                        letterSpacing: -0.3,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 2),
-                    Icon(Icons.chevron_right_rounded, size: 16, color: theme.accent),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (groups.isEmpty)
-            Text(
-              'No groups created yet',
-              style: AppTypography.body.copyWith(color: theme.muted),
-            )
-          else
-            ...groups.map((group) {
-              final summary = repo.getGroupSummary(group.id);
-              final myNet = summary.netBalances[repo.currentUserId] ?? 0;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => context.push('/group/${group.id}'),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.surface.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.hairline),
-                    ),
+                  ),
+                  InkWell(
+                    onTap: () => context.go('/groups'),
                     child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: GroupCoverArt(group: group, height: 56),
+                        Text(
+                          'All groups',
+                          style: AppTypography.caption.copyWith(
+                            color: theme.accent,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                group.name,
-                                style: AppTypography.bodySemiBold.copyWith(
-                                  color: theme.ink,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${group.memberIds.length} members',
-                                style: AppTypography.caption.copyWith(color: theme.muted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        BalancePill(paise: myNet),
+                        const SizedBox(width: 2),
+                        Icon(Icons.chevron_right_rounded, size: 16, color: theme.accent),
                       ],
                     ),
                   ),
-                ),
-              );
-            }),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (groups.isEmpty)
+                Text(
+                  'No groups created yet',
+                  style: AppTypography.body.copyWith(color: theme.muted),
+                )
+              else
+                ...groups.map((group) {
+                  final summary = repo.getGroupSummary(group.id);
+                  final myNet = summary.netBalances[repo.currentUserId] ?? 0;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => context.push('/group/${group.id}'),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.surface.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: theme.hairline),
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: GroupCoverArt(group: group, height: 56),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    group.name,
+                                    style: AppTypography.bodySemiBold.copyWith(
+                                      color: theme.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${group.memberIds.length} members',
+                                    style: AppTypography.caption.copyWith(color: theme.muted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Web only: plain right-aligned tabular amounts in AA text colours plus caption
+                            WebBalanceBadge(paise: myNet),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          ),
         ],
       ),
     );
@@ -559,11 +639,71 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
 
   Widget _buildShortcutsCard(BuildContext context, SettlivThemeExtension theme, {required bool isCompact}) {
     final profile = ref.watch(deviceProfileProvider);
-    // On desktop, scan receipt shortcut is hidden
+    // On desktop Web, scan receipt shortcut is hidden
     final available = _shortcuts.where((s) {
       if (profile.isDesktop && s.id == ShortcutId.scanReceipt) return false;
       return true;
     }).take(6).toList();
+
+    Widget buildTile(ShortcutDefinition shortcut) {
+      return SizedBox(
+        height: 88,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _handleShortcut(context, shortcut),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.surface.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.hairline),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(shortcut.icon, size: 24, color: theme.accent),
+                const SizedBox(height: 8),
+                Text(
+                  shortcut.label,
+                  style: AppTypography.caption.copyWith(
+                    color: theme.ink,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final int cols = isCompact ? 2 : 3;
+    final List<Widget> rows = [];
+    for (int i = 0; i < available.length; i += cols) {
+      final chunk = available.sublist(i, math.min(i + cols, available.length));
+      if (rows.isNotEmpty) {
+        rows.add(const SizedBox(height: 12));
+      }
+      rows.add(
+        Row(
+          children: [
+            for (int j = 0; j < chunk.length; j++) ...[
+              if (j > 0) const SizedBox(width: 12),
+              Expanded(child: buildTile(chunk[j])),
+            ],
+            for (int k = chunk.length; k < cols; k++) ...[
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox(height: 88)),
+            ],
+          ],
+        ),
+      );
+    }
 
     return GlassSurface(
       level: GlassLevel.level2,
@@ -571,43 +711,22 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'QUICK SHORTCUTS',
-            style: AppTypography.eyebrow.copyWith(color: theme.muted),
+            'Quick shortcuts',
+            style: TextStyle(
+              fontFamily: AppTypography.fontBrand,
+              fontFamilyFallback: AppTypography.brandFallback,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: theme.ink,
+              letterSpacing: -0.3,
+            ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: available.map((shortcut) {
-              return InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => _handleShortcut(context, shortcut),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: theme.surface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.hairline),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(shortcut.icon, size: 18, color: theme.accent),
-                      const SizedBox(width: 8),
-                      Text(
-                        shortcut.label,
-                        style: AppTypography.caption.copyWith(
-                          color: theme.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+          Column(
+            children: rows,
           ),
         ],
       ),
@@ -661,8 +780,15 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
             children: [
               Expanded(
                 child: Text(
-                  'RECENT ACTIVITY',
-                  style: AppTypography.eyebrow.copyWith(color: theme.muted),
+                  'Recent activity',
+                  style: TextStyle(
+                    fontFamily: AppTypography.fontBrand,
+                    fontFamilyFallback: AppTypography.brandFallback,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: theme.ink,
+                    letterSpacing: -0.3,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -982,7 +1108,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Text(
-            'Also runs as a mobile app and a website · See versions in Settings ›',
+            'Compatibility preview · PC, Mobile web, App · Settings ›',
             style: AppTypography.caption.copyWith(
               color: theme.muted,
               fontSize: 12,

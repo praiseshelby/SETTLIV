@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'docked_nav_bar.dart';
+import 'phone_frame.dart';
 
 class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -14,7 +15,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Stack(
+    final appContent = Stack(
       children: [
         Positioned.fill(
           child: navigationShell,
@@ -36,5 +37,7 @@ class AppShell extends StatelessWidget {
           ),
       ],
     );
+
+    return PhoneFrame(child: appContent);
   }
 }

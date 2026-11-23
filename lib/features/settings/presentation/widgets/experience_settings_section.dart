@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/layout/adaptive_layout.dart';
 import '../../../../core/profile/experience_mode.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/glass_segmented.dart';
 import '../../../../core/widgets/glass_surface.dart';
 
 class ExperienceSettingsSection extends ConsumerWidget {
@@ -11,134 +14,142 @@ class ExperienceSettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = context.settliv;
-    final profile = ref.watch(deviceProfileProvider);
     final effective = ref.watch(effectiveExperienceProvider);
+    final isCompact = AdaptiveLayout.isCompact(context);
+
+    // Active layout category among the 3 shipped targets:
+    // 0 = PC website (Web on medium/expanded)
+    // 1 = Mobile website (Web on compact)
+    // 2 = Mobile app (App experience)
+    final int activeLayoutIndex;
+    if (effective == EffectiveExperience.app) {
+      activeLayoutIndex = 2;
+    } else if (isCompact) {
+      activeLayoutIndex = 1;
+    } else {
+      activeLayoutIndex = 0;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 1. Eyebrow
         Text(
-          'EXPERIENCE',
-          style: AppTypography.caption.copyWith(
+          'COMPATIBILITY PREVIEW',
+          style: AppTypography.eyebrow.copyWith(
             color: theme.muted,
-            fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
+            fontSize: 11,
           ),
         ),
         const SizedBox(height: 10),
+
         GlassSurface(
           level: GlassLevel.level1,
           borderRadius: 20,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (profile.isTouch) ...[
-                // Touch devices: rectangular segmented control App | Web
-                Text(
-                  'Interface layout',
-                  style: AppTypography.bodySemiBold.copyWith(
-                    color: theme.ink,
-                    fontSize: 15,
-                  ),
+              // 2. Segmented control App | Web
+              Text(
+                'Preview layout switch',
+                style: AppTypography.bodySemiBold.copyWith(
+                  color: theme.ink,
+                  fontSize: 15,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    // App option
-                    Expanded(
-                      child: _buildExperienceOption(
-                        context: context,
-                        title: 'App',
-                        subtitle: 'Mobile app layout with bottom navigation',
-                        isSelected: effective == EffectiveExperience.app,
-                        painter: PhoneThumbnailPainter(color: theme.accent),
-                        theme: theme,
-                        onTap: () {
-                          ref.read(experienceModeProvider.notifier).setMode(ExperienceMode.app);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Web option
-                    Expanded(
-                      child: _buildExperienceOption(
-                        context: context,
-                        title: 'Web',
-                        subtitle: 'Responsive website layout with top navigation',
-                        isSelected: effective == EffectiveExperience.web,
-                        painter: BrowserThumbnailPainter(color: theme.accent),
-                        theme: theme,
-                        onTap: () {
-                          ref.read(experienceModeProvider.notifier).setMode(ExperienceMode.web);
-                        },
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Switch the live experience to verify compatibility and responsiveness.',
+                style: AppTypography.caption.copyWith(
+                  color: theme.muted,
+                  fontSize: 12,
                 ),
-              ] else ...[
-                // Desktop: informative card (no toggle)
-                Row(
-                  children: [
-                    CustomPaint(
-                      painter: BrowserThumbnailPainter(color: theme.accent),
-                      size: const Size(40, 28),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              Text(
-                                'Responsive Website',
-                                style: AppTypography.bodySemiBold.copyWith(
-                                  color: theme.ink,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: theme.accent.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'ACTIVE',
-                                  style: AppTypography.caption.copyWith(
-                                    color: theme.accent,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 10,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Optimized for desktop with sidebar, keyboard shortcuts, and responsive layouts. Touch and mobile devices can also toggle between app and website views.',
-                            style: AppTypography.caption.copyWith(
-                              color: theme.muted,
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
+              const SizedBox(height: 14),
+
+              GlassSegmented<String>(
+                values: const ['app', 'web'],
+                labels: const ['App', 'Web'],
+                selectedValue: effective == EffectiveExperience.app ? 'app' : 'web',
+                onValueChanged: (val) {
+                  final newMode = val == 'web' ? ExperienceMode.web : ExperienceMode.app;
+                  ref.read(experienceModeProvider.notifier).setMode(newMode);
+
+                  // Route mapping when switching:
+                  // /budgets (Web) <-> /insights/budgets (App)
+                  try {
+                    final currentPath = GoRouterState.of(context).matchedLocation;
+                    if (newMode == ExperienceMode.app && currentPath == '/budgets') {
+                      context.go('/insights/budgets');
+                    } else if (newMode == ExperienceMode.web && currentPath == '/insights/budgets') {
+                      context.go('/budgets');
+                    }
+                  } catch (_) {}
+                },
+              ),
+
+              const SizedBox(height: 20),
+              Divider(height: 1, color: theme.hairline),
               const SizedBox(height: 16),
+
+              // 3. Row of three drawn schematic thumbnails
+              Text(
+                'SHIPPED TARGETS',
+                style: AppTypography.eyebrow.copyWith(
+                  color: theme.muted,
+                  letterSpacing: 0.8,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Target 0: PC website
+                  Expanded(
+                    child: _buildTargetCard(
+                      title: 'PC website',
+                      caption: 'Shipped to: PC users',
+                      isActive: activeLayoutIndex == 0,
+                      painter: PcWebsiteThumbnailPainter(color: theme.accent),
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Target 1: Mobile website
+                  Expanded(
+                    child: _buildTargetCard(
+                      title: 'Mobile web',
+                      caption: 'Phone users, in the browser',
+                      isActive: activeLayoutIndex == 1,
+                      painter: MobileWebThumbnailPainter(color: theme.accent),
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Target 2: Mobile app
+                  Expanded(
+                    child: _buildTargetCard(
+                      title: 'Mobile app',
+                      caption: 'Phone users, installed',
+                      isActive: activeLayoutIndex == 2,
+                      painter: MobileAppThumbnailPainter(color: theme.accent),
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
               Divider(height: 1, color: theme.hairline),
               const SizedBox(height: 14),
 
-              // Professional architectural note in both
+              // 4. Required professional compatibility text
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -150,7 +161,7 @@ class ExperienceSettingsSection extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'One codebase, two experiences. Settliv is built with Flutter, so the same product can ship as a mobile app (for Play Store-style distribution) and as a responsive website for desktop and mobile browsers.',
+                      'Settliv is optimised for three layouts: a website for PC, a mobile website and a mobile app. In the shipped product each person gets only the layout made for their device, with no switching. This switch exists in this preview only, to demonstrate that compatibility from a single link.',
                       style: AppTypography.caption.copyWith(
                         color: theme.muted,
                         fontSize: 12,
@@ -167,131 +178,98 @@ class ExperienceSettingsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildExperienceOption({
-    required BuildContext context,
+  Widget _buildTargetCard({
     required String title,
-    required String subtitle,
-    required bool isSelected,
+    required String caption,
+    required bool isActive,
     required CustomPainter painter,
     required SettlivThemeExtension theme,
-    required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.accent.withValues(alpha: 0.08)
-              : theme.surface.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? theme.accent : theme.hairline,
-            width: isSelected ? 1.8 : 1.0,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isActive
+            ? theme.accent.withValues(alpha: 0.08)
+            : theme.surface.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isActive ? theme.accent : theme.hairline,
+          width: isActive ? 1.6 : 1.0,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodySemiBold.copyWith(
-                    color: isSelected ? theme.accent : theme.ink,
-                    fontSize: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CustomPaint(
+                painter: painter,
+                size: const Size(28, 22),
+              ),
+              if (isActive)
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: theme.accent,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'ACTIVE',
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontBody,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w700,
+                        color: theme.white,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
                   ),
                 ),
-                CustomPaint(
-                  painter: painter,
-                  size: const Size(24, 20),
-                ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: AppTypography.bodySemiBold.copyWith(
+              color: isActive ? theme.accent : theme.ink,
+              fontSize: 13,
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: AppTypography.caption.copyWith(
-                color: theme.muted,
-                fontSize: 11,
-                height: 1.3,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            caption,
+            style: AppTypography.caption.copyWith(
+              color: theme.muted,
+              fontSize: 10.5,
+              height: 1.25,
             ),
-          ],
-        ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
 }
 
-class PhoneThumbnailPainter extends CustomPainter {
+/// Thumbnail painter for PC Website (browser window with sidebar + grid)
+class PcWebsiteThumbnailPainter extends CustomPainter {
   final Color color;
-  const PhoneThumbnailPainter({required this.color});
+  const PcWebsiteThumbnailPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final strokePaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
+      ..strokeWidth = 1.0;
 
     final fillPaint = Paint()
-      ..color = color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill;
-
-    // Outer phone rect
-    final phoneRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(2, 0, size.width - 4, size.height),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(phoneRect, strokePaint);
-
-    // Top status line
-    canvas.drawLine(
-      Offset(size.width * 0.35, 3),
-      Offset(size.width * 0.65, 3),
-      strokePaint..strokeWidth = 1.0,
-    );
-
-    // Middle body block
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(5, 6, size.width - 10, 6),
-        const Radius.circular(1.5),
-      ),
-      fillPaint,
-    );
-
-    // Bottom docked bar line
-    canvas.drawLine(
-      Offset(4, size.height - 3),
-      Offset(size.width - 4, size.height - 3),
-      strokePaint..strokeWidth = 1.2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class BrowserThumbnailPainter extends CustomPainter {
-  final Color color;
-  const BrowserThumbnailPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    final fillPaint = Paint()
-      ..color = color.withValues(alpha: 0.3)
+      ..color = color.withValues(alpha: 0.25)
       ..style = PaintingStyle.fill;
 
     // Outer browser window
@@ -301,20 +279,134 @@ class BrowserThumbnailPainter extends CustomPainter {
     );
     canvas.drawRRect(windowRect, strokePaint);
 
-    // Top window bar line
-    canvas.drawLine(
-      const Offset(0, 5),
-      Offset(size.width, 5),
-      strokePaint..strokeWidth = 0.8,
+    // Sidebar strip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(2, 3, 6, size.height - 6),
+        const Radius.circular(1.5),
+      ),
+      fillPaint,
     );
 
-    // Left sidebar strip
-    canvas.drawRect(
-      Rect.fromLTWH(1, 5, 6, size.height - 8),
+    // Content cards (2 mini cards)
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(10, 4, size.width - 12, 5),
+        const Radius.circular(1),
+      ),
+      fillPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(10, 11, size.width - 12, 6),
+        const Radius.circular(1),
+      ),
       fillPaint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant PcWebsiteThumbnailPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Thumbnail painter for Mobile Website (phone frame with top header)
+class MobileWebThumbnailPainter extends CustomPainter {
+  final Color color;
+  const MobileWebThumbnailPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final fillPaint = Paint()
+      ..color = color.withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+
+    // Outer phone
+    final phoneRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(6, 0, size.width - 12, size.height),
+      const Radius.circular(3.5),
+    );
+    canvas.drawRRect(phoneRect, strokePaint);
+
+    // Top header bar
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8, 2, size.width - 16, 4),
+        const Radius.circular(1),
+      ),
+      fillPaint,
+    );
+
+    // Stacked content cards
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8, 8, size.width - 16, 5),
+        const Radius.circular(1),
+      ),
+      fillPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8, 15, size.width - 16, 4),
+        const Radius.circular(1),
+      ),
+      fillPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant MobileWebThumbnailPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Thumbnail painter for Mobile App (phone frame with bottom docked bar)
+class MobileAppThumbnailPainter extends CustomPainter {
+  final Color color;
+  const MobileAppThumbnailPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final fillPaint = Paint()
+      ..color = color.withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+
+    // Outer phone
+    final phoneRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(6, 0, size.width - 12, size.height),
+      const Radius.circular(3.5),
+    );
+    canvas.drawRRect(phoneRect, strokePaint);
+
+    // Main body card
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8, 4, size.width - 16, 8),
+        const Radius.circular(1),
+      ),
+      fillPaint,
+    );
+
+    // Bottom docked pill bar
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(9, size.height - 5, size.width - 18, 3),
+        const Radius.circular(1.5),
+      ),
+      fillPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant MobileAppThumbnailPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

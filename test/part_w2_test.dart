@@ -131,10 +131,10 @@ void main() {
       expect(find.byType(DashboardWebView), findsOneWidget);
 
       // Key Bento Elements
-      expect(find.text('THIS MONTH'), findsOneWidget);
-      expect(find.text('RECENT GROUPS'), findsOneWidget);
-      expect(find.text('QUICK SHORTCUTS'), findsOneWidget);
-      expect(find.text('RECENT ACTIVITY'), findsOneWidget);
+      expect(find.text('This month'), findsOneWidget);
+      expect(find.text('Recent groups'), findsOneWidget);
+      expect(find.text('Quick shortcuts'), findsOneWidget);
+      expect(find.text('Recent activity'), findsOneWidget);
 
       // Desktop rule: scanReceipt is hidden from shortcuts on desktop
       expect(find.text('Scan receipt'), findsNothing);

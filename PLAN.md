@@ -470,5 +470,81 @@
 
 ---
 
-## Next Steps: Resume Task 4 (Set 3)
-- [ ] **Set 3**: Settings sections expansion (Help & Support forms, WebAuthn Device Lock, recurring bills polish, export/import verification), Motion polish, Release polish, and final QA.
+## Follow-Up Task X Roadmap: X1, X2, S3
+
+### Part X1: Fixes and Behaviour (COMPLETED)
+- [x] **1. Theme Toggle & Month Dial**: Kept ONE theme toggle in sidebar footer. Removed top-right toggle on Web and replaced with drawn custom-painted Month Dial (radial ticks for each day of month, filled arc to today, today's tick highlighted with soft glow, large day number in center, month abbreviation below, tooltip 'Day X of Y', hidden on compact).
+- [x] **2. 'Needs Attention' Strip Placement**: Moved directly below the Net position + This month bento row on Web dashboard (App layout unchanged).
+- [x] **3. Hero Counts & Avatar Stack Geometry Bug**:
+  - Counts = distinct people with non-zero net balance (groups + IOUs); singular/plural ('1 person' vs 'N people'); guaranteed that net amount > 0 implies count >= 1.
+  - Avatar stack: 2px ring, overlap <= 6px, measured initials fully legible without clipping at any scale.
+- [x] **4. Seed & Logic Audit**:
+  - Month-to-date comparison: compare this month-to-date with same period last month.
+  - Cap change percentage: if baseline < ₹1,000 or change > 300%, show absolute difference ('₹X more than last month') instead of absurd percentage.
+  - Debt age calculation: FIFO matching of settlements to expenses so debt age reflects days since oldest still-unsettled amount, not arbitrary oldest expense.
+  - Added seed sanity tests in `test/part_x1_test.dart`.
+- [x] **5. Scan Receipt Visibility**: Hidden scan receipt everywhere on Web desktop (composer tools row, shortcuts card, Add dialog); kept visible on touch and inside App phone frame.
+- [x] **6. Quick Composer Polish**: Removed faint 'Use this' text from composer in all layouts.
+- [x] **7. Shortcuts Grid Uniformity**: 3 columns x 2 rows on expanded desktop, equal tile sizes (~88px), icon centered above label, cards in bento row stretch to equal height with no empty tails.
+- [x] **8. Plain Right-Aligned Amounts**: Created `WebBalanceBadge` with clean right-aligned tabular amounts in AA text colors + small caption ('owed to you' / 'you owe') on Web. Replaced decorative pills.
+- [x] **9. Web Typography Audit**: Card titles use Bricolage 17/700 sentence case (no all-caps card titles); caps eyebrows only for tiny meta labels.
+- [x] **10. Navigation & Budgets Standalone Route**:
+  - Budgets is standalone top-level sidebar item `/budgets` on Web; Web Insights = Overview only.
+  - App keeps Budgets nested under `/insights/budgets`.
+  - Sidebar items use `go()` to root route, active state derived from top-level section, 24px shared icon box, groups with eyebrows ('Overview', 'Money').
+- [x] **11. Add Expense Centred Dialog**:
+  - Desktop/medium Web: centred dialog via AdaptivePresenter (max 960px wide, 32px padding, header row with title and close button 24px from edges, Quick/Manual control, two panes with composer left and draft card right, footer actions with hairline).
+  - Compact Web: full-screen sheet with 20px safe padding.
+- [x] **12. Spacing & Insets Audit**: Nothing closer than 24px to viewport/dialog/drawer edge; 32-40px page padding on desktop; ScreenHeader top padding 40px, title-to-content 24px. Geometry tests at 1440x900 and 1280x720 in `test/part_x1_test.dart`.
+- [x] **13. Experience Rules & Compatibility Preview**:
+  - Synchronous device detection and pure resolution table: desktop+none->Web; desktop+app->App; desktop+web->Web; touch+none->App; touch+app->App; touch+web->Web. Tested in `test/part_x1_test.dart`.
+  - App on wide viewports (>600px): centred phone frame with slim bezel (8px), content clipped inside (radius 44), bottom bar docked inside, scaled to viewport height, Aurora background, SETTLIV wordmark above, hint below ('Mobile app layout · compatibility preview. Settings › Experience').
+  - Route mapping: `/budgets` (Web) <-> `/insights/budgets` (App).
+  - Compatibility preview messaging in exactly 4 places (Settings > Experience with 3 schematic thumbnails, desktop sidebar footer card, phone frame hint, first-visit glass toast/card). Removed all 'one codebase / every screen' slogans.
+  - Debug-only `?device=desktop|touch` query override.
+- [x] **14. Automated Tests & Verification**:
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **175/175 tests passing** (100%), including `test/part_x1_test.dart`, `test/part_w2_test.dart`, `test/part_w3_test.dart`, and `test/theme_token_scan_test.dart`.
+  - `flutter build web`: Built release bundle cleanly.
+  - Local server serving `http://localhost:3000/` with `no-store, no-cache` headers.
+
+---
+
+### Part X2: Visual Level-Up (Web Experience)
+- [ ] **1. Background Depth Stack**:
+  - FAR: soft color fields (light: pearl-white to lavender #E8E3FF, cool sky #DCEBFF, faint peach #FFE7DD; dark: ink #070914 base with violet #2A1B6B, indigo #16245E, teal #0C3A44 glows) with 6% scroll parallax and ±10px pointer parallax.
+  - MID: fine contour/orbit linework (0.75px, 6-8% opacity, cached).
+  - NEAR: 3-4% grain and soft vignette, soft pointer cursor light with eased lag (desktop only; disabled in lite mode).
+  - Remove current square hairline grid.
+- [ ] **2. Panels & Hover Styling**: 1px gradient hairline (brighter top-left), inner top highlight, violet ambient shadow (light) or hover glow (dark). Local hover border brightening along pointer position without full tree rebuilds.
+- [ ] **3. Hero 'Net Position' Level-Up**:
+  - Light 'Prism Pearl': white-to-lavender surface, 1.5px prismatic border (violet-cyan-mint), ink text, AA colored sentence, concentric orbit rings with owed/owe nodes.
+  - Dark 'Luminous Core': indigo-violet mesh, glowing gradient edge, slowly rotating orbit rings, glowing white amount, refined diverging track.
+  - Both: ~72px Sora 800 with 600ms odometer digit roll once per session, light sweep, staggered avatar entrance, pointer spotlight.
+- [ ] **4. Motion Choreography**: First load stagger (background 400ms -> sidebar 12px rise -> header -> hero -> cards stagger 60ms). Page transitions: 280ms fade + 8px rise + blur 8 to 0. Spring nav indicators. Subtle magnetic pull (<= 4px) on primary button.
+- [ ] **5. Sidebar & Surfaces Polish**: Frosted sidebar with gradient edge highlight, active item 3px accent bar + soft tint, 1.75px rounded icon set, tabular figures, 8pt optical alignment, refined chart crosshair.
+- [ ] **6. Signature Loading Screen (`web/index.html`)**: Pure HTML/CSS/inline SVG 'Settle' sequence: converging nodes on thin rings, balancing line, SETTLIV wordmark resolving from 0.6em to 0.18em tracking with indeterminate hairline sweep. On Flutter first frame: circular expanding clip-path reveal. Theme-aware, reduced-motion aware, zero external requests, no logo icon, no slogan.
+- [ ] **7. Empty States & Contrast Check**: Settle orbit motif in empty states; WCAG contrast test verification against blended backgrounds.
+- [ ] **8. Screenshots & Verification Pass**: Full 1440x900 screenshots (Dashboard light/dark, Add Expense dialog, Settings > Experience, loading screen frames).
+
+---
+
+### Part S3: Set 3 — Both Experiences Full Implementation
+- [ ] **1. Insights & Budgets Implementation for Both Experiences**:
+  - **App Experience**: Insights screen with `Overview | Budgets` segmented control. Overview tab includes calendar view, monthly recap card, debt breakdown, category spending distribution, group spending breakdown, spending habits. Budgets tab includes category monthly budget progress, upcoming recurring bills, and savings goals.
+  - **Web Experience**: Standalone `/budgets` page with full budgets hub, recurring bills, and savings goals; standalone `/insights` page with overview charts, calendar, and habit metrics.
+  - Adaptive presentation for all detail dialogs, create budget modal, and recurring bill creation.
+- [ ] **2. Settings Expansion & Polish for Both Experiences**:
+  - **Experience Section**: Maintained immediately before 'Privacy and data'; segmented App | Web control, 3 schematic thumbnails (PC website, Mobile website, Mobile app) with active state badge, factual copy.
+  - **Help & Feedback**: 'Report a problem' and 'Request a feature' functional interactive forms with category selector, description, severity, and confirmation sheet/dialog.
+  - **Security / Device Lock**: Biometric / WebAuthn screen lock simulation with PIN fallback; custom wordmark-only lock screen with full-viewport glass on Web and phone-frame compatibility on desktop.
+  - **Recurring Bills Manager**: Complete list of active/paused recurring templates, pause/resume toggle, delete with undo, add recurring template modal.
+  - **Data & Privacy Management**: JSON full ledger backup and restore with file download, CSV export, 'Clear all data' with two-step modal confirmation.
+  - **About / Brand Section**: Wordmark only ('SETTLIV'), version string, 'Built with Flutter'.
+- [ ] **3. Motion & Visual Consistency for App Experience**:
+  - Ensure App experience shares consistent high-end micro-interactions, smooth sheet transitions, and haptic feedback without heavy desktop-specific shaders/pointer parallax.
+- [ ] **4. Final Comprehensive QA & Documentation**:
+  - Test coverage across all desktop resolutions (1920x1080, 1440x900, 1366x768, 1024x768), tablet (768x1024), mobile viewports (390x844, 360x640).
+  - Verify route persistence on browser refresh and route mapping when switching modes (`/budgets` <-> `/insights/budgets`).
+  - Verify back affordance on every route.
+  - Update `README.md` and `DEPLOY.md` with complete documentation, build commands, Vercel instructions, release size stats, and honest limitations.

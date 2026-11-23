@@ -5,7 +5,6 @@ import 'package:settliv/main.dart';
 import 'package:settliv/routes/app_router.dart';
 import 'package:settliv/data/repositories/in_memory_app_repository.dart';
 import 'package:settliv/data/models/expense.dart';
-import 'package:settliv/data/models/group.dart';
 import 'package:settliv/data/models/iou_note.dart';
 import 'package:settliv/data/engine/person_balance_engine.dart';
 import 'package:settliv/data/seed/seed_data.dart';

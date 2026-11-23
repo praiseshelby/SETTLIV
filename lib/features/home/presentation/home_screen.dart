@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'widgets/dashboard_web_view.dart';
 import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
+import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
@@ -46,58 +48,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final sharedGroups = allGroups.where((g) => !g.isPersonal).toList();
     final people = ref.watch(allPeopleProvider);
     final allExpenses = ref.watch(allExpensesProvider);
-    final allSettlements = ref.watch(allSettlementsProvider);
+    final settlements = ref.watch(allSettlementsProvider);
     final currentUser = repo.currentUser;
     final currentUserId = repo.currentUserId;
     final now = DateTime.now();
 
-    // 1. Counterparties for Hero card footer
-    final peopleOwingUser = <Person>[];
-    final peopleUserOwes = <Person>[];
-    for (final group in sharedGroups) {
-      final summary = repo.getGroupSummary(group.id);
-      for (final debt in summary.debts) {
-        if (debt.toPersonId == currentUserId) {
-          final p = repo.getPerson(debt.fromPersonId);
-          if (p != null && !peopleOwingUser.any((item) => item.id == p.id)) {
-            peopleOwingUser.add(p);
-          }
-        } else if (debt.fromPersonId == currentUserId) {
-          final p = repo.getPerson(debt.toPersonId);
-          if (p != null && !peopleUserOwes.any((item) => item.id == p.id)) {
-            peopleUserOwes.add(p);
-          }
-        }
-      }
-    }
-    final allCounterparties = [...peopleOwingUser, ...peopleUserOwes];
+    // 1. Counterparties across groups + IOUs for Hero card
+    final allPeople = ref.watch(allPeopleProvider);
+    final peopleMap = {for (final p in allPeople) p.id: p};
+    final groupMembersMap = {for (final g in allGroups) g.id: g.memberIds};
+    final iouNotes = repo.getAllIouNotes();
 
-    // 2. "This month" compact calculation: YOUR share this month vs last month
+    final counterpartyNets = const BalanceEngine().computeCounterpartyNets(
+      currentUserId: currentUserId,
+      groups: allGroups,
+      groupMembersMap: groupMembersMap,
+      expenses: allExpenses,
+      settlements: settlements,
+      iouNotes: iouNotes,
+      peopleMap: peopleMap,
+    );
+
+    final peopleOwingUser = counterpartyNets.where((c) => c.netPaise > 0).map((c) => c.person).toList();
+    final peopleUserOwes = counterpartyNets.where((c) => c.netPaise < 0).map((c) => c.person).toList();
+    final allCounterparties = [...peopleOwingUser, ...peopleUserOwes];
+    final owedFromCount = overall.totalOwedToUser > 0
+        ? math.max(1, peopleOwingUser.length)
+        : peopleOwingUser.length;
+    final owesToCount = overall.totalUserOwes > 0
+        ? math.max(1, peopleUserOwes.length)
+        : peopleUserOwes.length;
+
+    // 2. "This month" compact calculation: compare month-to-date with SAME period last month
     final startOfThisMonth = DateTime(now.year, now.month, 1);
+    final daysInLastMonth = DateTime(now.year, now.month, 0).day;
+    final lastMonthDay = math.min(now.day, daysInLastMonth);
     final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
-    final endOfLastMonth = DateTime(now.year, now.month, 0, 23, 59, 59);
+    final samePeriodLastMonthEnd = DateTime(
+      now.year,
+      now.month - 1,
+      lastMonthDay,
+      now.hour,
+      now.minute,
+      now.second,
+    );
 
     int thisMonthYourSpend = 0;
     int lastMonthYourSpend = 0;
 
     for (final exp in allExpenses) {
       if (!exp.isDeleted) {
-        final share = exp.computedShares[currentUserId] ?? 0;
-        if (exp.date.isAfter(startOfThisMonth.subtract(const Duration(seconds: 1)))) {
+        final share = exp.computedShares[currentUserId] ?? exp.shares[currentUserId] ?? 0;
+        if (exp.date.isAfter(startOfThisMonth.subtract(const Duration(seconds: 1))) &&
+            !exp.date.isAfter(now)) {
           thisMonthYourSpend += share;
         } else if (exp.date.isAfter(startOfLastMonth.subtract(const Duration(seconds: 1))) &&
-            exp.date.isBefore(endOfLastMonth.add(const Duration(seconds: 1)))) {
+            !exp.date.isAfter(samePeriodLastMonthEnd)) {
           lastMonthYourSpend += share;
         }
       }
     }
 
+    final int diffSpend = thisMonthYourSpend - lastMonthYourSpend;
+    final bool showAbsolute = lastMonthYourSpend < 100000 || // baseline under ₹1,000
+        lastMonthYourSpend == 0 ||
+        (diffSpend.abs() / lastMonthYourSpend) > 3.0; // change exceeds 300%
+
     final double spendChangePercent = lastMonthYourSpend > 0
-        ? ((thisMonthYourSpend - lastMonthYourSpend) / lastMonthYourSpend) * 100.0
+        ? (diffSpend / lastMonthYourSpend) * 100.0
         : 0.0;
 
     // 3. "Needs attention" check:
-    // a) Overdue balances / counterparties owing 7+ days
+    // a) Overdue balances / counterparties owing 7+ days (computed via FIFO matching)
     // b) Due recurring bills (if any)
     String? attentionMessage;
     VoidCallback? attentionAction;
@@ -106,21 +128,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final summary = repo.getGroupSummary(group.id);
       for (final debt in summary.debts) {
         if (debt.toPersonId == currentUserId && debt.amount > 0) {
-          final debtorExpenses = allExpenses.where((e) =>
-            !e.isDeleted && e.groupId == group.id && (e.computedShares[debt.fromPersonId] ?? 0) > 0
-          ).toList();
-          final oldest = debtorExpenses.isNotEmpty
-              ? debtorExpenses.reduce((a, b) => a.date.isBefore(b.date) ? a : b)
-              : null;
-          if (oldest != null) {
-            final daysAgo = now.difference(oldest.date).inDays;
-            if (daysAgo >= 7) {
-              if (attentionMessage == null) {
-                final debtorPerson = repo.getPerson(debt.fromPersonId);
-                final dName = NameNormalizer.normalize(debtorPerson?.name ?? 'Someone');
-                attentionMessage = '$dName owes you ${CurrencyFormatter.formatPaise(debt.amount)} for $daysAgo days';
-                attentionAction = () => context.push('/balances');
-              }
+          final daysAgo = const BalanceEngine().computeDebtAgeInDays(
+            debtorId: debt.fromPersonId,
+            creditorId: currentUserId,
+            groupId: group.id,
+            expenses: allExpenses,
+            settlements: settlements,
+            now: now,
+          );
+          if (daysAgo >= 7) {
+            if (attentionMessage == null) {
+              final debtorPerson = repo.getPerson(debt.fromPersonId);
+              final dName = NameNormalizer.normalize(debtorPerson?.name ?? 'Someone');
+              attentionMessage = '$dName owes you ${CurrencyFormatter.formatPaise(debt.amount)} for $daysAgo days';
+              attentionAction = () => context.push('/balances');
             }
           }
         }
@@ -128,7 +149,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Check overdue IOU notes
-    final iouNotes = repo.getAllIouNotes();
     for (final note in iouNotes) {
       if (note.isOverdue(now) && !note.isSettled) {
         if (attentionMessage == null) {
@@ -149,7 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // 5. Recent activity rule: pure function RecentActivityEngine
     final recentActivityResult = RecentActivityEngine.computeRecentActivity(
       expenses: allExpenses,
-      settlements: allSettlements,
+      settlements: settlements,
       now: now,
     );
 
@@ -214,8 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 netPaise: overall.netBalance,
                 totalOwedToUserPaise: overall.totalOwedToUser,
                 totalUserOwesPaise: overall.totalUserOwes,
-                owedFromCount: peopleOwingUser.length,
-                owesToCount: peopleUserOwes.length,
+                owedFromCount: owedFromCount,
+                owesToCount: owesToCount,
                 counterparties: allCounterparties,
                 onTap: () => context.push('/balances'),
               ),
@@ -323,28 +343,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               if (lastMonthYourSpend > 0) ...[
                                 const SizedBox(height: 3),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      spendChangePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                                      size: 13,
-                                      color: spendChangePercent > 0 ? theme.coral : theme.emerald,
+                                if (showAbsolute) ...[
+                                  Text(
+                                    diffSpend >= 0
+                                        ? '${CurrencyFormatter.formatPaise(diffSpend, absolute: true)} more than last month'
+                                        : '${CurrencyFormatter.formatPaise(diffSpend.abs(), absolute: true)} less than last month',
+                                    style: AppTypography.caption.copyWith(
+                                      color: diffSpend > 0 ? theme.coral : theme.emerald,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
                                     ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        '${spendChangePercent.abs().toStringAsFixed(0)}% vs last month',
-                                        style: AppTypography.caption.copyWith(
-                                          color: spendChangePercent > 0 ? theme.coral : theme.emerald,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 11,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ] else ...[
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        spendChangePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                        size: 13,
+                                        color: spendChangePercent > 0 ? theme.coral : theme.emerald,
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          '${spendChangePercent.abs().toStringAsFixed(0)}% vs last month',
+                                          style: AppTypography.caption.copyWith(
+                                            color: spendChangePercent > 0 ? theme.coral : theme.emerald,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ],
                           ),
@@ -484,7 +519,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Center(
                     child: Text(
-                      'Also runs as a mobile app and a website · See versions in Settings ›',
+                      'Compatibility preview · PC, Mobile web, App · Settings ›',
                       style: AppTypography.caption.copyWith(
                         color: theme.muted,
                         fontSize: 12,

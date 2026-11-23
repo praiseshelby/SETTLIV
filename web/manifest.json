@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0B0F19",
     "theme_color": "#6366F1",
-    "description": "Expense Sharing & Group Ledger — One codebase. Every screen.",
+    "description": "Expense Sharing & Group Ledger",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

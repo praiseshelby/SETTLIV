@@ -543,8 +543,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       orElse: () => groups.first,
     );
     final effective = ref.watch(effectiveExperienceProvider);
+    final profile = ref.watch(deviceProfileProvider);
     final layout = AdaptiveLayout.of(context);
     final isDesktopWeb = effective == EffectiveExperience.web && layout != LayoutClass.compact;
+    final hideScanReceipt = profile.isDesktop && effective == EffectiveExperience.web;
 
     return CallbackShortcuts(
       bindings: {
@@ -569,71 +571,703 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         resizeToAvoidBottomInset: true,
         body: AuroraBackground(
           child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isDesktopWeb ? 960 : double.infinity),
-                child: Column(
-                  children: [
-                // Top Bar: Glass circular close button + title via ScreenHeader
-                ScreenHeader(
-                  title: widget.initialExpense != null
-                      ? 'Edit expense'
-                      : 'New expense',
-                  leading: Semantics(
-                    button: true,
-                    label: 'Close',
-                    child: GlassSurface(
-                      level: GlassLevel.level1,
-                      borderRadius: 999,
-                      padding: const EdgeInsets.all(8),
-                      onTap: () async {
-                        final shouldPop = await _onWillPop();
-                        if (shouldPop && context.mounted) {
-                          BackNavigation.handleBack(context, currentPath: '/add');
-                        }
-                      },
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: theme.ink,
-                        size: 20,
+            child: isDesktopWeb
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 960),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                        child: GlassSurface(
+                          level: GlassLevel.level2,
+                          borderRadius: 24,
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Header Row: title left + close button right
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    widget.initialExpense != null ? 'Edit expense' : 'New expense',
+                                    style: TextStyle(
+                                      fontFamily: AppTypography.fontBrand,
+                                      fontFamilyFallback: AppTypography.brandFallback,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                      color: theme.ink,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded),
+                                    color: theme.muted,
+                                    tooltip: 'Close (Esc)',
+                                    onPressed: () async {
+                                      final shouldPop = await _onWillPop();
+                                      if (shouldPop && context.mounted) {
+                                        BackNavigation.handleBack(context, currentPath: '/add');
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // GlassSegmented: Quick | Manual
+                              GlassSegmented<int>(
+                                values: const [0, 1],
+                                labels: const ['Quick', 'Manual'],
+                                selectedValue: _selectedTab,
+                                onValueChanged: (idx) {
+                                  setState(() => _selectedTab = idx);
+                                  if (idx == 0) {
+                                    _quickFocusNode.requestFocus();
+                                  } else {
+                                    _amountFocusNode.requestFocus();
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 520),
+                                child: _selectedTab == 0
+                                    ? _buildQuickDesktopTwoPane(people, groups, allExpenses, hideScanReceipt: hideScanReceipt)
+                                    : _buildManualDesktopTwoPane(people, groups, currentGroup, hideScanReceipt: hideScanReceipt),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  )
+                : Column(
+                    children: [
+                      // Top Bar: Glass circular close button + title via ScreenHeader
+                      ScreenHeader(
+                        title: widget.initialExpense != null
+                            ? 'Edit expense'
+                            : 'New expense',
+                        leading: Semantics(
+                          button: true,
+                          label: 'Close',
+                          child: GlassSurface(
+                            level: GlassLevel.level1,
+                            borderRadius: 999,
+                            padding: const EdgeInsets.all(8),
+                            onTap: () async {
+                              final shouldPop = await _onWillPop();
+                              if (shouldPop && context.mounted) {
+                                BackNavigation.handleBack(context, currentPath: '/add');
+                              }
+                            },
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: theme.ink,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
 
-                // GlassSegmented: Quick | Manual
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
-                  child: GlassSegmented<int>(
-                    values: const [0, 1],
-                    labels: const ['Quick', 'Manual'],
-                    selectedValue: _selectedTab,
-                    onValueChanged: (idx) {
-                      setState(() => _selectedTab = idx);
-                      if (idx == 0) {
-                        _quickFocusNode.requestFocus();
-                      } else {
-                        _amountFocusNode.requestFocus();
-                      }
-                    },
-                  ),
-                ),
+                      // GlassSegmented: Quick | Manual
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                        child: GlassSegmented<int>(
+                          values: const [0, 1],
+                          labels: const ['Quick', 'Manual'],
+                          selectedValue: _selectedTab,
+                          onValueChanged: (idx) {
+                            setState(() => _selectedTab = idx);
+                            if (idx == 0) {
+                              _quickFocusNode.requestFocus();
+                            } else {
+                              _amountFocusNode.requestFocus();
+                            }
+                          },
+                        ),
+                      ),
 
-                // Tab Body
-                Expanded(
-                  child: _selectedTab == 0
-                      ? _buildQuickTab(people, groups, allExpenses)
-                      : _buildManualTab(people, groups, currentGroup),
-                ),
-              ],
-            ),
+                      // Tab Body
+                      Expanded(
+                        child: _selectedTab == 0
+                            ? _buildQuickTab(people, groups, allExpenses, hideScanReceipt: hideScanReceipt)
+                            : _buildManualTab(people, groups, currentGroup, hideScanReceipt: hideScanReceipt),
+                      ),
+                    ],
+                  ),
           ),
-        ),
-      ),
     ),
   ),
 ),
 );
+  }
+
+  Widget _buildQuickDesktopTwoPane(
+    List<Person> people,
+    List<Group> groups,
+    List<Expense> allExpenses, {
+    required bool hideScanReceipt,
+  }) {
+    final theme = context.settliv;
+    final parser = QuickExpenseParser(
+      availablePeople: people,
+      availableGroups: groups,
+      currentUser: people.firstWhere(
+        (p) => p.id == SeedData.currentUserId,
+        orElse: () => people.first,
+      ),
+    );
+
+    final parseResult = parser.parse(
+      _quickTextController.text,
+      defaultGroupId: _selectedGroupId,
+    );
+    final bool hasValidExpense = parseResult.isValid;
+    final String ctaLabel = hasValidExpense
+        ? 'Confirm · ${CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true)} with ${parseResult.participants.length} people'
+        : 'Add expense';
+
+    final repeatSuggestions = RepeatSuggestionEngine.getRepeatSuggestions(
+      expenses: allExpenses,
+      currentUserId: SeedData.currentUserId,
+    );
+
+    final currentExample = _placeholderExamples[_exampleIndex];
+
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Pane: Composer + Suggestions
+              Expanded(
+                flex: 6,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GlassSurface(
+                        level: GlassLevel.level2,
+                        borderRadius: 20,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'WHAT DID YOU SPEND ON?',
+                              style: AppTypography.sectionLabel.copyWith(
+                                color: theme.secondary,
+                                letterSpacing: 0.8,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 100),
+                              child: Stack(
+                                children: [
+                                  if (_quickTextController.text.isEmpty)
+                                    IgnorePointer(
+                                      child: Text(
+                                        currentExample,
+                                        style: AppTypography.titleLarge.copyWith(
+                                          color: theme.tertiary.withValues(alpha: 0.5),
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  TextField(
+                                    controller: _quickTextController,
+                                    focusNode: _quickFocusNode,
+                                    maxLines: 4,
+                                    minLines: 3,
+                                    style: AppTypography.titleLarge.copyWith(
+                                      color: theme.ink,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Divider(height: 16, color: theme.hairline),
+                            Row(
+                              children: [
+                                if (!hideScanReceipt) ...[
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => ScanSheet.show(
+                                        context,
+                                        onPasteSms: _pasteFromClipboard,
+                                        onTypeInstead: () {
+                                          setState(() => _selectedTab = 1);
+                                          _amountFocusNode.requestFocus();
+                                        },
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(minHeight: 44),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
+                                            const SizedBox(width: 8),
+                                            Text('Scan receipt', style: AppTypography.caption.copyWith(color: theme.ink, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(width: 1, height: 24, color: theme.hairline),
+                                ],
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _pasteFromClipboard,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minHeight: 44),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.content_paste_rounded, size: 18, color: theme.ink),
+                                          const SizedBox(width: 8),
+                                          Text('Paste SMS', style: AppTypography.caption.copyWith(color: theme.ink, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (repeatSuggestions.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'REPEAT RECENT EXPENSES',
+                          style: AppTypography.sectionLabel.copyWith(
+                            color: theme.secondary,
+                            letterSpacing: 0.8,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: repeatSuggestions.map((item) {
+                            return InkWell(
+                              onTap: () {
+                                _quickTextController.text = item.displayTitle;
+                                setState(() {});
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: theme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: theme.hairline),
+                                ),
+                                child: Text(item.displayTitle, style: AppTypography.caption.copyWith(color: theme.ink, fontWeight: FontWeight.w600)),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+
+              // Right Pane: Draft Card Preview
+              Expanded(
+                flex: 5,
+                child: GlassSurface(
+                  level: GlassLevel.level1,
+                  borderRadius: 20,
+                  padding: const EdgeInsets.all(20),
+                  child: hasValidExpense
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'DRAFT EXPENSE',
+                              style: AppTypography.sectionLabel.copyWith(
+                                color: theme.muted,
+                                letterSpacing: 0.8,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true),
+                              style: TextStyle(
+                                fontFamily: AppTypography.fontFamily,
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: theme.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              parseResult.description,
+                              style: AppTypography.bodySemiBold.copyWith(color: theme.ink),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLiveParsePreview(parseResult, theme, groups),
+                          ],
+                        )
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.receipt_long_rounded, size: 40, color: theme.muted.withValues(alpha: 0.4)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Type what you spent\non the left',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.body.copyWith(color: theme.muted),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Footer Actions separated by hairline
+        Container(
+          padding: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: theme.hairline)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final shouldPop = await _onWillPop();
+                  if (shouldPop && mounted) {
+                    BackNavigation.handleBack(context, currentPath: '/add');
+                  }
+                },
+                child: Text('Cancel', style: AppTypography.button.copyWith(color: theme.muted)),
+              ),
+              const SizedBox(width: 12),
+              GradientPrimaryButton(
+                label: _showSavedSuccess ? 'Saved!' : ctaLabel,
+                isLoading: _isSaving && !_showSavedSuccess,
+                onPressed: (!hasValidExpense || _isSaving)
+                    ? null
+                    : () {
+                        final memberIds = parseResult.participants.map((p) => p.id).toList();
+                        final payerId = parseResult.payerId ?? SeedData.currentUserId;
+                        final shares = SplitCalculator.splitEqual(
+                          totalPaise: parseResult.amountPaise!,
+                          memberIds: memberIds,
+                          paidBy: payerId,
+                        );
+                        final newExp = Expense(
+                          id: widget.initialExpense?.id ?? 'exp_${DateTime.now().millisecondsSinceEpoch}',
+                          groupId: parseResult.inferredGroup?.id ?? _selectedGroupId,
+                          title: parseResult.description,
+                          category: parseResult.category,
+                          amount: parseResult.amountPaise!,
+                          date: DateTime.now(),
+                          paidBy: payerId,
+                          splitMode: SplitMode.equal,
+                          shares: shares,
+                        );
+                        _checkAndSaveExpense(newExp);
+                      },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManualDesktopTwoPane(
+    List<Person> people,
+    List<Group> groups,
+    Group currentGroup, {
+    required bool hideScanReceipt,
+  }) {
+    final theme = context.settliv;
+    final bool isPersonalMode = currentGroup.isPersonal;
+    final sharedGroups = groups.where((g) => !g.isPersonal).toList();
+    final int? enteredPaise = CurrencyFormatter.parseToPaise(_amountController.text);
+    final int amountPaise = enteredPaise ?? 0;
+    final validation = _validateManualSplit(amountPaise);
+
+    final String buttonLabel;
+    if (widget.initialExpense != null) {
+      buttonLabel = 'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
+    } else if (currentGroup.isPersonal) {
+      buttonLabel = 'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · personal';
+    } else {
+      buttonLabel = 'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · split with ${_selectedMemberIds.length} people';
+    }
+
+    final payer = people.firstWhere(
+      (p) => p.id == _paidById,
+      orElse: () => people.first,
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Pane: Amount hero, Description, Date, Category
+              Expanded(
+                flex: 6,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Amount Hero
+                      Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '₹',
+                              style: AppTypography.titleLarge.copyWith(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: theme.secondary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            IntrinsicWidth(
+                              child: TextField(
+                                controller: _amountController,
+                                focusNode: _amountFocusNode,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                                ],
+                                style: AppTypography.heroMoney.copyWith(
+                                  fontSize: 48,
+                                  color: theme.ink,
+                                  letterSpacing: -1.5,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: AppTypography.heroMoney.copyWith(
+                                    fontSize: 48,
+                                    color: theme.tertiary.withValues(alpha: 0.35),
+                                    letterSpacing: -1.5,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Description
+                      GlassSurface(
+                        level: GlassLevel.level1,
+                        borderRadius: 16,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: TextField(
+                          controller: _descriptionController,
+                          focusNode: _descFocusNode,
+                          maxLength: 60,
+                          buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                          style: AppTypography.bodySemiBold.copyWith(color: theme.ink),
+                          decoration: InputDecoration(
+                            hintText: 'What was this for? (optional)',
+                            hintStyle: AppTypography.body.copyWith(color: theme.tertiary),
+                            border: InputBorder.none,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Category Grid
+                      _buildCategoryGrid(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+
+              // Right Pane: Group, Payer, Participants, Split Mode
+              Expanded(
+                flex: 5,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Shared | Personal toggle
+                      GlassSegmented<String>(
+                        values: const ['shared', 'personal'],
+                        labels: const ['Shared', 'Personal'],
+                        selectedValue: isPersonalMode ? 'personal' : 'shared',
+                        onValueChanged: (mode) {
+                          if (mode == 'personal') {
+                            final personalGroup = groups.firstWhere((g) => g.isPersonal, orElse: () => groups.first);
+                            setState(() {
+                              _selectedGroupId = personalGroup.id;
+                              _initMembersForGroup();
+                            });
+                          } else {
+                            final firstShared = sharedGroups.isNotEmpty ? sharedGroups.first : groups.first;
+                            setState(() {
+                              _selectedGroupId = firstShared.id;
+                              _initMembersForGroup();
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Group selector
+                      if (!isPersonalMode) ...[
+                        InkWell(
+                          onTap: () => _showGroupSelectorSheet(context, sharedGroups),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: theme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: theme.hairline),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.group_work_outlined, size: 18, color: theme.accent),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    currentGroup.name,
+                                    style: AppTypography.bodySemiBold.copyWith(color: theme.ink),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right_rounded, size: 18, color: theme.muted),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Paid by
+                        InkWell(
+                          onTap: () => _openPaidByPickerSheet(people),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: theme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: theme.hairline),
+                            ),
+                            child: Row(
+                              children: [
+                                PersonAvatar(person: payer, size: 24, showRing: false),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Paid by ${payer.id == SeedData.currentUserId ? "you" : payer.name}',
+                                    style: AppTypography.bodySemiBold.copyWith(color: theme.ink),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right_rounded, size: 18, color: theme.muted),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Split mode: Equal | Exact | Percent
+                        GlassSegmented<int>(
+                          values: const [0, 1, 2],
+                          labels: const ['Equal', 'Exact', 'Percent'],
+                          selectedValue: _splitMode.index,
+                          onValueChanged: (idx) => setState(() => _splitMode = SplitMode.values[idx]),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSplitModeContent(people, amountPaise),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Footer Actions separated by hairline
+        Container(
+          padding: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: theme.hairline)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final shouldPop = await _onWillPop();
+                  if (shouldPop && mounted) {
+                    BackNavigation.handleBack(context, currentPath: '/add');
+                  }
+                },
+                child: Text('Cancel', style: AppTypography.button.copyWith(color: theme.muted)),
+              ),
+              const SizedBox(width: 12),
+              GradientPrimaryButton(
+                label: _showSavedSuccess ? 'Saved!' : buttonLabel,
+                isLoading: _isSaving && !_showSavedSuccess,
+                onPressed: (!validation.isValid || _isSaving)
+                    ? () => setState(() => _attemptedSave = true)
+                    : () {
+                        final shares = _computeFinalShares(amountPaise);
+                        final newExp = Expense(
+                          id: widget.initialExpense?.id ?? 'exp_${DateTime.now().millisecondsSinceEpoch}',
+                          groupId: _selectedGroupId,
+                          title: _descriptionController.text.trim().isEmpty ? _selectedCategory.label : _descriptionController.text.trim(),
+                          category: _selectedCategory,
+                          amount: amountPaise,
+                          date: _selectedDate,
+                          paidBy: _paidById,
+                          splitMode: _splitMode,
+                          shares: shares,
+                        );
+                        _checkAndSaveExpense(newExp);
+                      },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -643,8 +1277,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Widget _buildQuickTab(
     List<Person> people,
     List<Group> groups,
-    List<Expense> allExpenses,
-  ) {
+    List<Expense> allExpenses, {
+    required bool hideScanReceipt,
+  }) {
     final theme = context.settliv;
     final parser = QuickExpenseParser(
       availablePeople: people,
@@ -702,33 +1337,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (_quickTextController.text.isEmpty) ...[
-                        const SizedBox(width: 8),
-                        Semantics(
-                          button: true,
-                          label: 'Use current example',
-                          child: InkWell(
-                            onTap: () {
-                              _quickTextController.text = currentExample;
-                              setState(() {});
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              child: Text(
-                                'Use this',
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontBody,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.navy,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -803,38 +1411,40 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => ScanSheet.show(
-                              context,
-                              onPasteSms: _pasteFromClipboard,
-                              onTypeInstead: () {
-                                setState(() => _selectedTab = 1);
-                                _amountFocusNode.requestFocus();
-                              },
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: 48),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Scan receipt',
-                                    style: AppTypography.caption.copyWith(
-                                      color: theme.ink,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
+                        if (!hideScanReceipt) ...[
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => ScanSheet.show(
+                                context,
+                                onPasteSms: _pasteFromClipboard,
+                                onTypeInstead: () {
+                                  setState(() => _selectedTab = 1);
+                                  _amountFocusNode.requestFocus();
+                                },
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 48),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Scan receipt',
+                                      style: AppTypography.caption.copyWith(
+                                        color: theme.ink,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        Container(width: 1, height: 24, color: theme.hairline),
+                          Container(width: 1, height: 24, color: theme.hairline),
+                        ],
                         Expanded(
                           child: InkWell(
                             onTap: _pasteFromClipboard,
@@ -1199,8 +1809,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Widget _buildManualTab(
     List<Person> people,
     List<Group> groups,
-    Group currentGroup,
-  ) {
+    Group currentGroup, {
+    required bool hideScanReceipt,
+  }) {
     final theme = context.settliv;
     final bool isPersonalMode = currentGroup.isPersonal;
     final sharedGroups = groups.where((g) => !g.isPersonal).toList();
@@ -1318,22 +1929,24 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 12),
-                    Semantics(
-                      button: true,
-                      label: 'Scan receipt',
-                      child: GlassSurface(
-                        level: GlassLevel.level1,
-                        borderRadius: 999,
-                        padding: const EdgeInsets.all(10),
-                        onTap: () => ScanSheet.show(context),
-                        child: Icon(
-                          Icons.document_scanner_rounded,
-                          size: 20,
-                          color: theme.navy,
+                    if (!hideScanReceipt) ...[
+                      const SizedBox(width: 12),
+                      Semantics(
+                        button: true,
+                        label: 'Scan receipt',
+                        child: GlassSurface(
+                          level: GlassLevel.level1,
+                          borderRadius: 999,
+                          padding: const EdgeInsets.all(10),
+                          onTap: () => ScanSheet.show(context),
+                          child: Icon(
+                            Icons.document_scanner_rounded,
+                            size: 20,
+                            color: theme.navy,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

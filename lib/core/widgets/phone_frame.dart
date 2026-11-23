@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import 'aurora_background.dart';
 import 'glass_surface.dart';
+import 'settliv_wordmark.dart';
 
-class PhoneFrame extends StatelessWidget {
+class PhoneFrame extends ConsumerStatefulWidget {
   final Widget child;
 
   const PhoneFrame({super.key, required this.child});
@@ -13,199 +17,161 @@ class PhoneFrame extends StatelessWidget {
   static const double targetHeight = 844.0;
   static const double bezelWidth = 8.0;
   static const double cornerRadius = 44.0;
+  static const String prefHintDismissed = 'settliv_phone_frame_hint_dismissed';
 
-  static const String prototypeNote =
-      'v0 prototype with local demo data. More screens and online features come in the full app.';
+  @override
+  ConsumerState<PhoneFrame> createState() => _PhoneFrameState();
+}
+
+class _PhoneFrameState extends ConsumerState<PhoneFrame> {
+  bool _hintDismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (prefs != null) {
+      _hintDismissed = prefs.getBool(PhoneFrame.prefHintDismissed) ?? false;
+    }
+  }
+
+  void _dismissHint() {
+    setState(() => _hintDismissed = true);
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs?.setBool(PhoneFrame.prefHintDismissed, true);
+  }
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final screenWidth = media.size.width;
-    final isDesktop = screenWidth > 600;
+    final isWideViewport = screenWidth > 600;
 
-    if (!isDesktop) {
-      return child;
+    // Never shown on phones / narrow viewports (<= 600px)
+    if (!isWideViewport) {
+      return widget.child;
     }
 
-    const double totalFrameHeight = targetHeight + (bezelWidth * 2);
-    const double totalFrameWidth = targetWidth + (bezelWidth * 2);
     final theme = context.settliv;
-    final isWideDesktop = screenWidth >= 900;
+    const double totalFrameHeight = PhoneFrame.targetHeight + (PhoneFrame.bezelWidth * 2);
+    const double totalFrameWidth = PhoneFrame.targetWidth + (PhoneFrame.bezelWidth * 2);
 
     return Scaffold(
       backgroundColor: theme.canvas,
       body: AuroraBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Column(
               children: [
-                // Centred small SETTLIV wordmark above the frame
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    'SETTLIV',
-                    style: TextStyle(
-                      fontFamily: AppTypography.fontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 4.2, // ~0.32em
-                      color: theme.muted,
+                // 1. SETTLIV text wordmark above
+                const SizedBox(height: 4),
+                const Center(
+                  child: SettlivWordmark(fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+
+                // 2. Centred phone frame fitted to viewport height
+                Expanded(
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: Container(
+                        width: totalFrameWidth,
+                        height: totalFrameHeight,
+                        decoration: BoxDecoration(
+                          color: theme.surface,
+                          borderRadius: BorderRadius.circular(PhoneFrame.cornerRadius + PhoneFrame.bezelWidth),
+                          border: Border.all(
+                            color: theme.hairline,
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.shadow.withValues(alpha: theme.isDark ? 0.45 : 0.22),
+                              blurRadius: 44,
+                              offset: const Offset(0, 20),
+                              spreadRadius: -4,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(PhoneFrame.bezelWidth),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(PhoneFrame.cornerRadius),
+                          child: SizedBox(
+                            width: PhoneFrame.targetWidth,
+                            height: PhoneFrame.targetHeight,
+                            child: MediaQuery(
+                              data: media.copyWith(
+                                size: const Size(PhoneFrame.targetWidth, PhoneFrame.targetHeight),
+                                padding: const EdgeInsets.only(top: 44, bottom: 24),
+                                viewInsets: EdgeInsets.zero,
+                              ),
+                              child: widget.child,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
 
-                // Main frame area (with side note if width >= 900)
-                Expanded(
-                  child: isWideDesktop
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                // 3. Hint below: "Mobile app layout · compatibility preview. Settings › Experience"
+                if (!_hintDismissed) ...[
+                  const SizedBox(height: 10),
+                  Center(
+                    child: GlassSurface(
+                      level: GlassLevel.level1,
+                      borderRadius: 999,
+                      padding: const EdgeInsets.fromLTRB(14, 6, 8, 6),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Left spacer to balance side note
-                            const SizedBox(width: 260),
-                            const SizedBox(width: 24),
-                            // Centered phone frame
-                            Flexible(
-                              child: Center(
-                                child: _buildFrame(
-                                  context: context,
-                                  media: media,
-                                  totalFrameWidth: totalFrameWidth,
-                                  totalFrameHeight: totalFrameHeight,
-                                  theme: theme,
-                                ),
+                            GestureDetector(
+                              onTap: () => context.push('/settings'),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Mobile app layout · compatibility preview. ',
+                                    style: AppTypography.caption.copyWith(
+                                      color: theme.muted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Settings › Experience',
+                                    style: AppTypography.caption.copyWith(
+                                      color: theme.accent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 24),
-                            // Right side glass note card
-                            SizedBox(
-                              width: 260,
-                              child: GlassSurface(
-                                level: GlassLevel.level2,
-                                padding: const EdgeInsets.all(18),
-                                borderRadius: 20,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: theme.navy,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'PROTOTYPE NOTE',
-                                          style: AppTypography.caption.copyWith(
-                                            color: theme.muted,
-                                            fontSize: 11,
-                                            letterSpacing: 1.0,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      prototypeNote,
-                                      style: AppTypography.caption.copyWith(
-                                        color: theme.muted,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.45,
-                                      ),
-                                    ),
-                                  ],
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: _dismissHint,
+                              child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 14,
+                                  color: theme.muted,
                                 ),
                               ),
                             ),
                           ],
-                        )
-                      : Center(
-                          child: _buildFrame(
-                            context: context,
-                            media: media,
-                            totalFrameWidth: totalFrameWidth,
-                            totalFrameHeight: totalFrameHeight,
-                            theme: theme,
-                          ),
                         ),
-                ),
-
-                // Note below frame if 600 <= width < 900
-                if (!isWideDesktop) ...[
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      prototypeNote,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: theme.muted.withValues(alpha: 0.8),
-                        height: 1.35,
                       ),
                     ),
                   ),
                 ],
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFrame({
-    required BuildContext context,
-    required MediaQueryData media,
-    required double totalFrameWidth,
-    required double totalFrameHeight,
-    required SettlivThemeExtension theme,
-  }) {
-    final isDark = theme.isDark;
-    return FittedBox(
-      fit: BoxFit.contain,
-      child: Container(
-        width: totalFrameWidth,
-        height: totalFrameHeight,
-        decoration: BoxDecoration(
-          color: theme.surface,
-          borderRadius: BorderRadius.circular(cornerRadius + bezelWidth),
-          border: Border.all(
-            color: theme.hairline,
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadow.withValues(alpha: isDark ? 0.45 : 0.22),
-              blurRadius: 44,
-              offset: const Offset(0, 20),
-              spreadRadius: -4,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(bezelWidth),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(cornerRadius),
-          child: SizedBox(
-            width: targetWidth,
-            height: targetHeight,
-            child: MediaQuery(
-              data: media.copyWith(
-                size: const Size(targetWidth, targetHeight),
-                padding: const EdgeInsets.only(top: 44, bottom: 24),
-                viewInsets: EdgeInsets.zero,
-              ),
-              child: child,
             ),
           ),
         ),

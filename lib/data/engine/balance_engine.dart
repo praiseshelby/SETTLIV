@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/iou_note.dart';
+import '../models/person.dart';
+import '../models/group.dart';
 
 class SimplifiedDebt {
   final String fromPersonId;
@@ -12,6 +14,16 @@ class SimplifiedDebt {
     required this.fromPersonId,
     required this.toPersonId,
     required this.amount,
+  });
+}
+
+class CounterpartyNet {
+  final Person person;
+  final int netPaise; // positive = person owes user, negative = user owes person
+
+  const CounterpartyNet({
+    required this.person,
+    required this.netPaise,
   });
 }
 
@@ -211,5 +223,113 @@ class BalanceEngine {
     }
 
     return results;
+  }
+
+  /// Computes per-counterparty net balances across all groups and active IOUs.
+  List<CounterpartyNet> computeCounterpartyNets({
+    required String currentUserId,
+    required List<Group> groups,
+    required Map<String, List<String>> groupMembersMap,
+    required List<Expense> expenses,
+    required List<Settlement> settlements,
+    List<IouNote>? iouNotes,
+    required Map<String, Person> peopleMap,
+  }) {
+    final Map<String, int> netPerPerson = {};
+
+    // 1. Group simplified debts
+    for (final group in groups) {
+      if (group.isPersonal || group.id == 'group_personal') continue;
+      final members = groupMembersMap[group.id] ?? group.memberIds;
+      final summary = computeGroupSummary(
+        groupId: group.id,
+        memberIds: members,
+        expenses: expenses,
+        settlements: settlements,
+      );
+
+      for (final debt in summary.debts) {
+        if (debt.toPersonId == currentUserId) {
+          netPerPerson[debt.fromPersonId] =
+              (netPerPerson[debt.fromPersonId] ?? 0) + debt.amount;
+        } else if (debt.fromPersonId == currentUserId) {
+          netPerPerson[debt.toPersonId] =
+              (netPerPerson[debt.toPersonId] ?? 0) - debt.amount;
+        }
+      }
+    }
+
+    // 2. Active IOU notes
+    if (iouNotes != null) {
+      for (final note in iouNotes) {
+        if (note.isDeleted || note.isSettled) continue;
+        final normName = note.counterpartyName.trim().toLowerCase();
+        String? targetPersonId;
+        for (final p in peopleMap.values) {
+          if (p.name.trim().toLowerCase() == normName) {
+            targetPersonId = p.id;
+            break;
+          }
+        }
+        if (targetPersonId != null && targetPersonId != currentUserId) {
+          if (note.direction == IouDirection.owedToMe) {
+            netPerPerson[targetPersonId] =
+                (netPerPerson[targetPersonId] ?? 0) + note.remainingPaise;
+          } else {
+            netPerPerson[targetPersonId] =
+                (netPerPerson[targetPersonId] ?? 0) - note.remainingPaise;
+          }
+        }
+      }
+    }
+
+    final List<CounterpartyNet> results = [];
+    netPerPerson.forEach((pId, net) {
+      if (net != 0 && peopleMap.containsKey(pId)) {
+        results.add(CounterpartyNet(person: peopleMap[pId]!, netPaise: net));
+      }
+    });
+
+    return results;
+  }
+
+  /// Computes the age of a debt in days using FIFO matching of settlements against expenses.
+  int computeDebtAgeInDays({
+    required String debtorId,
+    required String creditorId,
+    required String groupId,
+    required List<Expense> expenses,
+    required List<Settlement> settlements,
+    required DateTime now,
+  }) {
+    // 1. Find all group expenses involving the debtor where debtor owes a share
+    final relevantExpenses = expenses.where((e) {
+      if (e.isDeleted || e.groupId != groupId) return false;
+      final share = e.computedShares[debtorId] ?? e.shares[debtorId] ?? 0;
+      return share > 0;
+    }).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // 2. Total settled by debtor in this group
+    final debtorSettlements = settlements.where((s) {
+      return !s.isDeleted && s.groupId == groupId && s.from == debtorId;
+    }).toList();
+    int totalSettled = debtorSettlements.fold<int>(0, (sum, s) => sum + s.paise);
+
+    // 3. FIFO consumption: settle oldest expenses first
+    for (final exp in relevantExpenses) {
+      final share = exp.computedShares[debtorId] ?? exp.shares[debtorId] ?? 0;
+      if (totalSettled >= share) {
+        totalSettled -= share;
+      } else {
+        // This expense has an unpaid portion!
+        return math.max(0, now.difference(exp.date).inDays);
+      }
+    }
+
+    if (relevantExpenses.isNotEmpty) {
+      return math.max(0, now.difference(relevantExpenses.last.date).inDays);
+    }
+    return 0;
   }
 }

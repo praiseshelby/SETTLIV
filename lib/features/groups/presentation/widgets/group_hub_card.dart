@@ -1,3 +1,5 @@
+import '../../../../core/profile/experience_mode.dart';
+import '../../../../core/widgets/web_balance_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -237,7 +239,9 @@ class GroupHubCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (isSettled)
+                      if (ref.watch(effectiveExperienceProvider) == EffectiveExperience.web)
+                        WebBalanceBadge(paise: netPaise)
+                      else if (isSettled)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(

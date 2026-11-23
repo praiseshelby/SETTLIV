@@ -109,6 +109,15 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
             ),
           ],
         ),
+        // Tab 4: Budgets (Standalone top-level route on Web)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/budgets',
+              builder: (context, state) => const PlanScreen(),
+            ),
+          ],
+        ),
       ],
     ),
 

@@ -18,7 +18,7 @@ class AvatarStack extends StatelessWidget {
     this.maxVisible = 3,
     this.size,
     this.avatarSize = 28,
-    this.overlap = 8,
+    this.overlap = 6.0,
   });
 
   @override
@@ -54,8 +54,8 @@ class AvatarStack extends StatelessWidget {
     // The next avatar covers from (effectiveSize - safeOverlap) to effectiveSize.
     // To ensure initials never intersect the overlapped area:
     // effectiveSize - safeOverlap >= (effectiveSize + maxInitialsWidth)/2 + 2px margin
-    final maxSafeOverlap = math.max(4.0, ((effectiveSize - maxInitialsWidth) / 2) - 2.0);
-    final effectiveOverlap = math.min(overlap, maxSafeOverlap);
+    final maxSafeOverlap = math.max(3.0, ((effectiveSize - maxInitialsWidth) / 2) - 2.0);
+    final effectiveOverlap = math.min(math.min(overlap, 6.0), maxSafeOverlap);
 
     final totalWidth = effectiveSize + (totalItems - 1) * (effectiveSize - effectiveOverlap);
 

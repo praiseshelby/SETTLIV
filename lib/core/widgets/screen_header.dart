@@ -115,7 +115,12 @@ class ScreenHeader extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 20 : 36,
+        isCompact ? 12 : 40,
+        isCompact ? 20 : 36,
+        isCompact ? 16 : 24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

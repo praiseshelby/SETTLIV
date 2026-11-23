@@ -10,7 +10,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/category_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/avatar_stack.dart';
-import '../../../../core/widgets/balance_pill.dart';
+import '../../../../core/widgets/web_balance_badge.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/group_cover_art.dart';
@@ -244,7 +244,7 @@ class GroupDetailWebView extends ConsumerWidget {
                     ],
                   ),
                 ),
-                BalancePill(paise: userNetPaise, compact: false),
+                WebBalanceBadge(paise: userNetPaise),
               ],
             ),
           ),

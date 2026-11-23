@@ -36,16 +36,13 @@ void main() {
       expect(touchProfile.isTouch, isTrue);
     });
 
-    test('Mode resolution table: Desktop always gets Web, Touch defaults to App', () {
-      // Test matrix:
-      // (DeviceClass, ExperienceMode) -> EffectiveExperience
+    test('Mode resolution table: desktop+none->Web, desktop+app->App, desktop+web->Web, touch+none->App, touch+app->App, touch+web->Web', () {
+      // Test matrix per Task X rules:
       final matrix = [
-        // Desktop is strictly always Web
         (DeviceClass.desktop, ExperienceMode.auto, EffectiveExperience.web),
-        (DeviceClass.desktop, ExperienceMode.app, EffectiveExperience.web),
+        (DeviceClass.desktop, ExperienceMode.app, EffectiveExperience.app),
         (DeviceClass.desktop, ExperienceMode.web, EffectiveExperience.web),
 
-        // Touch defaults to App, can switch to Web
         (DeviceClass.touch, ExperienceMode.auto, EffectiveExperience.app),
         (DeviceClass.touch, ExperienceMode.app, EffectiveExperience.app),
         (DeviceClass.touch, ExperienceMode.web, EffectiveExperience.web),
@@ -70,7 +67,7 @@ void main() {
       }
     });
 
-    test('Desktop cannot reach App experience under any circumstance', () {
+    test('Desktop can switch to App layout (compatibility preview in phone frame)', () {
       final container = ProviderContainer(
         overrides: [
           deviceProfileProvider.overrideWithValue(
@@ -79,9 +76,9 @@ void main() {
         ],
       );
 
-      // Explicitly try setting App mode
+      // Explicitly set App mode
       container.read(experienceModeProvider.notifier).setMode(ExperienceMode.app);
-      expect(container.read(effectiveExperienceProvider), equals(EffectiveExperience.web));
+      expect(container.read(effectiveExperienceProvider), equals(EffectiveExperience.app));
     });
   });
 

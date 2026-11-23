@@ -22,11 +22,10 @@ void main() {
       expect(file.existsSync(), isTrue);
       final html = file.readAsStringSync();
 
-      // Wordmark present, NO logomark
+      // Wordmark present, NO logomark, NO old slogan
       expect(html.contains('SETTLIV'), isTrue);
-      expect(html.contains('One codebase. Every screen.'), isTrue);
       expect(html.contains('loading-wordmark'), isTrue);
-      expect(html.contains('loading-tagline'), isTrue);
+      expect(html.contains('One codebase'), isFalse);
       expect(html.contains('prefers-color-scheme: dark'), isTrue);
 
       // Meta and OpenGraph tags
@@ -46,7 +45,7 @@ void main() {
 
       expect(json.contains('"name": "Settliv"'), isTrue);
       expect(json.contains('"short_name": "Settliv"'), isTrue);
-      expect(json.contains('One codebase. Every screen.'), isTrue);
+      expect(json.contains('One codebase'), isFalse);
     });
   });
 

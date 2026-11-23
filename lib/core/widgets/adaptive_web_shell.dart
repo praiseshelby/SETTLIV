@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../layout/adaptive_layout.dart';
-import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/person_avatar.dart';
 import '../../data/repositories/in_memory_app_repository.dart';
+import 'first_visit_compatibility_card.dart';
 
 class AdaptiveWebShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -26,6 +26,14 @@ class AdaptiveWebShell extends ConsumerStatefulWidget {
 
 class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  String _getCurrentPath(BuildContext context) {
+    try {
+      return GoRouterState.of(context).matchedLocation;
+    } catch (_) {
+      return '/';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,53 +53,63 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
 
   // 1. Compact Web (< 720): sticky top glass header + drawer, NO bottom bar
   Widget _buildCompactWeb(BuildContext context, SettlivThemeExtension theme) {
-
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.canvas,
       drawer: _buildWebDrawer(context, theme),
       body: AuroraBackground(
-        child: Column(
+        child: Stack(
           children: [
-            // Sticky glass top header
-            ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: theme.surface.withValues(alpha: 0.85),
-                    border: Border(bottom: BorderSide(color: theme.hairline)),
-                  ),
-                  child: Row(
-                    children: [
-                      // Menu trigger on left
-                      IconButton(
-                        icon: const Icon(Icons.menu_rounded),
-                        color: theme.ink,
-                        tooltip: 'Menu',
-                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            Column(
+              children: [
+                // Sticky glass top header
+                ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                    child: Container(
+                      height: 60,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: theme.surface.withValues(alpha: 0.85),
+                        border: Border(bottom: BorderSide(color: theme.hairline)),
                       ),
-                      const SizedBox(width: 8),
-                      // Wordmark beside menu button
-                      const SettlivWordmark(fontSize: 16),
-                      const Spacer(),
-                      // Add button
-                      IconButton(
-                        icon: const Icon(Icons.add_rounded),
-                        color: theme.ink,
-                        tooltip: 'Add expense',
-                        onPressed: () => context.push('/add'),
+                      child: Row(
+                        children: [
+                          // Menu trigger on left
+                          IconButton(
+                            icon: const Icon(Icons.menu_rounded),
+                            color: theme.ink,
+                            tooltip: 'Menu',
+                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                          ),
+                          const SizedBox(width: 8),
+                          // Wordmark beside menu button
+                          const SettlivWordmark(fontSize: 16),
+                          const Spacer(),
+                          // Add button
+                          IconButton(
+                            icon: const Icon(Icons.add_rounded),
+                            color: theme.ink,
+                            tooltip: 'Add expense',
+                            onPressed: () => context.push('/add'),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                // Page content
+                Expanded(
+                  child: widget.navigationShell,
+                ),
+              ],
             ),
-            // Page content
-            Expanded(
-              child: widget.navigationShell,
+            // First visit compatibility toast/card
+            const Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: FirstVisitCompatibilityCard(),
             ),
           ],
         ),
@@ -104,18 +122,27 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     return Scaffold(
       backgroundColor: theme.canvas,
       body: AuroraBackground(
-        child: Row(
+        child: Stack(
           children: [
-            // 76px Icon Rail
-            _buildIconRail(context, theme),
-            // Main content
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
-                  child: widget.navigationShell,
+            Row(
+              children: [
+                // 76px Icon Rail
+                _buildIconRail(context, theme),
+                // Main content
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
+                      child: widget.navigationShell,
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ),
+            const Positioned(
+              right: 24,
+              bottom: 24,
+              child: FirstVisitCompatibilityCard(),
             ),
           ],
         ),
@@ -128,18 +155,27 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     return Scaffold(
       backgroundColor: theme.canvas,
       body: AuroraBackground(
-        child: Row(
+        child: Stack(
           children: [
-            // 264px Glass Sidebar
-            _buildSidebar(context, theme),
-            // Main content area
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
-                  child: widget.navigationShell,
+            Row(
+              children: [
+                // 264px Glass Sidebar
+                _buildSidebar(context, theme),
+                // Main content area
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
+                      child: widget.navigationShell,
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ),
+            const Positioned(
+              right: 24,
+              bottom: 24,
+              child: FirstVisitCompatibilityCard(),
             ),
           ],
         ),
@@ -148,9 +184,15 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   }
 
   Widget _buildSidebar(BuildContext context, SettlivThemeExtension theme) {
-    final currentBranch = widget.navigationShell.currentIndex;
+    final currentPath = _getCurrentPath(context);
     final repo = ref.watch(appRepositoryProvider);
     final user = repo.currentUser;
+
+    final isDashboardActive = currentPath == '/';
+    final isGroupsActive = currentPath.startsWith('/groups') || currentPath.startsWith('/group');
+    final isRecordsActive = currentPath.startsWith('/records');
+    final isInsightsActive = currentPath == '/insights';
+    final isBudgetsActive = currentPath.startsWith('/budgets') || currentPath == '/insights/budgets';
 
     return Container(
       width: 264,
@@ -191,59 +233,79 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 ),
                 const SizedBox(height: 24),
 
-                // Nav Links
+                // Group 1: OVERVIEW
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  child: Text(
+                    'OVERVIEW',
+                    style: AppTypography.eyebrow.copyWith(
+                      color: theme.muted,
+                      letterSpacing: 0.8,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
                 _buildNavItem(
                   icon: Icons.dashboard_rounded,
                   label: 'Dashboard',
-                  isSelected: currentBranch == 0,
-                  onTap: () => widget.navigationShell.goBranch(0),
+                  isSelected: isDashboardActive,
+                  onTap: () => context.go('/'),
                   theme: theme,
                 ),
                 const SizedBox(height: 4),
                 _buildNavItem(
                   icon: Icons.group_rounded,
                   label: 'Groups',
-                  isSelected: currentBranch == 1,
-                  onTap: () => widget.navigationShell.goBranch(1),
+                  isSelected: isGroupsActive,
+                  onTap: () => context.go('/groups'),
                   theme: theme,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 18),
+
+                // Group 2: MONEY
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  child: Text(
+                    'MONEY',
+                    style: AppTypography.eyebrow.copyWith(
+                      color: theme.muted,
+                      letterSpacing: 0.8,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
                 _buildNavItem(
                   icon: Icons.receipt_long_rounded,
                   label: 'Records',
-                  isSelected: currentBranch == 2,
-                  onTap: () => widget.navigationShell.goBranch(2),
+                  isSelected: isRecordsActive,
+                  onTap: () => context.go('/records'),
                   theme: theme,
                 ),
                 const SizedBox(height: 4),
                 _buildNavItem(
                   icon: Icons.auto_graph_rounded,
                   label: 'Insights',
-                  isSelected: currentBranch == 3,
-                  onTap: () => widget.navigationShell.goBranch(3),
+                  isSelected: isInsightsActive,
+                  onTap: () => context.go('/insights'),
                   theme: theme,
                 ),
-                // Budgets nested under Insights
-                Padding(
-                  padding: const EdgeInsets.only(left: 20, top: 2),
-                  child: _buildNavItem(
-                    icon: Icons.pie_chart_outline_rounded,
-                    label: 'Budgets & Plan',
-                    isSelected: false,
-                    onTap: () => context.go('/insights/budgets'),
-                    theme: theme,
-                    dense: true,
-                  ),
+                const SizedBox(height: 4),
+                _buildNavItem(
+                  icon: Icons.pie_chart_outline_rounded,
+                  label: 'Budgets',
+                  isSelected: isBudgetsActive,
+                  onTap: () => context.go('/budgets'),
+                  theme: theme,
                 ),
 
                 const Spacer(),
 
-                // Version micro-card
+                // Compatibility preview card
                 InkWell(
                   onTap: () => context.push('/settings'),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: theme.canvas.withValues(alpha: 0.60),
                       borderRadius: BorderRadius.circular(12),
@@ -251,16 +313,28 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.devices_rounded, size: 16, color: theme.muted),
-                        const SizedBox(width: 8),
+                        Icon(Icons.devices_rounded, size: 16, color: theme.accent),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                            'Runs as mobile app & website',
-                            style: AppTypography.caption.copyWith(
-                              color: theme.muted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Compatibility preview',
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.ink,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'PC · Mobile web · App',
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.muted,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         Icon(Icons.chevron_right_rounded, size: 14, color: theme.muted),
@@ -324,7 +398,13 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   }
 
   Widget _buildIconRail(BuildContext context, SettlivThemeExtension theme) {
-    final currentBranch = widget.navigationShell.currentIndex;
+    final currentPath = _getCurrentPath(context);
+
+    final isDashboardActive = currentPath == '/';
+    final isGroupsActive = currentPath.startsWith('/groups') || currentPath.startsWith('/group');
+    final isRecordsActive = currentPath.startsWith('/records');
+    final isInsightsActive = currentPath == '/insights';
+    final isBudgetsActive = currentPath.startsWith('/budgets') || currentPath == '/insights/budgets';
 
     return Container(
       width: 76,
@@ -353,29 +433,36 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
           _buildRailIcon(
             icon: Icons.dashboard_rounded,
             tooltip: 'Dashboard',
-            isSelected: currentBranch == 0,
-            onTap: () => widget.navigationShell.goBranch(0),
+            isSelected: isDashboardActive,
+            onTap: () => context.go('/'),
             theme: theme,
           ),
           _buildRailIcon(
             icon: Icons.group_rounded,
             tooltip: 'Groups',
-            isSelected: currentBranch == 1,
-            onTap: () => widget.navigationShell.goBranch(1),
+            isSelected: isGroupsActive,
+            onTap: () => context.go('/groups'),
             theme: theme,
           ),
           _buildRailIcon(
             icon: Icons.receipt_long_rounded,
             tooltip: 'Records',
-            isSelected: currentBranch == 2,
-            onTap: () => widget.navigationShell.goBranch(2),
+            isSelected: isRecordsActive,
+            onTap: () => context.go('/records'),
             theme: theme,
           ),
           _buildRailIcon(
             icon: Icons.auto_graph_rounded,
             tooltip: 'Insights',
-            isSelected: currentBranch == 3,
-            onTap: () => widget.navigationShell.goBranch(3),
+            isSelected: isInsightsActive,
+            onTap: () => context.go('/insights'),
+            theme: theme,
+          ),
+          _buildRailIcon(
+            icon: Icons.pie_chart_outline_rounded,
+            tooltip: 'Budgets',
+            isSelected: isBudgetsActive,
+            onTap: () => context.go('/budgets'),
             theme: theme,
           ),
           const Spacer(),
@@ -404,8 +491,6 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   }
 
   Widget _buildWebDrawer(BuildContext context, SettlivThemeExtension theme) {
-    final profile = ref.watch(deviceProfileProvider);
-
     return Drawer(
       backgroundColor: theme.surface,
       child: SafeArea(
@@ -424,7 +509,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 title: const Text('Dashboard'),
                 onTap: () {
                   Navigator.pop(context);
-                  widget.navigationShell.goBranch(0);
+                  context.go('/');
                 },
               ),
               ListTile(
@@ -432,7 +517,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 title: const Text('Groups'),
                 onTap: () {
                   Navigator.pop(context);
-                  widget.navigationShell.goBranch(1);
+                  context.go('/groups');
                 },
               ),
               ListTile(
@@ -440,7 +525,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 title: const Text('Records'),
                 onTap: () {
                   Navigator.pop(context);
-                  widget.navigationShell.goBranch(2);
+                  context.go('/records');
                 },
               ),
               ListTile(
@@ -448,15 +533,15 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 title: const Text('Insights'),
                 onTap: () {
                   Navigator.pop(context);
-                  widget.navigationShell.goBranch(3);
+                  context.go('/insights');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.pie_chart_outline_rounded),
-                title: const Text('Budgets & Plan'),
+                title: const Text('Budgets'),
                 onTap: () {
                   Navigator.pop(context);
-                  context.go('/insights/budgets');
+                  context.go('/budgets');
                 },
               ),
               ListTile(
@@ -469,30 +554,52 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
               ),
               const Spacer(),
 
-              // Switch to app view (touch devices only)
-              if (profile.isTouch) ...[
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ref.read(experienceModeProvider.notifier).setMode(ExperienceMode.app);
-                  },
-                  icon: const Icon(Icons.phone_iphone_rounded, size: 18),
-                  label: const Text('Switch to app view'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.accent,
-                    side: BorderSide(color: theme.accent.withValues(alpha: 0.5)),
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // Compatibility preview drawer entry
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.canvas.withValues(alpha: 0.60),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.hairline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.devices_rounded, size: 18, color: theme.accent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Compatibility preview',
+                              style: AppTypography.caption.copyWith(
+                                color: theme.ink,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'PC · Mobile web · App',
+                              style: AppTypography.caption.copyWith(
+                                color: theme.muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: theme.muted),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-              ],
-
-              // Version info
-              Text(
-                'One codebase, two experiences.\nSettliv Web 1.0',
-                style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -506,37 +613,54 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     required bool isSelected,
     required VoidCallback onTap,
     required SettlivThemeExtension theme,
-    bool dense = false,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: dense ? 36 : 42,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? theme.accent.withValues(alpha: 0.12) : theme.transparent,
+          color: isSelected
+              ? theme.accent.withValues(alpha: 0.10)
+              : theme.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: dense ? 17 : 20,
-              color: isSelected ? theme.accent : theme.ink.withValues(alpha: 0.75),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? theme.accent : theme.muted,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontFamily: AppTypography.fontBody,
-                  fontSize: dense ? 13 : 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                style: AppTypography.bodySemiBold.copyWith(
                   color: isSelected ? theme.accent : theme.ink,
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (isSelected)
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: theme.accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
           ],
         ),
       ),
@@ -552,14 +676,34 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: IconButton(
-        icon: Icon(icon),
-        tooltip: tooltip,
-        color: isSelected ? theme.accent : theme.muted,
-        onPressed: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? theme.accent.withValues(alpha: 0.12)
+                  : theme.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: isSelected ? theme.accent : theme.muted,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
-
-
 }
