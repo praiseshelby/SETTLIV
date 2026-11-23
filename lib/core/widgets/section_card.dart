@@ -32,6 +32,20 @@ class SectionCard extends StatelessWidget {
           color: theme.hairline,
           width: 1.0,
         ),
+        boxShadow: [
+          if (theme.isDark)
+            BoxShadow(
+              color: theme.cardAmbientShadow,
+              blurRadius: 40,
+              offset: const Offset(0, 16),
+            )
+          else
+            BoxShadow(
+              color: theme.cardAmbientShadow,
+              blurRadius: 32,
+              offset: const Offset(0, 12),
+            ),
+        ],
       ),
       child: Stack(
         children: [

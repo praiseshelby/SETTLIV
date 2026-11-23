@@ -12,9 +12,9 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/category_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/name_normalizer.dart';
-import '../../../../core/widgets/balance_hero_card.dart';
 import '../../../../core/widgets/web_balance_badge.dart';
-import '../../../../core/widgets/glass_surface.dart';
+import '../../../../core/widgets/web_glass_card.dart';
+import 'web_net_position_hero.dart';
 import '../../../../core/widgets/group_cover_art.dart';
 import '../../../../data/engine/balance_engine.dart';
 import '../../../../data/models/group.dart';
@@ -389,7 +389,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     int owesToCount, {
     required bool isLarge,
   }) {
-    return BalanceHeroCard(
+    return WebNetPositionHero(
       netPaise: overall.netBalance,
       totalOwedToUserPaise: overall.totalOwedToUser,
       totalUserOwesPaise: overall.totalUserOwes,
@@ -397,6 +397,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       owesToCount: owesToCount,
       counterparties: counterparties,
       onTap: () => context.push('/balances'),
+      isLarge: isLarge,
     );
   }
 
@@ -410,37 +411,34 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     bool showAbsolute, {
     required bool isCompact,
   }) {
-    return GlassSurface(
-      level: GlassLevel.level2,
+    return WebGlassCard(
       borderRadius: 24,
       padding: EdgeInsets.all(isCompact ? 16 : 24),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => context.go('/insights'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'This month',
-                      style: TextStyle(
-                        fontFamily: AppTypography.fontBrand,
-                        fontFamilyFallback: AppTypography.brandFallback,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: theme.ink,
-                        letterSpacing: -0.3,
-                      ),
+      onTap: () => context.go('/insights'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'This month',
+                    style: TextStyle(
+                      fontFamily: AppTypography.fontBrand,
+                      fontFamilyFallback: AppTypography.brandFallback,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: theme.ink,
+                      letterSpacing: -0.3,
                     ),
-                    Icon(Icons.arrow_forward_rounded, size: 16, color: theme.muted),
-                  ],
-                ),
+                  ),
+                  Icon(Icons.arrow_forward_rounded, size: 16, color: theme.muted),
+                ],
+              ),
                 const SizedBox(height: 14),
                 Text(
                   CurrencyFormatter.formatPaise(thisMonthSpend),
@@ -511,8 +509,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildRecentGroupsCard(
@@ -523,8 +520,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
   }) {
     final repo = ref.watch(appRepositoryProvider);
 
-    return GlassSurface(
-      level: GlassLevel.level2,
+    return WebGlassCard(
       borderRadius: 24,
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       child: Column(
@@ -705,8 +701,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       );
     }
 
-    return GlassSurface(
-      level: GlassLevel.level2,
+    return WebGlassCard(
       borderRadius: 24,
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       child: Column(
@@ -768,8 +763,7 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     final repo = ref.watch(appRepositoryProvider);
     final items = result.items;
 
-    return GlassSurface(
-      level: GlassLevel.level2,
+    return WebGlassCard(
       borderRadius: 24,
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       child: Column(

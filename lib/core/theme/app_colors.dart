@@ -50,6 +50,26 @@ abstract class AppColors {
   static const Color orchid = Color(0xFF8E6BEA);
   static const Color orchidTint = Color(0x248E6BEA);
 
+  // Web Depth Stack & Signature Aurora Tokens
+  static const Color farLightLavender = Color(0xFFE8E3FF);
+  static const Color farLightCoolSky = Color(0xFFDCEBFF);
+  static const Color farLightPeach = Color(0xFFFFE7DD);
+
+  static const Color farDarkInkBase = Color(0xFF070914);
+  static const Color farDarkVioletGlow = Color(0xFF2A1B6B);
+  static const Color farDarkIndigoGlow = Color(0xFF16245E);
+  static const Color farDarkTealGlow = Color(0xFF0C3A44);
+
+  // Prismatic Border Tokens (Violet-Cyan-Mint)
+  static const Color prismViolet = Color(0xFF7C5CFF);
+  static const Color prismCyan = Color(0xFF00D2FF);
+  static const Color prismMint = Color(0xFF38E5B0);
+
+  // Violet Ambient Shadows
+  static const Color shadowVioletLight = Color(0x0F6C47FF); // rgba(108,71,255,0.06)
+  static const Color shadowAmbientDark = Color(0x8C000000);  // rgba(0,0,0,0.55)
+  static const Color shadowGlowHoverDark = Color(0x1F7C5CFF); // rgba(124,92,255,0.12)
+
   // 8 Curated Avatar Pair Gradients
   static const List<List<Color>> avatarGradients = [
     [Color(0xFF16193F), Color(0xFF3F4685)], // Indigo / Slate

@@ -59,6 +59,17 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
   final List<List<Color>> avatarGradients;
   final List<List<Color>> coverThemePalettes;
 
+  // Web Depth Stack & Signature Tokens
+  final Color farBase;
+  final Color farGlow1;
+  final Color farGlow2;
+  final Color farGlow3;
+  final Color prismViolet;
+  final Color prismCyan;
+  final Color prismMint;
+  final Color cardAmbientShadow;
+  final Color cardHoverGlow;
+
   final bool isDark;
 
   const SettlivThemeExtension({
@@ -102,6 +113,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     required this.heroMeshAccent,
     required this.avatarGradients,
     required this.coverThemePalettes,
+    required this.farBase,
+    required this.farGlow1,
+    required this.farGlow2,
+    required this.farGlow3,
+    required this.prismViolet,
+    required this.prismCyan,
+    required this.prismMint,
+    required this.cardAmbientShadow,
+    required this.cardHoverGlow,
     required this.isDark,
   });
 
@@ -149,6 +169,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     heroMeshAccent: Color(0xFF5B4BDB),
     avatarGradients: AppColors.avatarGradients,
     coverThemePalettes: AppColors.coverThemes,
+    farBase: AppColors.lightCanvas,
+    farGlow1: AppColors.farLightLavender,
+    farGlow2: AppColors.farLightCoolSky,
+    farGlow3: AppColors.farLightPeach,
+    prismViolet: AppColors.prismViolet,
+    prismCyan: AppColors.prismCyan,
+    prismMint: AppColors.prismMint,
+    cardAmbientShadow: AppColors.shadowVioletLight,
+    cardHoverGlow: AppColors.shadowVioletLight,
     isDark: false,
   );
 
@@ -193,6 +222,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     heroMeshAccent: Color(0xFF5B4BDB),
     avatarGradients: AppColors.avatarGradients,
     coverThemePalettes: AppColors.coverThemes,
+    farBase: AppColors.farDarkInkBase,
+    farGlow1: AppColors.farDarkVioletGlow,
+    farGlow2: AppColors.farDarkIndigoGlow,
+    farGlow3: AppColors.farDarkTealGlow,
+    prismViolet: AppColors.prismViolet,
+    prismCyan: AppColors.prismCyan,
+    prismMint: AppColors.prismMint,
+    cardAmbientShadow: AppColors.shadowAmbientDark,
+    cardHoverGlow: AppColors.shadowGlowHoverDark,
     isDark: true,
   );
 
@@ -238,6 +276,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     Color? heroMeshAccent,
     List<List<Color>>? avatarGradients,
     List<List<Color>>? coverThemePalettes,
+    Color? farBase,
+    Color? farGlow1,
+    Color? farGlow2,
+    Color? farGlow3,
+    Color? prismViolet,
+    Color? prismCyan,
+    Color? prismMint,
+    Color? cardAmbientShadow,
+    Color? cardHoverGlow,
     bool? isDark,
   }) {
     return SettlivThemeExtension(
@@ -281,6 +328,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       heroMeshAccent: heroMeshAccent ?? this.heroMeshAccent,
       avatarGradients: avatarGradients ?? this.avatarGradients,
       coverThemePalettes: coverThemePalettes ?? this.coverThemePalettes,
+      farBase: farBase ?? this.farBase,
+      farGlow1: farGlow1 ?? this.farGlow1,
+      farGlow2: farGlow2 ?? this.farGlow2,
+      farGlow3: farGlow3 ?? this.farGlow3,
+      prismViolet: prismViolet ?? this.prismViolet,
+      prismCyan: prismCyan ?? this.prismCyan,
+      prismMint: prismMint ?? this.prismMint,
+      cardAmbientShadow: cardAmbientShadow ?? this.cardAmbientShadow,
+      cardHoverGlow: cardHoverGlow ?? this.cardHoverGlow,
       isDark: isDark ?? this.isDark,
     );
   }
@@ -329,6 +385,15 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
       heroMeshAccent: Color.lerp(heroMeshAccent, other.heroMeshAccent, t) ?? heroMeshAccent,
       avatarGradients: t < 0.5 ? avatarGradients : other.avatarGradients,
       coverThemePalettes: t < 0.5 ? coverThemePalettes : other.coverThemePalettes,
+      farBase: Color.lerp(farBase, other.farBase, t) ?? farBase,
+      farGlow1: Color.lerp(farGlow1, other.farGlow1, t) ?? farGlow1,
+      farGlow2: Color.lerp(farGlow2, other.farGlow2, t) ?? farGlow2,
+      farGlow3: Color.lerp(farGlow3, other.farGlow3, t) ?? farGlow3,
+      prismViolet: Color.lerp(prismViolet, other.prismViolet, t) ?? prismViolet,
+      prismCyan: Color.lerp(prismCyan, other.prismCyan, t) ?? prismCyan,
+      prismMint: Color.lerp(prismMint, other.prismMint, t) ?? prismMint,
+      cardAmbientShadow: Color.lerp(cardAmbientShadow, other.cardAmbientShadow, t) ?? cardAmbientShadow,
+      cardHoverGlow: Color.lerp(cardHoverGlow, other.cardHoverGlow, t) ?? cardHoverGlow,
       isDark: t < 0.5 ? isDark : other.isDark,
     );
   }

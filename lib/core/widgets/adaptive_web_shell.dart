@@ -11,6 +11,7 @@ import '../widgets/aurora_background.dart';
 import '../widgets/person_avatar.dart';
 import '../../data/repositories/in_memory_app_repository.dart';
 import 'first_visit_compatibility_card.dart';
+import 'magnetic_button.dart';
 
 class AdaptiveWebShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -71,27 +72,49 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: theme.surface.withValues(alpha: 0.85),
-                        border: Border(bottom: BorderSide(color: theme.hairline)),
                       ),
-                      child: Row(
+                      child: Stack(
                         children: [
-                          // Menu trigger on left
-                          IconButton(
-                            icon: const Icon(Icons.menu_rounded),
-                            color: theme.ink,
-                            tooltip: 'Menu',
-                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 1,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    theme.accent.withValues(alpha: 0.35),
+                                    theme.hairline,
+                                    theme.hairline.withValues(alpha: 0.20),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          // Wordmark beside menu button
-                          const SettlivWordmark(fontSize: 16),
-                          const Spacer(),
-                          // Add button
-                          IconButton(
-                            icon: const Icon(Icons.add_rounded),
-                            color: theme.ink,
-                            tooltip: 'Add expense',
-                            onPressed: () => context.push('/add'),
+                          Row(
+                            children: [
+                              // Menu trigger on left
+                              IconButton(
+                                icon: const Icon(Icons.menu_rounded),
+                                color: theme.ink,
+                                tooltip: 'Menu',
+                                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                              ),
+                              const SizedBox(width: 8),
+                              // Wordmark beside menu button
+                              const SettlivWordmark(fontSize: 16),
+                              const Spacer(),
+                              // Add button
+                              IconButton(
+                                icon: const Icon(Icons.add_rounded),
+                                color: theme.ink,
+                                tooltip: 'Add expense',
+                                onPressed: () => context.push('/add'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -199,39 +222,43 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
       height: double.infinity,
       decoration: BoxDecoration(
         color: theme.surface.withValues(alpha: 0.82),
-        border: Border(right: BorderSide(color: theme.hairline)),
       ),
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header: SETTLIV wordmark (~18px, left-aligned with nav items' text column)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  child: SettlivWordmark(fontSize: 18),
-                ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header: SETTLIV wordmark (~18px, left-aligned with nav items' text column)
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
+                        child: SettlivWordmark(fontSize: 18),
+                      ),
 
-                // Primary "Add expense" button
-                ElevatedButton.icon(
-                  onPressed: () => context.push('/add'),
-                  icon: const Icon(Icons.add_rounded, size: 20),
-                  label: const Text('Add expense'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.accent,
-                    foregroundColor: theme.white,
-                    elevation: 0,
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    textStyle: AppTypography.bodySemiBold.copyWith(fontSize: 14),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                      // Primary "Add expense" button with subtle magnetic pull
+                      MagneticButton(
+                        child: ElevatedButton.icon(
+                          onPressed: () => context.push('/add'),
+                          icon: const Icon(Icons.add_rounded, size: 20),
+                          label: const Text('Add expense'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.accent,
+                            foregroundColor: theme.white,
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            textStyle: AppTypography.bodySemiBold.copyWith(fontSize: 14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
                 // Group 1: OVERVIEW
                 Padding(
@@ -394,7 +421,31 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
           ),
         ),
       ),
-    );
+    ),
+    // Subtle gradient edge highlight on right border
+    Positioned(
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 1.0,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.accent.withValues(alpha: 0.35),
+              theme.hairline,
+              theme.hairline.withValues(alpha: 0.15),
+            ],
+            stops: const [0.0, 0.40, 1.0],
+          ),
+        ),
+      ),
+    ),
+  ],
+),
+);
   }
 
   Widget _buildIconRail(BuildContext context, SettlivThemeExtension theme) {
@@ -622,7 +673,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.accent.withValues(alpha: 0.10)
+              ? theme.accent.withValues(alpha: theme.isDark ? 0.14 : 0.08)
               : theme.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -647,6 +698,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                   color: isSelected ? theme.accent : theme.ink,
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -655,7 +707,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
             if (isSelected)
               Container(
                 width: 3,
-                height: 16,
+                height: 18,
                 decoration: BoxDecoration(
                   color: theme.accent,
                   borderRadius: BorderRadius.circular(2),

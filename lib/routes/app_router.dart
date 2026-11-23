@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/home/presentation/home_screen.dart';
@@ -132,10 +133,14 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     ),
 
     // Pushed routes (ABOVE the shell, docked bar is never shown on them)
+    // 280ms fade + 8px rise + blur 8 to 0 page transition
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/balances',
-      builder: (context, state) => const BalancesScreen(),
+      pageBuilder: (context, state) => _buildWebPageTransition(
+        key: state.pageKey,
+        child: const BalancesScreen(),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -171,22 +176,75 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/group/:id',
-      builder: (context, state) {
-        final groupId = state.pathParameters['id'] ?? '';
-        return GroupDetailScreen(groupId: groupId);
-      },
+      pageBuilder: (context, state) => _buildWebPageTransition(
+        key: state.pageKey,
+        child: GroupDetailScreen(groupId: state.pathParameters['id'] ?? ''),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      pageBuilder: (context, state) => _buildWebPageTransition(
+        key: state.pageKey,
+        child: const SettingsScreen(),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/settings/recurring',
-      builder: (context, state) => const RecurringExpensesScreen(),
+      pageBuilder: (context, state) => _buildWebPageTransition(
+        key: state.pageKey,
+        child: const RecurringExpensesScreen(),
+      ),
     ),
   ],
 );
+
+Page<dynamic> _buildWebPageTransition({
+  required LocalKey key,
+  required Widget child,
+}) {
+  return CustomTransitionPage(
+    key: key,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+
+      final slide = Tween<Offset>(
+        begin: const Offset(0.0, 0.012),
+        end: Offset.zero,
+      ).animate(curved);
+
+      final fade = Tween<double>(begin: 0.0, end: 1.0).animate(curved);
+
+      return AnimatedBuilder(
+        animation: curved,
+        builder: (context, _) {
+          final blurSigma = (1.0 - curved.value) * 8.0;
+          Widget content = FadeTransition(
+            opacity: fade,
+            child: SlideTransition(
+              position: slide,
+              child: child,
+            ),
+          );
+
+          if (blurSigma > 0.4) {
+            content = ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: content,
+            );
+          }
+          return content;
+        },
+      );
+    },
+  );
+}
 
 final appRouter = createAppRouter();

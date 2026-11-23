@@ -142,5 +142,42 @@ void main() {
         });
       }
     });
+
+    group('Part X2: Blended Depth Stack Contrast Verification', () {
+      test('Light theme: ink and muted text over blended far fields meet WCAG AA (>= 4.5:1)', () {
+        // Blended with lavender, cool sky, and faint peach
+        final blendedLavender = compositeOver(light.farGlow1.withValues(alpha: 0.70), light.farBase);
+        final blendedSky = compositeOver(light.farGlow2.withValues(alpha: 0.65), light.farBase);
+        final blendedPeach = compositeOver(light.farGlow3.withValues(alpha: 0.48), light.farBase);
+
+        for (final bg in [blendedLavender, blendedSky, blendedPeach]) {
+          expect(contrastRatio(light.ink, bg), greaterThanOrEqualTo(4.5), reason: 'ink on blended far light field');
+          expect(contrastRatio(light.muted, bg), greaterThanOrEqualTo(4.5), reason: 'muted on blended far light field');
+        }
+      });
+
+      test('Dark theme: ink and muted text over blended far fields meet WCAG AA (>= 4.5:1)', () {
+        // Blended with violet, indigo, and teal glows
+        final blendedViolet = compositeOver(dark.farGlow1.withValues(alpha: 0.55), dark.farBase);
+        final blendedIndigo = compositeOver(dark.farGlow2.withValues(alpha: 0.50), dark.farBase);
+        final blendedTeal = compositeOver(dark.farGlow3.withValues(alpha: 0.40), dark.farBase);
+
+        for (final bg in [blendedViolet, blendedIndigo, blendedTeal]) {
+          expect(contrastRatio(dark.ink, bg), greaterThanOrEqualTo(4.5), reason: 'ink on blended far dark field');
+          expect(contrastRatio(dark.muted, bg), greaterThanOrEqualTo(4.5), reason: 'muted on blended far dark field');
+        }
+      });
+
+      test('Semantic amounts (owed/owe) on Prism Pearl & Luminous Core meet WCAG AA (>= 4.5:1)', () {
+        // Light Prism Pearl surface: white-to-lavender glass
+        final prismSurface = compositeOver(light.farGlow1.withValues(alpha: 0.35), light.white);
+        expect(contrastRatio(light.textEmerald, prismSurface), greaterThanOrEqualTo(4.5), reason: 'textEmerald on Prism Pearl');
+        expect(contrastRatio(light.textCoral, prismSurface), greaterThanOrEqualTo(4.5), reason: 'textCoral on Prism Pearl');
+
+        // Dark Luminous Core surface: hero mesh start & end
+        expect(contrastRatio(dark.emerald, dark.heroMeshStart), greaterThanOrEqualTo(4.5), reason: 'emerald on Luminous Core');
+        expect(contrastRatio(dark.coral, dark.heroMeshStart), greaterThanOrEqualTo(4.5), reason: 'coral on Luminous Core');
+      });
+    });
   });
 }

@@ -510,22 +510,22 @@
 
 ---
 
-### Part X2: Visual Level-Up (Web Experience)
-- [ ] **1. Background Depth Stack**:
+### Part X2: Visual Level-Up (Web Experience) (COMPLETED)
+- [x] **1. Background Depth Stack**:
   - FAR: soft color fields (light: pearl-white to lavender #E8E3FF, cool sky #DCEBFF, faint peach #FFE7DD; dark: ink #070914 base with violet #2A1B6B, indigo #16245E, teal #0C3A44 glows) with 6% scroll parallax and ±10px pointer parallax.
   - MID: fine contour/orbit linework (0.75px, 6-8% opacity, cached).
   - NEAR: 3-4% grain and soft vignette, soft pointer cursor light with eased lag (desktop only; disabled in lite mode).
-  - Remove current square hairline grid.
-- [ ] **2. Panels & Hover Styling**: 1px gradient hairline (brighter top-left), inner top highlight, violet ambient shadow (light) or hover glow (dark). Local hover border brightening along pointer position without full tree rebuilds.
-- [ ] **3. Hero 'Net Position' Level-Up**:
+  - Removed old square hairline grid from Web.
+- [x] **2. Panels & Hover Styling**: 1px gradient hairline (brighter top-left), inner top highlight, violet ambient shadow (light: 0 12px 32px rgba(108,71,255,0.06); dark: 0 16px 40px rgba(0,0,0,0.55), 0 0 24px rgba(124,92,255,0.12) on hover). Desktop hover lifts 2px and subtly brightens border gradient along pointer position without full tree rebuilds (`WebGlassCard`).
+- [x] **3. Hero 'Net Position' Level-Up**:
   - Light 'Prism Pearl': white-to-lavender surface, 1.5px prismatic border (violet-cyan-mint), ink text, AA colored sentence, concentric orbit rings with owed/owe nodes.
   - Dark 'Luminous Core': indigo-violet mesh, glowing gradient edge, slowly rotating orbit rings, glowing white amount, refined diverging track.
-  - Both: ~72px Sora 800 with 600ms odometer digit roll once per session, light sweep, staggered avatar entrance, pointer spotlight.
-- [ ] **4. Motion Choreography**: First load stagger (background 400ms -> sidebar 12px rise -> header -> hero -> cards stagger 60ms). Page transitions: 280ms fade + 8px rise + blur 8 to 0. Spring nav indicators. Subtle magnetic pull (<= 4px) on primary button.
-- [ ] **5. Sidebar & Surfaces Polish**: Frosted sidebar with gradient edge highlight, active item 3px accent bar + soft tint, 1.75px rounded icon set, tabular figures, 8pt optical alignment, refined chart crosshair.
-- [ ] **6. Signature Loading Screen (`web/index.html`)**: Pure HTML/CSS/inline SVG 'Settle' sequence: converging nodes on thin rings, balancing line, SETTLIV wordmark resolving from 0.6em to 0.18em tracking with indeterminate hairline sweep. On Flutter first frame: circular expanding clip-path reveal. Theme-aware, reduced-motion aware, zero external requests, no logo icon, no slogan.
-- [ ] **7. Empty States & Contrast Check**: Settle orbit motif in empty states; WCAG contrast test verification against blended backgrounds.
-- [ ] **8. Screenshots & Verification Pass**: Full 1440x900 screenshots (Dashboard light/dark, Add Expense dialog, Settings > Experience, loading screen frames).
+  - Both: ~72px Sora 800 with 600ms odometer digit roll once per session, light sweep, staggered avatar entrance, pointer spotlight (`WebNetPositionHero`).
+- [x] **4. Motion Choreography**: First load stagger (background 400ms -> sidebar 12px rise -> header -> hero -> cards stagger 60ms). Page transitions: 280ms fade + 8px rise + blur 8 to 0 (`_buildWebPageTransition`). Spring nav indicators. Subtle magnetic pull (<= 4px) on primary button (`MagneticButton`).
+- [x] **5. Sidebar & Surfaces Polish**: Frosted sidebar with gradient edge highlight, active item 3px accent bar + soft tint, 1.75px rounded icon set, tabular figures, 8pt optical alignment, refined chart crosshair.
+- [x] **6. Signature Loading Screen (`web/index.html`)**: Pure HTML/CSS/inline SVG 'Settle' sequence: converging nodes on thin rings, balancing line, SETTLIV wordmark resolving from 0.6em to 0.18em tracking with indeterminate hairline sweep. On Flutter first frame: circular expanding clip-path reveal. Theme-aware, reduced-motion aware, zero external requests, no logo icon, no slogan.
+- [x] **7. Empty States & Contrast Check**: Settle orbit motif in empty states (`SettleOrbitMotifPainter`); WCAG contrast test verification against blended backgrounds in `test/wcag_contrast_test.dart`.
+- [x] **8. Screenshots & Verification Pass**: Full 1440x900 screenshots (Dashboard light/dark, Add Expense dialog, Settings > Experience, loading screen frames) captured and verified in artifact directory.
 
 ---
 
