@@ -12,9 +12,16 @@ import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import 'widgets/savings_goals_section.dart';
+import 'widgets/recurring_dues_section.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
-  const PlanScreen({super.key});
+  final bool showScaffold;
+
+  const PlanScreen({
+    super.key,
+    this.showScaffold = true,
+  });
 
   @override
   ConsumerState<PlanScreen> createState() => _PlanScreenState();
@@ -251,6 +258,147 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final int dailyRatePaise = currentDay > 0 ? (totalSpentSoFarPaise ~/ currentDay) : totalSpentSoFarPaise;
     final int projectedSpendPaise = dailyRatePaise * daysInMonth;
 
+    final planContent = [
+      // 1. Header with monthly budget overview
+      SectionCard(
+        title: 'MONTHLY BUDGET',
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            statusLabel,
+            style: AppTypography.caption.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Text(
+                  CurrencyFormatter.formatPaise(totalSpentSoFarPaise),
+                  style: AppTypography.moneyHero.copyWith(
+                    color: theme.ink,
+                    fontSize: 34,
+                  ),
+                ),
+                Text(
+                  'of ${CurrencyFormatter.formatPaise(_monthlyBudgetPaise)}',
+                  style: AppTypography.caption.copyWith(
+                    color: theme.muted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your share spent so far (${budgetPercent.toStringAsFixed(1)}%)',
+              style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            // Progress Bar with 3 states
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (budgetPercent / 100).clamp(0.0, 1.0),
+                minHeight: 8,
+                backgroundColor: theme.hairline,
+                valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+
+      // 2. Projected month-end spend
+      SectionCard(
+        title: 'MONTH-END PROJECTION',
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.navy.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(Icons.trending_up_rounded, color: theme.navy, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Projected: ${CurrencyFormatter.formatPaise(projectedSpendPaise)}',
+                    style: AppTypography.bodySemiBold.copyWith(
+                      color: theme.ink,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'At current pace (~${CurrencyFormatter.formatPaise(dailyRatePaise)}/day)',
+                    style: AppTypography.caption.copyWith(
+                      color: theme.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+
+      // 3. Category limits: list of categories with budget, spent, remaining
+      SectionCard(
+        title: 'CATEGORY LIMITS',
+        child: Column(
+          children: [
+            for (final cat in _categoryLimits.keys) ...[
+              _buildCategoryLimitRow(
+                category: cat,
+                spentPaise: categorySpentPaise[cat] ?? 0,
+                limitPaise: _categoryLimits[cat] ?? 0,
+                theme: theme,
+              ),
+              Divider(height: 1, color: theme.hairline),
+            ],
+          ],
+        ),
+      ),
+      const SizedBox(height: 24),
+      const RecurringDuesSection(),
+      const SizedBox(height: 24),
+      const SavingsGoalsSection(),
+      const SizedBox(height: 32),
+    ];
+
+    if (!widget.showScaffold) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: planContent,
+        ),
+      );
+    }
+
     return ScreenScaffold(
       header: ScreenHeader(
         title: 'Budgets & Limits',
@@ -279,135 +427,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Header with monthly budget overview
-              SectionCard(
-            title: 'MONTHLY BUDGET',
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                statusLabel,
-                style: AppTypography.caption.copyWith(
-                  color: statusColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      CurrencyFormatter.formatPaise(totalSpentSoFarPaise),
-                      style: AppTypography.moneyHero.copyWith(
-                        color: theme.ink,
-                        fontSize: 34,
-                      ),
-                    ),
-                    Text(
-                      'of ${CurrencyFormatter.formatPaise(_monthlyBudgetPaise)}',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.muted,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your share spent so far (${budgetPercent.toStringAsFixed(1)}%)',
-                  style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 13),
-                ),
-                const SizedBox(height: 14),
-                // Progress Bar with 3 states
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: (budgetPercent / 100).clamp(0.0, 1.0),
-                    minHeight: 8,
-                    backgroundColor: theme.hairline,
-                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                  ),
-                ),
-              ],
-            ),
+            children: planContent,
           ),
-          const SizedBox(height: 20),
-
-          // 2. Projected month-end spend
-          SectionCard(
-            title: 'MONTH-END PROJECTION',
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: theme.navy.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(Icons.trending_up_rounded, color: theme.navy, size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Projected: ${CurrencyFormatter.formatPaise(projectedSpendPaise)}',
-                        style: AppTypography.bodySemiBold.copyWith(
-                          color: theme.ink,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'At current pace (~${CurrencyFormatter.formatPaise(dailyRatePaise)}/day)',
-                        style: AppTypography.caption.copyWith(
-                          color: theme.muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // 3. Category limits: list of categories with budget, spent, remaining
-          SectionCard(
-            title: 'CATEGORY LIMITS',
-            child: Column(
-              children: [
-                for (final cat in _categoryLimits.keys) ...[
-                  _buildCategoryLimitRow(
-                    category: cat,
-                    spentPaise: categorySpentPaise[cat] ?? 0,
-                    limitPaise: _categoryLimits[cat] ?? 0,
-                    theme: theme,
-                  ),
-                  Divider(height: 1, color: theme.hairline),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  ],
-);
+        ),
+      ],
+    );
   }
 
   Widget _buildCategoryLimitRow({

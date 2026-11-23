@@ -1,87 +1,108 @@
-# Settliv v0 - QA Report & Known Limitations
+# Settliv — QA Notes & Release Findings
 
-**Date:** 20 November 2026  
-**Version:** Settliv v0 (Functional Correctness Release)  
-**Status:** All 67 Unit, Widget, and QA Tests Passed · Zero `flutter analyze` Issues
+> Generated: 2026-11-23 | Build: 0.2+1
 
 ---
 
-## 1. QA Verification Matrix
+## QA Checklist Results
 
-### Responsive Form Factors & Typography Scale
-- **320x568 (iPhone SE / Small Phone Width)**:
-  - Navigation bar adapts with `FittedBox` scale-down and compact padding.
-  - Group cards wrap both group name and balance pills with `Expanded`/`Flexible` and ellipsis without overflow.
-  - Verified at `textScaler: 1.3`: 0 layout overflows detected.
-- **360x640 (Standard Android Small / Budget Device)**:
-  - Composer card headers wrap gracefully without overflow.
-  - Verified at `textScaler: 1.3`: 0 layout overflows detected.
-- **390x844 (Modern Phone Reference)**:
-  - Clean floating pill bar with frosted glass background, hairline border, and 52px Sapphire proud center button.
-- **Desktop Frame (>600px width)**:
-  - Centered mobile frame inside phone bezel with background aurora, SETTLIV wordmark, and prototype note card.
-  - Floating navigation bar remains strictly anchored within the phone frame container.
+### Themes
+- [x] Light theme — all screens, no raw color values (`flutter analyze` token scan passes)
+- [x] Dark theme — accent, emerald, coral, navy all use theme-extension tokens; hairline adapts correctly
 
-### Theme & Visual Integrity
-- **Light & Dark Themes**:
-  - Light mode: Clean Pearl surface, high-contrast dark navy typography, subtle glass tinting.
-  - Dark mode: Deep midnight base, frosted dark pearl surfaces, crisp contrast on emerald, sapphire, and coral accents.
-  - Red is strictly reserved for genuine errors and debt ("you owe"). Idle buttons stay neutral.
-- **Rules 7 & 8 (App-wide Polish)**:
-  - `SettlivScrollBehavior` hides scrollbars and overscroll glows app-wide on touch, web, and desktop without impeding scrollability.
-  - Strict performance limits respected: ≤2 `BackdropFilter`s per screen, static cover art cached in `RepaintBoundary`, no per-frame grain or heavy animations.
+### Viewport Sizes
+- [x] 390px (compact/phone) — bottom-sheet presenter, single-column layout, no overflow
+- [x] 768px (medium) — icon rail sidebar, two-column forms where applicable
+- [x] 1440px (wide/desktop) — full two-pane layout, desktop nav rail, bento grid on Insights web view
+- [x] App-in-frame 1440×900 — PhoneFrame renders at 390×844 with MediaQuery override; all routes constrained to frame
 
-### Functional Edge Cases & Validation Matrix
-| Scenario | Input | Expected Outcome | Verified Result |
-| :--- | :--- | :--- | :--- |
-| **Zero Amount** | `0` / `₹0` | Rejected, cannot add or settle | Handled (returns `null`, save/settle blocked) |
-| **Negative Amount** | `-50` | Rejected | Handled (returns `null`) |
-| **Decimal Amount** | `0.5` | Parsed as 50 paise, formatted as `₹0.50` | Handled (50 paise) |
-| **Over-Cap Amount** | `1e18` / `> ₹10,00,00,000` | Hard block with clear notice | Handled (`isOverCap: true`, blocked) |
-| **Large Amount Dialog** | `₹1,00,00,000` | Confirmation modal in digits + words | Handled ("₹1,00,00,000 · One crore") |
-| **Pasted Junk** | `abc!@#$%^&*` | Cleanly ignored, parser remains robust | Handled (returns `null`, no crash) |
-| **Ambiguous Amounts** | `"dinner 200 400"` | Asks instead of guessing | Handled (`isAmbiguous: true`) |
-| **3-Way ₹100 Split** | `10000 paise / 3` | Leftover paise assigned to payer first | Handled (payer: ₹33.34, others: ₹33.33 each, sums to ₹100.00) |
-| **Rapid Double Taps** | Rapid double press | Blocked by `_isSaving` / `_isSettling` guard | Handled (prevents duplicate requests) |
-| **Duplicate Guard** | Same group, amount, title < 2m | "Looks like a duplicate. Add anyway?" dialog | Handled |
-| **Repeat Suggestions** | Logged 3+ times in same group | "Repeat" chip appears on Quick tab only | Handled (seed data has 0, dynamic triggers at 3+) |
-| **Unknown Routes** | `/non_existent` | Friendly "Page not found" with "Home" button | Handled |
-| **Invalid Group ID** | `/group/invalid_id` | Friendly "Group not found" with "Back to Home" | Handled |
-| **Back Button / Sheets** | Back press on dirty composer | "Discard changes?" modal confirmation | Handled via `PopScope` |
+### Experience Switching
+- [x] Web → App → Web: state preserved, route stays, no double-push
+- [x] Deep link `/settings?section=experience` scrolls to Experience section with highlight pulse
+- [x] App-in-frame hint (PhoneFrame) dismissible; preference persisted in SharedPreferences (`settliv_phone_frame_hint_dismissed`)
+
+### Screen Lock
+- [x] Toggle appears only when WebAuthn is available (secure context + platform authenticator)
+- [x] On plain HTTP / unavailable: toggle is disabled with explanation text
+- [x] Timeout options: 1 min, 5 min, 15 min, 30 min, Never
+- [x] Lock screen auto-prompts on first view; erase-all confirmation is double-confirmed
+- [x] Unit tests use `FakeDeviceAuth`; no real biometric/PIN called in test suite
+
+### Insights & Spending Calendar
+- [x] Overview tab: MonthRecapCard (plain-language sentences), SpendingCalendar (day-intensity grid, tap-to-sheet)
+- [x] Budgets tab: embeds PlanScreen without scaffold; RecurringDuesSection + SavingsGoalsSection
+- [x] Segmented control taps trigger `HapticFeedback.selectionClick()`
+- [x] SpendingCalendar wrapped in `RepaintBoundary`
+
+### Savings Goals
+- [x] Create / contribute / withdraw / delete — all update SharedPreferences
+- [x] Animated progress bar (TweenAnimationBuilder, 300ms easeOutCubic, keyed by goal id)
+- [x] Achieved state shown with emerald color and "Goal achieved!" badge
+- [x] No goal data in backup export (privacy)
+
+### Help & Feedback
+- [x] Report a problem / Request a feature forms with validation
+- [x] Device info toggle (opt-in)
+- [x] Local queue in `feedbackReports` SharedPreferences key
+- [x] "Your reports" sheet: copy text, send via mailto, delete
+- [x] Email button shown (kFeedbackEmail = 'feedback@settliv.app')
+
+### Logomark
+- [x] `SettlivLogomark` CustomPainter: circle with diagonal ribbon band, single colour, `RepaintBoundary`
+- [x] Shown above SETTLIV wordmark in Settings About/brand block
+
+### Motion
+- [x] `AnimatedSection`: fade + 8px rise, 240ms easeOut, once per widget lifetime, respects `disableAnimations`
+- [x] Applied to: MonthRecapCard, Debts & Settlements, Your Spending, SpendingCalendar in Insights
+- [x] Progress bar grow-in: TweenAnimationBuilder on savings goals (0 → actual value)
+- [x] No looping animations anywhere (except Quick-tab typewriter which was pre-existing)
+- [x] No BackdropFilter in lists
+
+### Release Polish
+- [x] `web/index.html`: branded SVG loading screen, wordmark animation, flutter-first-frame listener
+- [x] Page title: "Settliv — Expense Sharing & Group Ledger"
+- [x] Meta description, Open Graph tags, theme-color (light + dark)
+- [x] Phone-frame prototype note: dismissible, remembered via SharedPreferences
+
+### Back Control
+- [x] GoRouter handles browser back button on web
+- [x] All routes have back navigation (AppBar back or custom back gesture in settings)
+- [x] Modal sheets dismiss on swipe-down and Escape key on web
 
 ---
 
-## 3. Settliv Experiences (App + Web) QA Report — Part W1, W2, W3
+## Known Limitations
 
-**Date:** 22 November 2026  
-**Status:** 161/161 Tests Passing · 0 `flutter analyze` Issues · Complete Screenshot Pass
+| Area | Limitation |
+|---|---|
+| **Screen Lock** | WebAuthn requires a secure context (HTTPS or `localhost`). On plain HTTP the toggle is disabled. No fallback PIN by design. |
+| **Spending Calendar** | Shows current month only (no month-navigation in this version). |
+| **Savings Goals** | Stored locally in SharedPreferences; not synced across devices or included in ledger backup. |
+| **Feedback Reports** | No backend: reports are stored locally and can be emailed manually. No tracking or analytics. |
+| **WebAuthn Credential** | Credential ID is stored in SharedPreferences; re-registration required if prefs are cleared. |
+| **Motion — AnimatedSection** | Animates once per widget lifetime. Page reload re-triggers animations (acceptable for prototype). |
+| **App-in-frame MediaQuery** | Frame overrides size to 390×844. If the viewport is very short (< 844px height), FittedBox scales the frame; content inside still sees 390×844. |
+| **Category Donut** | Custom painter; not interactive via keyboard (hover/tap only). |
+| **Recurring** | Templates are pre-seeded only; creation UI is in the Manage Recurring sheet (Settings). Auto-posting is intentionally disabled. |
 
-### Visual QA Verification Matrix
-- **Desktop 1440x900 (Expanded Web)**:
-  - **Dashboard (Light & Dark)**: Bento grid layout (Hero Net Position ₹860 span 7, This Month ₹36,239 span 5, Recent Groups span 7, Shortcuts span 5, Recent Activity table span 12). Row clicks open `ExpenseDetailSheet` in an `AdaptivePresenter` right drawer. Invariant and "Paid by you" display verified.
-  - **Groups (Light & Dark)**: Responsive 3-column grid of rich group cards with cover art, balance badges, member avatars, and "+ New group" modal dialog.
-  - **Records (Light & Dark)**: Live search toolbar, "Filter Records" popover with Group and Category filters, full 7-column table with Sora tabular currency, and drawer inspection.
-  - **Insights (Light & Dark)**: Period selector chips, reconciled spend (₹36,239), category bars with light/dark contrast-compliant palette, and spending habits weekday histogram. Back link to `/insights/budgets`.
-  - **Add Expense Dialog (Light & Dark)**: Centered dialog presentation with `maxWidth: 960`, cycling placeholder examples, instant parse preview, and Esc key dismissal.
-  - **Settings (Light & Dark)**: Two-pane layout with left rail sections and right content pane, Experience card ("Responsive Website ACTIVE"), and large 24px SETTLIV wordmark end block.
+---
 
-- **Compact Web 390x844**:
-  - Web header with hamburger menu, `SETTLIV` wordmark, and `+` action.
-  - Bento items stacked vertically into responsive cards.
-  - No mobile bottom navigation bar rendered (spec compliant).
+## Build Info
 
-- **App Mode 390x844 (Touch Device)**:
-  - Mobile Home screen: day-period icon and status text removed per W1 small fix (`Sunday, 22 Nov` subline only).
-  - Floating pill navigation bar anchored at bottom with 52px proud Sapphire `+` button.
-  - Experience setting toggle (App | Web) with phone and browser thumbnail illustrations.
+- Flutter channel: stable
+- Build command: `flutter build web --release --no-web-resources-cdn`
+- Output: `build/web/`
+- Deploy: copy `vercel.json` into `build/web/`, then `npx vercel --prod --yes` from `build/web/`
 
-### Defect Audit & Resolutions
-- **Brand Consistency**: Zero logomark widgets remain in tree; brand is exclusively the `SETTLIV` wordmark in Bricolage Grotesque ExtraBold with ~0.18em tracking.
-- **Overflow / Layout Checks**: Verified at both 1440x900 and 390x844 viewports with text scale 1.3. No layout overflow or clipped currency text.
-- **Contrast**: Category palette contrast verified (Rent tile, icon, and donut slices pass ≥3:1 contrast in both light and dark themes).
+---
 
-   - Newly created groups default to either the Goa Trip or Flatmates procedural artistic painter based on group type (`trip` vs `home`/`other`). Custom user image uploading or palette pickers are not yet implemented.
-4. **Group Member Editing**:
-   - Dynamic group creation allows adding members with arbitrary names (min 2 members, unique names enforced). Editing or removing members from an existing group post-creation is not supported in v0.
-5. **Multi-Currency Support**:
-   - Fixed to Indian Rupee (INR / ₹) with integer paise precision and Indian numeral grouping (`12,34,567.50`). Cross-currency conversion is out of scope for v0.
+## Test Results (last run)
+
+```
+flutter analyze → No issues found
+flutter test    → All tests pass
+                  theme_token_scan_test.dart     → pass
+                  balance_engine_test.dart        → pass
+                  extended_features_test.dart     → pass
+                  part_s3_verification_test.dart  → 10/10 pass
+```

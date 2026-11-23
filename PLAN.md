@@ -583,3 +583,56 @@
   - Verify route persistence on browser refresh and route mapping when switching modes (`/budgets` <-> `/insights/budgets`).
   - Verify back affordance on every route.
   - Update `README.md` and `DEPLOY.md` with complete documentation, build commands, Vercel instructions, release size stats, and honest limitations.
+
+
+---
+
+## ✅ SET 3 COMPLETE — 2026-11-23
+
+### What was delivered:
+
+**A. Insights tab (App + Web)**
+- Rectangular segmented control `Overview | Budgets` replaces old Plan tab
+- Overview: MonthRecapCard, SpendingCalendar (day-intensity grid, tap-to-sheet), Debts & Settlements, Your Spending, Category Breakdown (donut), By Group, Habits & Highlights
+- Budgets tab embeds PlanScreen (RecurringDuesSection + SavingsGoalsSection) without scaffold
+- `/insights/budgets` route renders InsightsScreen with Budgets tab pre-selected
+
+**B. Profile & Settings**
+- Full-screen settings (no AppBar by default on App)
+- Security section: WebAuthn screen lock with timeout options
+- Help & Feedback section: Report a problem / Request a feature forms, local queue, copy/email
+- About section: `SettlivLogomark` CustomPainter (circle + diagonal ribbon) + SETTLIV wordmark + version + hairline watermark
+- Brand block: `AppConfig.versionString` = "Version 0.2 (build 1)"
+
+**C. Help & Feedback**
+- `FeedbackReport` model, `FeedbackType` enum
+- `HelpFeedbackDialog` with validation, device-info toggle, double-tap guard
+- Local queue in SharedPreferences (`feedbackReports`)
+- `ReportsQueueSheet` with copy + email (mailto) + delete
+- `kFeedbackEmail = 'feedback@settliv.app'`
+
+**D. Screen Lock (WebAuthn)**
+- Abstract `DeviceAuth` interface + web impl + stub + `FakeDeviceAuth` for tests
+- `ScreenLockNotifier` Riverpod notifier with enable/disable/unlock/setTimeout
+- `LockScreen` widget: auto-prompt, error display, erase-all confirmation
+- Gated in `main.dart` builder via `screenLockProvider`
+
+**E. Motion Polish**
+- `AnimatedSection` widget: fade + 8px rise, 240ms easeOut, once per lifetime, `disableAnimations`-aware
+- Applied to MonthRecapCard, Debts & Settlements, Your Spending, SpendingCalendar in Insights
+- `TweenAnimationBuilder` grow-in on savings goals progress bars
+- `HapticFeedback.selectionClick()` on tab switches and period chips
+- `RepaintBoundary` around SpendingCalendar and SettlivLogomark
+
+**F. Release Polish**
+- `web/index.html`: branded SVG loading screen, wordmark animation, flutter-first-frame listener, theme-color tags
+- PhoneFrame hint: dismissible, persisted in SharedPreferences (`settliv_phone_frame_hint_dismissed`)
+
+**G. QA + Docs**
+- `NOTES.md` created with full QA checklist and known limitations
+- `README.md` updated: removed Replit/port-3000, added build/deploy instructions
+- `DEPLOY.md` updated: Vercel steps, screen lock caveat, routing note
+
+### Test results at completion:
+- `flutter analyze` → 0 issues
+- All test files pass

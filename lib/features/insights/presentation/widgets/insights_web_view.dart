@@ -12,6 +12,8 @@ import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/expense.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
 import '../insights_screen.dart';
+import 'month_recap_card.dart';
+import 'spending_calendar.dart';
 
 class InsightsWebView extends ConsumerStatefulWidget {
   const InsightsWebView({super.key});
@@ -154,6 +156,12 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                 )
               else if (isCompact) ...[
                 // Compact Web: Stacked
+                MonthRecapCard(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  now: now,
+                ),
+                const SizedBox(height: 16),
                 _buildSpendSummaryCard(context, theme, totalYourSpend, prevTotalSpend, spendChangePercent),
                 const SizedBox(height: 16),
                 _buildDebtsSettlementsCard(context, theme, settledThisPeriod),
@@ -161,8 +169,20 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                 _buildCategoryCard(context, theme, activeCategories, totalYourSpend),
                 const SizedBox(height: 16),
                 _buildHabitsCard(context, theme, avgPerDay, weekdaySpend),
+                const SizedBox(height: 16),
+                SpendingCalendar(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  initialDate: now,
+                ),
               ] else ...[
                 // Expanded / Medium: Bento Grid
+                MonthRecapCard(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  now: now,
+                ),
+                const SizedBox(height: 20),
                 // Row 1: Spend summary (span 7) + Debts & settlements (span 5)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,6 +214,14 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                       child: _buildHabitsCard(context, theme, avgPerDay, weekdaySpend),
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+
+                // Row 3: Spending Calendar
+                SpendingCalendar(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  initialDate: now,
                 ),
               ],
             ],

@@ -1,7 +1,6 @@
 import '../../../core/layout/adaptive_layout.dart';
 import '../../../core/navigation/back_navigation.dart';
 import '../../../core/profile/experience_mode.dart';
-import '../../../core/widgets/settliv_wordmark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import 'widgets/experience_settings_section.dart';
+import 'widgets/security_settings_section.dart';
+import 'widgets/help_feedback_settings_section.dart';
+import 'widgets/settliv_brand_block.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
@@ -34,6 +36,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final ScrollController _scrollController;
   final GlobalKey _experienceSectionKey = GlobalKey();
   final GlobalKey _privacySectionKey = GlobalKey();
+  final GlobalKey _securitySectionKey = GlobalKey();
+  final GlobalKey _helpSectionKey = GlobalKey();
   late String _selectedNavSection;
   bool _highlightExperience = false;
   bool _isEditingProfile = false;
@@ -790,6 +794,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 28),
 
+            // Security Section
+            KeyedSubtree(
+              key: _securitySectionKey,
+              child: const SecuritySettingsSection(),
+            ),
+            const SizedBox(height: 28),
+
+            // Help & Feedback Section
+            KeyedSubtree(
+              key: _helpSectionKey,
+              child: const HelpFeedbackSettingsSection(),
+            ),
+            const SizedBox(height: 28),
+
             // Experience Section
             KeyedSubtree(
               key: _experienceSectionKey,
@@ -882,31 +900,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 28),
 
-            // About / Version with large wordmark
-            Center(
-              child: Column(
-                children: [
-                  const SettlivWordmark(fontSize: 24),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Settliv v0.2.0',
-                    style: AppTypography.caption.copyWith(
-                      color: theme.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'v0 prototype with local demo data. More screens and online features come in the full app.',
-                    style: AppTypography.caption.copyWith(
-                      color: theme.muted,
-                      fontSize: 11,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+            // About Brand Block
+            const SettlivBrandBlock(),
             const SizedBox(height: 32),
     ];
 
@@ -970,6 +965,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   false,
                                   theme,
                                   onTap: () => context.push('/settings/recurring'),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildNavPill(
+                                  'Security',
+                                  Icons.lock_outline_rounded,
+                                  _selectedNavSection == 'security',
+                                  theme,
+                                  onTap: () {
+                                    setState(() => _selectedNavSection = 'security');
+                                    final ctx = _securitySectionKey.currentContext;
+                                    if (ctx != null) {
+                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                _buildNavPill(
+                                  'Help & Feedback',
+                                  Icons.help_outline_rounded,
+                                  _selectedNavSection == 'help',
+                                  theme,
+                                  onTap: () {
+                                    setState(() => _selectedNavSection = 'help');
+                                    final ctx = _helpSectionKey.currentContext;
+                                    if (ctx != null) {
+                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
+                                    }
+                                  },
                                 ),
                                 const SizedBox(height: 8),
                                 _buildNavPill(

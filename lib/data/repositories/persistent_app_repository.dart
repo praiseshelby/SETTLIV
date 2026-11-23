@@ -7,6 +7,8 @@ import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
 import '../models/iou_note.dart';
+import '../models/savings_goal.dart';
+import '../models/feedback_report.dart';
 import '../engine/balance_engine.dart';
 import '../engine/split_calculator.dart';
 import '../seed/seed_data.dart';
@@ -28,6 +30,8 @@ class PersistentAppRepository implements AppRepository {
   late List<Settlement> _settlements;
   late List<RecurringTemplate> _recurringTemplates;
   late List<IouNote> _iouNotes;
+  late List<SavingsGoal> _savingsGoals;
+  late List<FeedbackReport> _feedbackReports;
 
   bool _wasCorruptDataRecovered = false;
   Timer? _debounceTimer;
@@ -63,6 +67,25 @@ class PersistentAppRepository implements AppRepository {
     _settlements = List.from(SeedData.settlements);
     _recurringTemplates = [];
     _iouNotes = [];
+    _savingsGoals = [
+      SavingsGoal(
+        id: 'goal_emergency',
+        name: 'Emergency Fund',
+        targetPaise: 10000000,
+        savedPaise: 4250000,
+        targetDate: _clock().add(const Duration(days: 90)),
+        createdAt: _clock().subtract(const Duration(days: 60)),
+      ),
+      SavingsGoal(
+        id: 'goal_vacation',
+        name: 'Goa Next Trip',
+        targetPaise: 3000000,
+        savedPaise: 2400000,
+        targetDate: _clock().add(const Duration(days: 45)),
+        createdAt: _clock().subtract(const Duration(days: 30)),
+      ),
+    ];
+    _feedbackReports = [];
   }
 
   bool _loadFromJsonString(String rawJson) {
@@ -100,6 +123,14 @@ class PersistentAppRepository implements AppRepository {
           [];
       final iouList = (data['iouNotes'] as List<dynamic>?)
               ?.map((i) => IouNote.fromJson(i as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final savingsList = (data['savingsGoals'] as List<dynamic>?)
+              ?.map((s) => SavingsGoal.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final feedbackList = (data['feedbackReports'] as List<dynamic>?)
+              ?.map((f) => FeedbackReport.fromJson(f as Map<String, dynamic>))
               .toList() ??
           [];
 
@@ -169,6 +200,8 @@ class PersistentAppRepository implements AppRepository {
       _settlements = settlementsList;
       _recurringTemplates = recurringList;
       _iouNotes = iouList;
+      _savingsGoals = savingsList;
+      _feedbackReports = feedbackList;
       _wasCorruptDataRecovered = false;
       return true;
     } catch (e) {
@@ -204,6 +237,8 @@ class PersistentAppRepository implements AppRepository {
         'settlements': _settlements.map((s) => s.toJson()).toList(),
         'recurringTemplates': _recurringTemplates.map((r) => r.toJson()).toList(),
         'iouNotes': _iouNotes.map((i) => i.toJson()).toList(),
+        'savingsGoals': _savingsGoals.map((s) => s.toJson()).toList(),
+        'feedbackReports': _feedbackReports.map((f) => f.toJson()).toList(),
       };
       await _prefs.setString(storageKey, jsonEncode(data));
     } catch (_) {
@@ -563,6 +598,71 @@ class PersistentAppRepository implements AppRepository {
   }
 
   @override
+  List<SavingsGoal> getSavingsGoals() => List.unmodifiable(_savingsGoals);
+
+  @override
+  SavingsGoal? getSavingsGoal(String id) {
+    try {
+      return _savingsGoals.firstWhere((g) => g.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void addSavingsGoal(SavingsGoal goal) {
+    _savingsGoals.add(goal);
+    _scheduleSave();
+  }
+
+  @override
+  void updateSavingsGoal(SavingsGoal goal) {
+    final idx = _savingsGoals.indexWhere((g) => g.id == goal.id);
+    if (idx != -1) {
+      _savingsGoals[idx] = goal;
+      _scheduleSave();
+    }
+  }
+
+  @override
+  void deleteSavingsGoal(String id) {
+    _savingsGoals.removeWhere((g) => g.id == id);
+    _scheduleSave();
+  }
+
+  @override
+  void contributeToSavingsGoal(String id, int amountPaise) {
+    final goal = getSavingsGoal(id);
+    if (goal != null && amountPaise > 0) {
+      updateSavingsGoal(goal.copyWith(savedPaise: goal.savedPaise + amountPaise));
+    }
+  }
+
+  @override
+  void withdrawFromSavingsGoal(String id, int amountPaise) {
+    final goal = getSavingsGoal(id);
+    if (goal != null && amountPaise > 0) {
+      final newSaved = (goal.savedPaise - amountPaise).clamp(0, 100000000000).toInt();
+      updateSavingsGoal(goal.copyWith(savedPaise: newSaved));
+    }
+  }
+
+  @override
+  List<FeedbackReport> getFeedbackReports() => List.unmodifiable(_feedbackReports);
+
+  @override
+  void addFeedbackReport(FeedbackReport report) {
+    _feedbackReports.insert(0, report);
+    _scheduleSave();
+  }
+
+  @override
+  void deleteFeedbackReport(String id) {
+    _feedbackReports.removeWhere((f) => f.id == id);
+    _scheduleSave();
+  }
+
+  @override
   String exportLedgerJson() {
     final data = {
       'version': schemaVersion,
@@ -575,6 +675,8 @@ class PersistentAppRepository implements AppRepository {
       'settlements': _settlements.map((s) => s.toJson()).toList(),
       'recurringTemplates': _recurringTemplates.map((r) => r.toJson()).toList(),
       'iouNotes': _iouNotes.map((i) => i.toJson()).toList(),
+      'savingsGoals': _savingsGoals.map((s) => s.toJson()).toList(),
+      'feedbackReports': _feedbackReports.map((f) => f.toJson()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(data);
   }
@@ -646,6 +748,14 @@ class PersistentAppRepository implements AppRepository {
               ?.map((i) => IouNote.fromJson(i as Map<String, dynamic>))
               .toList() ??
           [];
+      final savingsList = (data['savingsGoals'] as List<dynamic>?)
+              ?.map((s) => SavingsGoal.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [];
+      final feedbackList = (data['feedbackReports'] as List<dynamic>?)
+              ?.map((f) => FeedbackReport.fromJson(f as Map<String, dynamic>))
+              .toList() ??
+          [];
 
       // Validate invariants
       final peopleIds = peopleList.map((p) => p.id).toSet();
@@ -683,6 +793,8 @@ class PersistentAppRepository implements AppRepository {
       _settlements = settlementsList;
       _recurringTemplates = recurringList;
       _iouNotes = iouList;
+      _savingsGoals = savingsList;
+      _feedbackReports = feedbackList;
       _wasCorruptDataRecovered = false;
       _saveToStorageImmediate();
       return true;
@@ -733,6 +845,9 @@ class PersistentAppRepository implements AppRepository {
     _expenses = [];
     _settlements = [];
     _recurringTemplates = [];
+    _iouNotes = [];
+    _savingsGoals = [];
+    _feedbackReports = [];
     await _saveNow();
   }
 

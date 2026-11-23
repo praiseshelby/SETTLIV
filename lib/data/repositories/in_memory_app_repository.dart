@@ -8,6 +8,8 @@ import '../models/recurring_template.dart';
 import '../models/iou_note.dart';
 import '../engine/balance_engine.dart';
 import 'app_repository.dart';
+import '../models/savings_goal.dart';
+import '../models/feedback_report.dart';
 import 'persistent_app_repository.dart';
 
 // An in-memory implementation that matches AppRepository for tests and fast mocks
@@ -136,6 +138,41 @@ class AppStateNotifier extends Notifier<int> {
     notifyChange();
   }
 
+  void addSavingsGoal(SavingsGoal goal) {
+    repository.addSavingsGoal(goal);
+    notifyChange();
+  }
+
+  void updateSavingsGoal(SavingsGoal goal) {
+    repository.updateSavingsGoal(goal);
+    notifyChange();
+  }
+
+  void deleteSavingsGoal(String id) {
+    repository.deleteSavingsGoal(id);
+    notifyChange();
+  }
+
+  void contributeToSavingsGoal(String id, int amountPaise) {
+    repository.contributeToSavingsGoal(id, amountPaise);
+    notifyChange();
+  }
+
+  void withdrawFromSavingsGoal(String id, int amountPaise) {
+    repository.withdrawFromSavingsGoal(id, amountPaise);
+    notifyChange();
+  }
+
+  void addFeedbackReport(FeedbackReport report) {
+    repository.addFeedbackReport(report);
+    notifyChange();
+  }
+
+  void deleteFeedbackReport(String id) {
+    repository.deleteFeedbackReport(id);
+    notifyChange();
+  }
+
   int processDueRecurringExpenses({DateTime? asOf}) {
     final generated = repository.processDueRecurringExpenses(asOf: asOf);
     if (generated.isNotEmpty) {
@@ -237,4 +274,14 @@ final allRecurringTemplatesProvider = Provider<List<RecurringTemplate>>((ref) {
 final allIouNotesProvider = Provider<List<IouNote>>((ref) {
   final repo = ref.watch(appRepositoryProvider);
   return repo.getAllIouNotes();
+});
+
+final allSavingsGoalsProvider = Provider<List<SavingsGoal>>((ref) {
+  final repo = ref.watch(appRepositoryProvider);
+  return repo.getSavingsGoals();
+});
+
+final allFeedbackReportsProvider = Provider<List<FeedbackReport>>((ref) {
+  final repo = ref.watch(appRepositoryProvider);
+  return repo.getFeedbackReports();
 });

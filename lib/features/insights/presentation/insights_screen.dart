@@ -1,5 +1,9 @@
 import 'widgets/insights_web_view.dart';
+import 'widgets/month_recap_card.dart';
+import 'widgets/spending_calendar.dart';
+import '../../plan/presentation/plan_screen.dart';
 import '../../../core/profile/experience_mode.dart';
+import '../../../core/widgets/animated_section.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,17 +20,30 @@ import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 
 enum InsightPeriod { thisMonth, lastMonth, threeMonths, sixMonths, year }
+enum InsightsTab { overview, budgets }
 
 class InsightsScreen extends ConsumerStatefulWidget {
-  const InsightsScreen({super.key});
+  final InsightsTab initialTab;
+
+  const InsightsScreen({
+    super.key,
+    this.initialTab = InsightsTab.overview,
+  });
 
   @override
   ConsumerState<InsightsScreen> createState() => _InsightsScreenState();
 }
 
 class _InsightsScreenState extends ConsumerState<InsightsScreen> {
+  late InsightsTab _activeTab;
   InsightPeriod _period = InsightPeriod.thisMonth;
   ExpenseCategory? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeTab = widget.initialTab;
+  }
 
   (DateTime start, DateTime end, DateTime prevStart, DateTime prevEnd) _getDateRanges(DateTime now) {
     switch (_period) {
@@ -188,24 +205,101 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Period Selector
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              // Segmented Control: Overview | Budgets
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.hairline),
+                ),
                 child: Row(
                   children: [
-                    _buildPeriodChip('This month', InsightPeriod.thisMonth, theme),
-                    const SizedBox(width: 8),
-                    _buildPeriodChip('Last month', InsightPeriod.lastMonth, theme),
-                    const SizedBox(width: 8),
-                    _buildPeriodChip('3M', InsightPeriod.threeMonths, theme),
-                    const SizedBox(width: 8),
-                    _buildPeriodChip('6M', InsightPeriod.sixMonths, theme),
-                    const SizedBox(width: 8),
-                    _buildPeriodChip('Year', InsightPeriod.year, theme),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _activeTab = InsightsTab.overview);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _activeTab == InsightsTab.overview ? theme.canvas : theme.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Overview',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: _activeTab == InsightsTab.overview ? FontWeight.w700 : FontWeight.w500,
+                              color: _activeTab == InsightsTab.overview ? theme.ink : theme.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _activeTab = InsightsTab.budgets);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _activeTab == InsightsTab.budgets ? theme.canvas : theme.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Budgets',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: _activeTab == InsightsTab.budgets ? FontWeight.w700 : FontWeight.w500,
+                              color: _activeTab == InsightsTab.budgets ? theme.ink : theme.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+
+              if (_activeTab == InsightsTab.budgets) ...[
+                const PlanScreen(showScaffold: false),
+              ] else ...[
+                AnimatedSection(
+                  child: MonthRecapCard(
+                    expenses: allExpenses,
+                    currentUserId: currentUserId,
+                    now: now,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // 1. Period Selector
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildPeriodChip('This month', InsightPeriod.thisMonth, theme),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('Last month', InsightPeriod.lastMonth, theme),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('3M', InsightPeriod.threeMonths, theme),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('6M', InsightPeriod.sixMonths, theme),
+                      const SizedBox(width: 8),
+                      _buildPeriodChip('Year', InsightPeriod.year, theme),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
 
           if (currentExpenses.isEmpty || totalYourSpend == 0) ...[
             const Padding(
@@ -217,7 +311,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             ),
           ] else ...[
             // 2. Debts block: "Settled this month" vs "Still owed", mini net trend
-            SectionCard(
+            AnimatedSection(
+              delay: const Duration(milliseconds: 60),
+              child: SectionCard(
               title: 'DEBTS & SETTLEMENTS',
               child: Column(
                 children: [
@@ -268,10 +364,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 ],
               ),
             ),
+            ),  // AnimatedSection (Debts)
             const SizedBox(height: 20),
 
             // 3. "Your spending" hero card: total for period, % vs previous period, "Spent in groups ₹A · Personal ₹B", horizontal bar
-            SectionCard(
+            AnimatedSection(
+              delay: const Duration(milliseconds: 120),
+              child: SectionCard(
               title: 'YOUR SPENDING',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,6 +444,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 ],
               ),
             ),
+            ),  // AnimatedSection (Your Spending)
             const SizedBox(height: 20),
 
             // 4. Category breakdown: crisp donut chart + list below sorted descending
@@ -559,8 +659,21 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            AnimatedSection(
+              delay: const Duration(milliseconds: 180),
+              child: RepaintBoundary(
+                child: SpendingCalendar(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  initialDate: now,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
               ],
             ],
+          ],
           ),
         ),
       ],

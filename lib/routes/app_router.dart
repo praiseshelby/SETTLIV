@@ -104,7 +104,7 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
               routes: [
                 GoRoute(
                   path: 'budgets',
-                  builder: (context, state) => const PlanScreen(),
+                  builder: (context, state) => const InsightsScreen(initialTab: InsightsTab.budgets),
                 ),
               ],
             ),

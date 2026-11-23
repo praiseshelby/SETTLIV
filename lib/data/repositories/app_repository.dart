@@ -4,6 +4,8 @@ import '../models/expense.dart';
 import '../models/settlement.dart';
 import '../models/recurring_template.dart';
 import '../models/iou_note.dart';
+import '../models/savings_goal.dart';
+import '../models/feedback_report.dart';
 import '../engine/balance_engine.dart';
 
 abstract class AppRepository {
@@ -49,6 +51,18 @@ abstract class AppRepository {
   void deleteRecurringTemplate(String id);
   List<Expense> processDueRecurringExpenses({DateTime? asOf});
 
+  List<SavingsGoal> getSavingsGoals();
+  SavingsGoal? getSavingsGoal(String id);
+  void addSavingsGoal(SavingsGoal goal);
+  void updateSavingsGoal(SavingsGoal goal);
+  void deleteSavingsGoal(String id);
+  void contributeToSavingsGoal(String id, int amountPaise);
+  void withdrawFromSavingsGoal(String id, int amountPaise);
+
+  List<FeedbackReport> getFeedbackReports();
+  void addFeedbackReport(FeedbackReport report);
+  void deleteFeedbackReport(String id);
+
   String exportLedgerJson();
   String exportExpensesCsv();
   bool restoreFromJson(String jsonString);
@@ -62,3 +76,4 @@ abstract class AppRepository {
   bool get wasCorruptDataRecovered;
   DateTime Function() get clock;
 }
+

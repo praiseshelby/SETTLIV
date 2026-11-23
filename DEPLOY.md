@@ -1,21 +1,55 @@
-# Settliv Deployment Guide
+# Settliv — Deployment Guide
 
-### Option 1: Local Preview (Zero Setup)
-Serve the pre-built Flutter Web production bundle:
+## 1. Build
+
 ```bash
-python3 -m http.server 3000 --directory build/web --bind 0.0.0.0
+flutter build web --release --no-web-resources-cdn
 ```
-Open [http://localhost:3000](http://localhost:3000) in any modern browser.
 
-### Option 2: Replit Instant Host
-1. Create a new Replit and select the **Python** or **Blank** template.
-2. Upload this repository (or just `build/web/` and `.replit`).
-3. Click **Run**.
-4. Replit starts Python's web server on port 3000 and provides a public HTTPS URL.
-*(Note: Built with `--base-href /` for standard root URL hosting).*
+Output is in `build/web/`.
 
-### Option 3: Rebuilding from Source
+## 2. Deploy to Vercel
+
 ```bash
-flutter build web --release --base-href /
+cp vercel.json build/web/
+cd build/web
+npx vercel --prod --yes
 ```
-Output artifacts are saved in `build/web/`.
+
+> The `vercel.json` configures SPA routing (all paths → `index.html`) with correct MIME types for Flutter web assets.
+
+## 3. Local Preview
+
+```bash
+# After building:
+python3 -m http.server 8080 --directory build/web
+# Open http://localhost:8080
+```
+
+> **Screen lock (WebAuthn)** requires HTTPS or `localhost`. It is **not available** on plain HTTP deployments.
+
+## 4. Environment Notes
+
+| Requirement | Value |
+|---|---|
+| Flutter SDK | stable (3.x+) |
+| Dart | 3.x |
+| Renderer | HTML (default for web) |
+| Packages | No native plugins; all packages work on web |
+
+## 5. What Gets Deployed
+
+- Full Flutter web bundle (JS + assets)
+- Branded loading screen in `index.html`
+- Favicon + manifest from `web/`
+- No server-side logic; fully client-side
+
+## 6. Routing
+
+All routes are client-side via GoRouter. The `vercel.json` rewrites all requests to `index.html`. Deep links like `/settings?section=experience` and `/insights/budgets` work correctly on both initial load and navigation.
+
+## 7. Known Deployment Considerations
+
+- **WebAuthn / Screen Lock**: Works on `localhost` and HTTPS only. Disabled automatically on HTTP origins.
+- **SharedPreferences**: Browser `localStorage` on web. Cleared when the user clears site data.
+- **Feedback email**: Uses `mailto:` — requires the user's default mail client. No SMTP server.
