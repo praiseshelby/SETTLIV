@@ -1,16 +1,34 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/currency_formatter.dart';
+
+class UpcomingDueItem {
+  final String title;
+  final DateTime dueDate;
+  final int amountPaise;
+
+  const UpcomingDueItem({
+    required this.title,
+    required this.dueDate,
+    required this.amountPaise,
+  });
+}
 
 class MonthDial extends StatelessWidget {
   final DateTime now;
   final double size;
+  final List<UpcomingDueItem> upcomingItems;
+  final VoidCallback? onTap;
 
   const MonthDial({
     super.key,
     required this.now,
-    this.size = 68.0,
+    this.size = 64.0,
+    this.upcomingItems = const [],
+    this.onTap,
   });
 
   @override
@@ -18,125 +36,216 @@ class MonthDial extends StatelessWidget {
     final theme = context.settliv;
     final int daysInMonth = DateTime(now.year, now.month + 1, 0).day;
     final int today = now.day;
-    final String tooltip = 'Day $today of $daysInMonth';
-    final String monthAbbr = _getMonthAbbr(now.month);
+    final int daysLeft = math.max(0, daysInMonth - today);
 
-    return Tooltip(
-      message: tooltip,
-      child: Semantics(
-        label: tooltip,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: CustomPaint(
-            painter: MonthDialPainter(
-              today: today,
-              daysInMonth: daysInMonth,
-              monthAbbr: monthAbbr,
-              accentColor: theme.accent,
-              hairlineColor: theme.hairline,
-              inkColor: theme.ink,
-              mutedColor: theme.muted,
+    // Extract days with upcoming dues (days >= today in this month)
+    final Set<int> dueDays = {};
+    final List<UpcomingDueItem> futureItems = [];
+    for (final item in upcomingItems) {
+      if (item.dueDate.year == now.year && item.dueDate.month == now.month) {
+        if (item.dueDate.day >= today) {
+          dueDays.add(item.dueDate.day);
+          futureItems.add(item);
+        }
+      }
+    }
+    futureItems.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+
+    final String tooltipMessage;
+    if (futureItems.isNotEmpty) {
+      tooltipMessage = futureItems.take(3).map((item) {
+        final dateStr = DateFormat('EEE, d MMM').format(item.dueDate);
+        final amt = CurrencyFormatter.formatPaise(item.amountPaise, absolute: true);
+        return '${item.title} ($amt) · $dateStr';
+      }).join('\n');
+    } else {
+      tooltipMessage = 'No dues this month';
+    }
+
+    final UpcomingDueItem? nextItem = futureItems.isNotEmpty ? futureItems.first : null;
+
+    return Semantics(
+      button: true,
+      label: 'Month overview: $daysLeft days left. $tooltipMessage',
+      child: Tooltip(
+        message: tooltipMessage,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Beside the dial: two short lines
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      nextItem != null
+                          ? 'Next: ${nextItem.title} · ${DateFormat('EEE d MMM').format(nextItem.dueDate)}'
+                          : 'No dues this month',
+                      style: AppTypography.caption.copyWith(
+                        color: theme.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    if (nextItem != null)
+                      Text(
+                        CurrencyFormatter.formatPaise(nextItem.amountPaise, absolute: true),
+                        style: TextStyle(
+                          fontFamily: AppTypography.fontDisplay,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: theme.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      )
+                    else
+                      Text(
+                        'All settled',
+                        style: AppTypography.caption.copyWith(
+                          color: theme.textEmerald,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+
+                // Radial Dial
+                SizedBox(
+                  width: size,
+                  height: size,
+                  child: CustomPaint(
+                    painter: MonthDialPainter(
+                      today: today,
+                      daysInMonth: daysInMonth,
+                      daysLeft: daysLeft,
+                      dueDays: dueDays,
+                      accentColor: theme.accent,
+                      hairlineColor: theme.hairline,
+                      inkColor: theme.ink,
+                      mutedColor: theme.muted,
+                      coralColor: theme.coral,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-
-  String _getMonthAbbr(int month) {
-    const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
-    ];
-    return months[month - 1];
-  }
 }
 
 class MonthDialPainter extends CustomPainter {
   final int today;
   final int daysInMonth;
-  final String monthAbbr;
+  final int daysLeft;
+  final Set<int> dueDays;
   final Color accentColor;
   final Color hairlineColor;
   final Color inkColor;
   final Color mutedColor;
+  final Color coralColor;
 
   const MonthDialPainter({
     required this.today,
     required this.daysInMonth,
-    required this.monthAbbr,
+    required this.daysLeft,
+    required this.dueDays,
     required this.accentColor,
     required this.hairlineColor,
     required this.inkColor,
     required this.mutedColor,
+    required this.coralColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) - 2.0;
+    final radius = (size.width / 2) - 2.5;
     const startAngle = -math.pi / 2; // 12 o'clock
 
     final tickPaintInactive = Paint()
       ..color = hairlineColor
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.0
       ..strokeCap = StrokeCap.round;
 
     final tickPaintActive = Paint()
       ..color = accentColor
-      ..strokeWidth = 1.4
+      ..strokeWidth = 1.3
       ..strokeCap = StrokeCap.round;
 
     final glowPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.5)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+      ..color = accentColor.withValues(alpha: 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5);
 
-    // Draw ticks around the dial
+    final dueDotPaint = Paint()
+      ..color = coralColor
+      ..style = PaintingStyle.fill;
+
+    // Draw ticks around the dial for each day
     for (int day = 1; day <= daysInMonth; day++) {
       final angle = startAngle + (day / daysInMonth) * 2 * math.pi;
       final isPassedOrToday = day <= today;
       final isToday = day == today;
+      final hasDue = dueDays.contains(day);
 
-      final innerR = radius - (isToday ? 6.5 : 5.0);
+      final innerR = radius - (isToday ? 6.0 : 4.5);
       final outerR = radius;
 
       final p1 = Offset(center.dx + innerR * math.cos(angle), center.dy + innerR * math.sin(angle));
       final p2 = Offset(center.dx + outerR * math.cos(angle), center.dy + outerR * math.sin(angle));
 
       if (isToday) {
-        // Draw soft glow behind today's tick
-        canvas.drawCircle(p2, 4.0, glowPaint);
+        canvas.drawCircle(p2, 3.5, glowPaint);
         canvas.drawLine(p1, p2, tickPaintActive..strokeWidth = 2.0);
       } else if (isPassedOrToday) {
-        canvas.drawLine(p1, p2, tickPaintActive..strokeWidth = 1.4);
+        canvas.drawLine(p1, p2, tickPaintActive..strokeWidth = 1.3);
       } else {
         canvas.drawLine(p1, p2, tickPaintInactive);
+      }
+
+      // Small marker dot (not capsule) on days with upcoming dues
+      if (hasDue) {
+        final dotR = radius + 1.8;
+        final dotCenter = Offset(center.dx + dotR * math.cos(angle), center.dy + dotR * math.sin(angle));
+        canvas.drawCircle(dotCenter, 1.8, dueDotPaint);
       }
     }
 
     // Filled arc up to today
     final arcPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.18)
+      ..color = accentColor.withValues(alpha: 0.16)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
     final sweepAngle = (today / daysInMonth) * 2 * math.pi;
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 8.0),
+      Rect.fromCircle(center: center, radius: radius - 7.5),
       startAngle,
       sweepAngle,
       false,
       arcPaint,
     );
 
-    // Large day number in center
-    final dayTextPainter = TextPainter(
+    // Center: Large "N" (days left)
+    final numPainter = TextPainter(
       text: TextSpan(
-        text: '$today',
+        text: '$daysLeft',
         style: TextStyle(
           fontFamily: AppTypography.fontHeading,
-          fontSize: 18,
+          fontSize: 17,
           fontWeight: FontWeight.w800,
           color: inkColor,
           letterSpacing: -0.8,
@@ -146,40 +255,42 @@ class MonthDialPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    final dayOffset = Offset(
-      center.dx - (dayTextPainter.width / 2),
-      center.dy - (dayTextPainter.height / 2) - 5.0,
+    final numOffset = Offset(
+      center.dx - (numPainter.width / 2),
+      center.dy - (numPainter.height / 2) - 4.5,
     );
-    dayTextPainter.paint(canvas, dayOffset);
+    numPainter.paint(canvas, numOffset);
 
-    // Month abbreviation under the day number
-    final monthTextPainter = TextPainter(
+    // Below "N": "days left"
+    final labelPainter = TextPainter(
       text: TextSpan(
-        text: monthAbbr,
+        text: 'days left',
         style: TextStyle(
           fontFamily: AppTypography.fontBody,
-          fontSize: 8.5,
-          fontWeight: FontWeight.w700,
+          fontSize: 8.0,
+          fontWeight: FontWeight.w600,
           color: mutedColor,
-          letterSpacing: 0.6,
+          letterSpacing: 0.2,
           height: 1.0,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
 
-    final monthOffset = Offset(
-      center.dx - (monthTextPainter.width / 2),
-      center.dy + 8.0,
+    final labelOffset = Offset(
+      center.dx - (labelPainter.width / 2),
+      center.dy + 8.5,
     );
-    monthTextPainter.paint(canvas, monthOffset);
+    labelPainter.paint(canvas, labelOffset);
   }
 
   @override
   bool shouldRepaint(covariant MonthDialPainter oldDelegate) {
     return oldDelegate.today != today ||
         oldDelegate.daysInMonth != daysInMonth ||
+        oldDelegate.daysLeft != daysLeft ||
         oldDelegate.accentColor != accentColor ||
-        oldDelegate.inkColor != inkColor;
+        oldDelegate.inkColor != inkColor ||
+        oldDelegate.dueDays != dueDays;
   }
 }

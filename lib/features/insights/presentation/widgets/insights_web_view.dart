@@ -141,7 +141,7 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Top Controls: Period selector + Budgets Link
-              _buildTopControls(context, theme),
+              _buildTopControls(context, theme, isCompact: isCompact),
               const SizedBox(height: 24),
 
               if (currentExpenses.isEmpty || totalYourSpend == 0)
@@ -203,7 +203,44 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
     );
   }
 
-  Widget _buildTopControls(BuildContext context, SettlivThemeExtension theme) {
+  Widget _buildTopControls(BuildContext context, SettlivThemeExtension theme, {bool isCompact = false}) {
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildPeriodChip('This month', InsightPeriod.thisMonth, theme),
+                const SizedBox(width: 8),
+                _buildPeriodChip('Last month', InsightPeriod.lastMonth, theme),
+                const SizedBox(width: 8),
+                _buildPeriodChip('3M', InsightPeriod.threeMonths, theme),
+                const SizedBox(width: 8),
+                _buildPeriodChip('6M', InsightPeriod.sixMonths, theme),
+                const SizedBox(width: 8),
+                _buildPeriodChip('Year', InsightPeriod.year, theme),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () => context.go('/insights/budgets'),
+            icon: Icon(Icons.account_balance_wallet_outlined, size: 18, color: theme.ink),
+            label: Text('Budgets & Limits', style: TextStyle(color: theme.ink, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.surface,
+              elevation: 0,
+              side: BorderSide(color: theme.hairline),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -278,12 +315,16 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Text('TOTAL SPEND (YOUR SHARE)', style: AppTypography.eyebrow.copyWith(color: theme.muted)),
               if (prevSpend > 0)
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       changePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
@@ -324,8 +365,10 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Text('Reconciled with Records', style: AppTypography.caption.copyWith(color: theme.muted, fontSize: 11)),
               if (prevSpend > 0)
@@ -385,7 +428,13 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('View outstanding balances', style: AppTypography.caption.copyWith(color: theme.accent, fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text(
+                    'View outstanding balances',
+                    style: AppTypography.caption.copyWith(color: theme.accent, fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 Icon(Icons.arrow_forward_rounded, size: 14, color: theme.accent),
               ],
             ),

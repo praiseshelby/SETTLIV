@@ -2,6 +2,7 @@ import '../models/person.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
 import '../models/settlement.dart';
+import '../models/recurring_template.dart';
 
 abstract class SeedData {
   static const String currentUserId = 'person_arjun';
@@ -654,4 +655,45 @@ abstract class SeedData {
       method: SettlementMethod.upi,
     ),
   ];
+
+  static List<RecurringTemplate> get recurringTemplates {
+    return [
+      RecurringTemplate(
+        id: 'rec_seed_wifi',
+        groupId: 'group_flatmates',
+        description: 'Wifi & broadband',
+        category: ExpenseCategory.bills,
+        totalPaise: 150000,
+        payers: const [
+          PayerShare(personId: 'person_arjun', paise: 150000),
+        ],
+        splitMode: SplitMode.equal,
+        participants: const [
+          'person_arjun',
+          'person_meera',
+          'person_kabir',
+        ],
+        frequency: RecurringFrequency.monthly,
+        startDate: DateTime(now.year, now.month, 28),
+      ),
+      RecurringTemplate(
+        id: 'rec_seed_maid',
+        groupId: 'group_flatmates',
+        description: 'Cook & maid',
+        category: ExpenseCategory.other,
+        totalPaise: 400000,
+        payers: const [
+          PayerShare(personId: 'person_arjun', paise: 400000),
+        ],
+        splitMode: SplitMode.equal,
+        participants: const [
+          'person_arjun',
+          'person_meera',
+          'person_kabir',
+        ],
+        frequency: RecurringFrequency.monthly,
+        startDate: DateTime(now.year, now.month, 30),
+      ),
+    ];
+  }
 }

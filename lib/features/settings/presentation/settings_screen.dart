@@ -17,7 +17,12 @@ import '../../../../core/widgets/screen_scaffold.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+  final String? initialSection;
+
+  const SettingsScreen({
+    super.key,
+    this.initialSection,
+  });
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -26,6 +31,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _nameController;
   late TextEditingController _upiController;
+  late final ScrollController _scrollController;
+  final GlobalKey _experienceSectionKey = GlobalKey();
+  final GlobalKey _privacySectionKey = GlobalKey();
+  late String _selectedNavSection;
+  bool _highlightExperience = false;
   bool _isEditingProfile = false;
   String? _upiError;
 
@@ -36,12 +46,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = repo.currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
     _upiController = TextEditingController(text: user?.upiId ?? '');
+    _scrollController = ScrollController();
+    _selectedNavSection = widget.initialSection ?? 'account';
+
+    if (_selectedNavSection == 'experience') {
+      _highlightExperience = true;
+      _scrollToExperience();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSection != oldWidget.initialSection && widget.initialSection != null) {
+      setState(() {
+        _selectedNavSection = widget.initialSection!;
+        if (_selectedNavSection == 'experience') {
+          _highlightExperience = true;
+          _scrollToExperience();
+        }
+      });
+    }
+  }
+
+  void _scrollToExperience() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _experienceSectionKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.05,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _upiController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -745,16 +791,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 28),
 
             // Experience Section
-            const ExperienceSettingsSection(),
+            KeyedSubtree(
+              key: _experienceSectionKey,
+              child: ExperienceSettingsSection(
+                isHighlighted: _highlightExperience,
+              ),
+            ),
             const SizedBox(height: 28),
 
             // Privacy & Data
-            Text(
-              'PRIVACY & DATA',
-              style: AppTypography.caption.copyWith(
-                color: theme.muted,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
+            KeyedSubtree(
+              key: _privacySectionKey,
+              child: Text(
+                'PRIVACY & DATA',
+                style: AppTypography.caption.copyWith(
+                  color: theme.muted,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -858,6 +912,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return ScreenScaffold(
       hasBottomBar: false,
+      scrollController: _scrollController,
       header: ScreenHeader(
         title: 'Profile & Settings',
         onBack: () => BackNavigation.handleBack(context, currentPath: '/settings'),
@@ -884,13 +939,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _buildNavPill('Account & Theme', Icons.person_outline_rounded, true, theme),
+                                _buildNavPill(
+                                  'Account & Theme',
+                                  Icons.person_outline_rounded,
+                                  _selectedNavSection == 'account',
+                                  theme,
+                                  onTap: () {
+                                    setState(() => _selectedNavSection = 'account');
+                                    _scrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+                                  },
+                                ),
                                 const SizedBox(height: 8),
-                                _buildNavPill('Experience', Icons.devices_rounded, false, theme),
+                                _buildNavPill(
+                                  'Experience',
+                                  Icons.devices_rounded,
+                                  _selectedNavSection == 'experience',
+                                  theme,
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedNavSection = 'experience';
+                                      _highlightExperience = true;
+                                    });
+                                    _scrollToExperience();
+                                  },
+                                ),
                                 const SizedBox(height: 8),
-                                _buildNavPill('Recurring Bills', Icons.repeat_rounded, false, theme, onTap: () => context.push('/settings/recurring')),
+                                _buildNavPill(
+                                  'Recurring Bills',
+                                  Icons.repeat_rounded,
+                                  false,
+                                  theme,
+                                  onTap: () => context.push('/settings/recurring'),
+                                ),
                                 const SizedBox(height: 8),
-                                _buildNavPill('Privacy & Data', Icons.shield_outlined, false, theme),
+                                _buildNavPill(
+                                  'Privacy & Data',
+                                  Icons.shield_outlined,
+                                  _selectedNavSection == 'privacy',
+                                  theme,
+                                  onTap: () {
+                                    setState(() => _selectedNavSection = 'privacy');
+                                    final ctx = _privacySectionKey.currentContext;
+                                    if (ctx != null) {
+                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
+                                    }
+                                  },
+                                ),
                               ],
                             ),
                           ),

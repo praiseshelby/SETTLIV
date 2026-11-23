@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../routes/app_router.dart';
 import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
@@ -104,8 +105,9 @@ class _PhoneFrameState extends ConsumerState<PhoneFrame> {
                             child: MediaQuery(
                               data: media.copyWith(
                                 size: const Size(PhoneFrame.targetWidth, PhoneFrame.targetHeight),
-                                padding: const EdgeInsets.only(top: 44, bottom: 24),
-                                viewInsets: EdgeInsets.zero,
+                                padding: const EdgeInsets.only(top: 48, bottom: 34),
+                                viewPadding: const EdgeInsets.only(top: 48, bottom: 34),
+                                viewInsets: media.viewInsets,
                               ),
                               child: widget.child,
                             ),
@@ -130,7 +132,14 @@ class _PhoneFrameState extends ConsumerState<PhoneFrame> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             GestureDetector(
-                              onTap: () => context.push('/settings'),
+                              onTap: () {
+                                final navContext = rootNavigatorKey.currentContext;
+                                if (navContext != null) {
+                                  GoRouter.of(navContext).push('/settings?section=experience');
+                                } else {
+                                  appRouter.push('/settings?section=experience');
+                                }
+                              },
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [

@@ -4,23 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/adaptive_presenter.dart';
 import '../../../../core/widgets/gradient_primary_button.dart';
 
 class SplitCalculatorSheet extends StatefulWidget {
   const SplitCalculatorSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    final theme = context.settliv;
-    return showModalBottomSheet<void>(
+    return AdaptivePresenter.show<void>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: theme.surfaceSolid,
-      barrierColor: theme.scrim,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => const SplitCalculatorSheet(),
+      title: 'Split Calculator',
+      type: PresentationType.formOrConfirmation,
+      child: const SplitCalculatorSheet(),
     );
   }
 
@@ -77,42 +72,13 @@ class _SplitCalculatorSheetState extends State<SplitCalculatorSheet> {
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
-        top: 20,
-        bottom: bottomInset + 20,
+        top: 8,
+        bottom: bottomInset + 16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.muted.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Title
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Split Calculator',
-                style: AppTypography.titleLarge.copyWith(color: theme.ink),
-              ),
-              IconButton(
-                icon: Icon(Icons.close_rounded, color: theme.muted),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
           // Total bill amount input
           Text(
             'TOTAL BILL (₹)',
@@ -231,9 +197,12 @@ class _SplitCalculatorSheetState extends State<SplitCalculatorSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Per person share',
-                      style: AppTypography.body.copyWith(color: theme.muted),
+                    Expanded(
+                      child: Text(
+                        'Per person share',
+                        style: AppTypography.body.copyWith(color: theme.muted),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     Text(
                       CurrencyFormatter.formatPaise(perPerson),
@@ -249,9 +218,12 @@ class _SplitCalculatorSheetState extends State<SplitCalculatorSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Exact paise split',
-                        style: AppTypography.caption.copyWith(color: theme.muted),
+                      Expanded(
+                        child: Text(
+                          'Exact paise split',
+                          style: AppTypography.caption.copyWith(color: theme.muted),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Text(
                         '$remainder person gets +₹0.01',
@@ -266,9 +238,12 @@ class _SplitCalculatorSheetState extends State<SplitCalculatorSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Total with tip',
-                      style: AppTypography.caption.copyWith(color: theme.muted),
+                    Expanded(
+                      child: Text(
+                        'Total with tip',
+                        style: AppTypography.caption.copyWith(color: theme.muted),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     Text(
                       CurrencyFormatter.formatPaise(totalPaise),

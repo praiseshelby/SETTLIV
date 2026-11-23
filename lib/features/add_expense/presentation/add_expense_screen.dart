@@ -1425,20 +1425,25 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               borderRadius: BorderRadius.circular(12),
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(minHeight: 48),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Scan receipt',
-                                      style: AppTypography.caption.copyWith(
-                                        color: theme.ink,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
+                                child: Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.document_scanner_outlined, size: 18, color: theme.ink),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Scan receipt',
+                                          style: AppTypography.caption.copyWith(
+                                            color: theme.ink,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -1451,20 +1456,25 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             borderRadius: BorderRadius.circular(12),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(minHeight: 48),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.content_paste_rounded, size: 18, color: theme.ink),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Paste SMS',
-                                    style: AppTypography.caption.copyWith(
-                                      color: theme.ink,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
+                              child: Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.content_paste_rounded, size: 18, color: theme.ink),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Paste SMS',
+                                        style: AppTypography.caption.copyWith(
+                                          color: theme.ink,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),

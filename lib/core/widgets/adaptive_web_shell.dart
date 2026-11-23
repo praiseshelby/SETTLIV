@@ -329,7 +329,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
 
                 // Compatibility preview card
                 InkWell(
-                  onTap: () => context.push('/settings'),
+                  onTap: () => context.push('/settings?section=experience'),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -518,6 +518,12 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
           ),
           const Spacer(),
           IconButton(
+            icon: const Icon(Icons.devices_rounded),
+            color: theme.muted,
+            tooltip: 'Compatibility preview',
+            onPressed: () => context.push('/settings?section=experience'),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_rounded),
             color: theme.muted,
             tooltip: 'Settings',
@@ -609,7 +615,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
               InkWell(
                 onTap: () {
                   Navigator.pop(context);
-                  context.push('/settings');
+                  context.push('/settings?section=experience');
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(

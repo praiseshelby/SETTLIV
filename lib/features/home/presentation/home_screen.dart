@@ -510,25 +510,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              // Quiet compatibility footer
-              InkWell(
-                onTap: () => context.push('/settings'),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Center(
-                    child: Text(
-                      'Compatibility preview · PC, Mobile web, App · Settings ›',
-                      style: AppTypography.caption.copyWith(
-                        color: theme.muted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

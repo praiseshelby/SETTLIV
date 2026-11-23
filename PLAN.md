@@ -529,6 +529,41 @@
 
 ---
 
+---
+
+### Part Y: Fixes for App-on-PC, Dial, Deep Link, Experience Section, Home Footer (COMPLETED)
+- [x] **1. App Experience on Wide Viewport (Global Phone Frame Encapsulation)**:
+  - Root Navigator wrapped via `MaterialApp.builder` when `effectiveExperience == EffectiveExperience.app` and `MediaQuery.sizeOf(context).width > 600`.
+  - Nested phone frame removed from `AppShell`; every pushed route, overlay, bottom sheet, dialog, menu, and snackbar now renders within the phone frame screen.
+  - Overrides `MediaQuery` inside the frame (`size: Size(390, 844)`, `padding: EdgeInsets.only(top: 48, bottom: 34)`), ensuring `AdaptivePresenter`, breakpoints, and LayoutBuilders resolve strictly to the frame.
+  - Modals and scrims clipped to frame's rounded screen (radius 44). Mouse-drag scrolling enabled via `SettlivScrollBehavior.dragDevices`.
+  - Added lint test in `test/part_y_verification_test.dart` asserting no physical window/view size reads outside experience wrapper.
+- [x] **2. Month Dial Redesign on Web Dashboard**:
+  - Web dashboard header top-right dial redesigned: does NOT repeat date (date stays on left).
+  - Ring ticks for each day of the month with today's progress arc and glow.
+  - Small dot markers on days with upcoming dues (recurring bills or IOUs).
+  - Centre displays large "N" (`daysLeft`) and "days left". Beside the dial: "Next: <item> · <date>" and amount, or "No dues this month".
+  - Hover tooltip displays up to 3 upcoming items. Tap navigates to `/budgets` on Web.
+  - Cached painter, reduced-motion safe, hidden on compact. Seeded realistic upcoming dues.
+- [x] **3. Compatibility Preview Entry Points & Deep Link**:
+  - Removed "Compatibility preview" footer line from Home/Dashboard in all layouts.
+  - Kept exactly the 6 approved entry points: expanded Web sidebar card, medium icon rail bottom icon with tooltip, compact Web menu drawer item, phone frame hint, first-visit glass toast, Settings screen.
+  - Deep link `/settings?section=experience` auto-scrolls so section header sits ~24px below top, selects 'Experience' in two-pane Web list, and plays a 1.2s soft border glow pulse.
+- [x] **4. Experience Section Redesign in Settings**:
+  - Removed old segmented control and long grey paragraph.
+  - Eyebrow 'COMPATIBILITY PREVIEW' with 3.5px accent bar.
+  - Three schematic layout tiles (PC website, Mobile website, Mobile app). On PC: PC website and Mobile app selectable, Mobile web dashed reference. On Touch: Mobile web and Mobile app selectable, PC website dashed reference.
+  - Compact notice strip (~96px tall) with left gradient edge, `DeviceConvergencePainter` schematic orbit diagram with single traveling dot animation, lead line *"A preview, not a feature."* and concise body copy.
+- [x] **5. Layout Matrix & Overflow Defect Fixes**:
+  - Fixed Add Expense bottom action row overflow on narrow screens with `FittedBox`.
+  - Fixed Group Detail summary chips row overflow on compact Web with `Wrap`.
+  - Migrated Split Calculator sheet to `AdaptivePresenter.show` with responsive text truncation.
+  - Made Insights top period selector adaptive on compact viewports.
+  - Full layout matrix verified across 4 environments (App on Phone, App in Frame on PC, Web Desktop, Web Compact) with no overflow.
+- [x] **6. Automated Verification**:
+  - `flutter analyze`: **0 issues found**.
+  - `flutter test`: **199/199 tests passing** (100%).
+
 ### Part S3: Set 3 — Both Experiences Full Implementation
 - [ ] **1. Insights & Budgets Implementation for Both Experiences**:
   - **App Experience**: Insights screen with `Overview | Budgets` segmented control. Overview tab includes calendar view, monthly recap card, debt breakdown, category spending distribution, group spending breakdown, spending habits. Budgets tab includes category monthly budget progress, upcoming recurring bills, and savings goals.

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/profile/experience_mode.dart' show effectiveExperienceProvider, EffectiveExperience;
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
+import 'core/widgets/phone_frame.dart';
 import 'data/repositories/in_memory_app_repository.dart';
 import 'routes/app_router.dart';
 
@@ -61,6 +63,7 @@ class SettlivApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final effectiveExperience = ref.watch(effectiveExperienceProvider);
 
     return MaterialApp.router(
       title: 'Settliv',
@@ -70,6 +73,16 @@ class SettlivApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: router ?? appRouter,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        final media = MediaQuery.of(context);
+        final isWideViewport = media.size.width > 600;
+
+        if (effectiveExperience == EffectiveExperience.app && isWideViewport) {
+          return PhoneFrame(child: child);
+        }
+        return child;
+      },
     );
   }
 }

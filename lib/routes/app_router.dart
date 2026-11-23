@@ -184,10 +184,13 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: '/settings',
-      pageBuilder: (context, state) => _buildWebPageTransition(
-        key: state.pageKey,
-        child: const SettingsScreen(),
-      ),
+      pageBuilder: (context, state) {
+        final section = state.uri.queryParameters['section'];
+        return _buildWebPageTransition(
+          key: state.pageKey,
+          child: SettingsScreen(initialSection: section),
+        );
+      },
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

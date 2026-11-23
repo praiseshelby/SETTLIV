@@ -177,7 +177,7 @@ class _FirstVisitCompatibilityCardState
                   ),
                   onPressed: () {
                     _dismiss(remember: true);
-                    context.push('/settings');
+                    context.push('/settings?section=experience');
                   },
                   child: const Text(
                     'View layouts',
