@@ -2,26 +2,35 @@
 <html>
 <head>
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <title>Settliv — Expense Sharing & Group Ledger</title>
   <meta name="description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
-
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Settliv — Expense Sharing & Group Ledger">
-  <meta property="og:description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
-
-  <meta name="theme-color" content="#04060D">
+  <meta name="theme-color" content="#0A0C1C">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Settliv">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <link rel="preload" href="assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
+
+  <script>
+    (function () {
+      var mode = null;
+      try {
+        mode = localStorage.getItem('flutter.settliv_theme_mode') || localStorage.getItem('settliv_theme_mode');
+        if (mode && mode.charAt(0) === '"') mode = JSON.parse(mode);
+      } catch (_) {}
+      var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var root = document.documentElement;
+      root.dataset.theme = dark ? 'dark' : 'light';
+      root.style.backgroundColor = dark ? '#0A0C1C' : '#F6F7FC';
+      var mc = document.querySelector('meta[name="theme-color"]');
+      if (mc) mc.content = dark ? '#0A0C1C' : '#F6F7FC';
+    })();
+  </script>
 
   <style>
     @font-face {
@@ -31,660 +40,432 @@
       font-style: normal;
       font-display: block;
     }
-
     :root {
-      --base: #04060D;
-      --ease: cubic-bezier(.2, .8, .2, 1);
-      --ring-a: max(135vmin, 980px);
-      --ring-b: max(105vmin, 780px);
+      --bg: #F6F7FC;
+      --glow-a: #E9E5FF;
+      --glow-b: #F6F7FC;
+      --ink: #12132B;
+      --emerald: #0FA37F;
+      --coral: #EF5B48;
+      --orbit: rgba(18, 19, 43, 0.05);
+      --sheen: rgba(255, 255, 255, 0.55);
+      --wm-w: clamp(220px, 34vw, 520px);
     }
-    @media (max-width: 600px) {
-      :root {
-        --ring-a: 94vw;
-        --ring-b: 78vw;
-      }
+    :root[data-theme="dark"] {
+      --bg: #0A0C1C;
+      --glow-a: #2A1B6B;
+      --glow-b: #1A1640;
+      --ink: #ECEBF5;
+      --emerald: #4FE3B8;
+      --coral: #FF8D7C;
+      --orbit: rgba(236, 235, 245, 0.05);
+      --sheen: rgba(255, 255, 255, 0.28);
     }
-
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      background-color: var(--base);
-      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
-      overflow: hidden;
+      background: var(--bg);
     }
+    body.intro-lock { overflow: hidden; }
 
     #loading-screen {
       position: fixed;
       inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--base);
+      height: 100dvh;
       z-index: 99999;
       overflow: hidden;
-      contain: layout paint;
-      will-change: opacity;
-      backface-visibility: hidden;
+      pointer-events: auto;
     }
-    #loading-screen.reveal-out {
-      pointer-events: none;
-      animation: splashExit 300ms ease-out forwards;
-    }
-    @keyframes splashExit {
-      from { opacity: 1; }
-      to   { opacity: 0; }
-    }
+    #loading-screen.exiting { pointer-events: none; }
 
-    .vignette {
+    .split-half {
       position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(circle at 50% 50%, rgba(4, 6, 13, 0) 30%, rgba(0, 0, 0, 0.58) 100%);
+      left: 0;
+      right: 0;
+      height: 50%;
+      overflow: hidden;
+      background-color: var(--bg);
+      background-image: radial-gradient(circle at 50% 50%, var(--glow-a) 0%, var(--glow-b) 36%, transparent 72%);
+      background-size: 100% 200%;
+      background-repeat: no-repeat;
+    }
+    .split-half.top { top: 0; background-position: 0 0; }
+    .split-half.bottom { bottom: 0; background-position: 0 100%; }
+
+    .animating .split-half { will-change: transform, opacity; }
+    #loading-screen.exiting .split-half.top {
+      animation: splitUp 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    #loading-screen.exiting .split-half.bottom {
+      animation: splitDown 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    @keyframes splitUp { to { transform: translateY(-100%); } }
+    @keyframes splitDown { to { transform: translateY(100%); } }
+
+    .slow-breathe .split-half {
+      animation: bgBreathe 4s ease-in-out infinite alternate;
+    }
+    @keyframes bgBreathe {
+      from { transform: scale(1); }
+      to   { transform: scale(1.05); }
     }
 
     .grain {
       position: absolute;
       inset: 0;
+      opacity: 0.035;
       pointer-events: none;
-      opacity: 0.04;
       background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAH0lEQVQYV2NkYGD4z8DAwMgABXAGNgGwSgwVAFbmAgAw1wYFBcX5AAAAAElFTkSuQmCC");
-      background-repeat: repeat;
     }
 
-    /* 6 soft bokeh discs in outer 30% of viewport width (behind everything) */
-    .bokeh {
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-      opacity: 0;
-    }
-    .bokeh.w1 { width: 240px; height: 240px; top: 12%; left: 3%; background: radial-gradient(circle, rgba(255,178,107,0.13) 0%, transparent 70%); }
-    .bokeh.w2 { width: 140px; height: 140px; top: 62%; left: 8%; background: radial-gradient(circle, rgba(255,170,110,0.10) 0%, transparent 70%); }
-    .bokeh.w3 { width: 96px;  height: 96px;  bottom: 10%; left: 16%; background: radial-gradient(circle, rgba(255,217,168,0.08) 0%, transparent 70%); }
-    .bokeh.c1 { width: 250px; height: 250px; bottom: 10%; right: 3%; background: radial-gradient(circle, rgba(143,211,255,0.13) 0%, transparent 70%); }
-    .bokeh.c2 { width: 150px; height: 150px; top: 18%; right: 7%; background: radial-gradient(circle, rgba(120,200,255,0.10) 0%, transparent 70%); }
-    .bokeh.c3 { width: 90px;  height: 90px;  top: 54%; right: 15%; background: radial-gradient(circle, rgba(220,231,255,0.07) 0%, transparent 70%); }
-    #loading-screen.play .bokeh.w1 { animation: bokehIn 0.6s var(--ease) 0s both, driftB1 10s ease-in-out 1.1s infinite alternate; }
-    #loading-screen.play .bokeh.w2 { animation: bokehIn 0.6s var(--ease) 0s both, driftB2 12s ease-in-out 1.1s infinite alternate; }
-    #loading-screen.play .bokeh.w3 { animation: bokehIn 0.6s var(--ease) 0s both, driftB3 14s ease-in-out 1.1s infinite alternate; }
-    #loading-screen.play .bokeh.c1 { animation: bokehIn 0.6s var(--ease) 0s both, driftB2 11s ease-in-out 1.1s infinite alternate; }
-    #loading-screen.play .bokeh.c2 { animation: bokehIn 0.6s var(--ease) 0s both, driftB1 13s ease-in-out 1.1s infinite alternate; }
-    #loading-screen.play .bokeh.c3 { animation: bokehIn 0.6s var(--ease) 0s both, driftB3 15s ease-in-out 1.1s infinite alternate; }
-    @keyframes bokehIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes driftB1 { from { transform: translate3d(-14px, -10px, 0); } to { transform: translate3d(14px, 12px, 0); } }
-    @keyframes driftB2 { from { transform: translate3d(18px, -12px, 0); } to { transform: translate3d(-16px, 14px, 0); } }
-    @keyframes driftB3 { from { transform: translate3d(-24px, 16px, 0); } to { transform: translate3d(24px, -16px, 0); } }
-
-    /* Giant outline typography texture rows (1.6 wordmark-heights above & below) */
-    .outline-row {
+    .orbit-svg {
       position: absolute;
       left: 50%;
-      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
-      font-size: clamp(64px, 13vw, 176px);
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      line-height: 1;
-      white-space: nowrap;
-      color: transparent;
-      -webkit-text-stroke: 1px rgba(255, 255, 255, 0.055);
+      width: min(94vmin, 820px);
+      height: min(94vmin, 820px);
+      transform: translateX(-50%);
       pointer-events: none;
-      contain: layout paint;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-      opacity: 0;
     }
-    .outline-row.top {
-      top: calc(50% - min(18vw, 220px));
-      margin-left: -48vw;
-      transform: translate3d(-20px, -50%, 0);
-    }
-    .outline-row.bottom {
-      top: calc(50% + min(18vw, 220px));
-      margin-left: -48vw;
-      transform: translate3d(20px, -50%, 0);
-    }
-    @media (max-width: 600px) {
-      .outline-row.top { top: calc(50% - 125px); }
-      .outline-row.bottom { top: calc(50% + 125px); }
-    }
-    #loading-screen.play .outline-row.top {
-      animation: outlineIn 0.6s var(--ease) 0.15s both, outlineDriftR 16s linear 1.1s infinite alternate;
-    }
-    #loading-screen.play .outline-row.bottom {
-      animation: outlineIn 0.6s var(--ease) 0.15s both, outlineDriftL 16s linear 1.1s infinite alternate;
-    }
-    @keyframes outlineIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes outlineDriftR { from { transform: translate3d(-20px, -50%, 0); } to { transform: translate3d(20px, -50%, 0); } }
-    @keyframes outlineDriftL { from { transform: translate3d(20px, -50%, 0); } to { transform: translate3d(-20px, -50%, 0); } }
+    .split-half.top .orbit-svg { bottom: calc(-0.5 * min(94vmin, 820px)); }
+    .split-half.bottom .orbit-svg { top: calc(-0.5 * min(94vmin, 820px)); }
 
-    /* Asymmetric off-centre warm & cool light leaks */
-    .bg-leaks {
+    .wm-anchor {
       position: absolute;
-      inset: -8%;
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-      opacity: 0.45;
-      background:
-        radial-gradient(circle at 14% 16%, rgba(255, 170, 110, 0.28) 0%, rgba(255, 170, 110, 0) 54%),
-        radial-gradient(circle at 86% 84%, rgba(120, 200, 255, 0.18) 0%, rgba(120, 200, 255, 0) 54%);
-    }
-    #loading-screen.play .bg-leaks {
-      animation: leaksBloom 0.55s var(--ease) 0s both, leaksParallax 9s ease-in-out 1.10s infinite alternate;
-    }
-    @keyframes leaksBloom {
-      from { opacity: 0.45; transform: translate3d(0, 0, 0); }
-      to   { opacity: 1.00; transform: translate3d(0, 0, 0); }
-    }
-    @keyframes leaksParallax {
-      from { transform: translate3d(-1%, -0.8%, 0); }
-      to   { transform: translate3d(1%, 0.8%, 0); }
-    }
-
-    /* Unclipped soft warm radial glow + elliptical legibility pad behind wordmark */
-    .warm-word-glow {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(ellipse 54% 40% at 50% 50%, rgba(4, 6, 13, 0.62) 0%, rgba(4, 6, 13, 0) 100%),
-        radial-gradient(circle at 50% 50%, rgba(255, 170, 110, 0.14) 0%, rgba(255, 170, 110, 0) 48%);
-    }
-
-    .bezel-svg {
-      position: absolute;
-      width: var(--ring-a);
-      height: var(--ring-a);
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform;
-      backface-visibility: hidden;
-      opacity: 0.14;
-    }
-    #loading-screen.play .bezel-svg {
-      animation: bezelSpin 64s linear 0s infinite;
-    }
-    @keyframes bezelSpin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-
-    .rings-shell {
-      position: absolute;
-      width: var(--ring-a);
-      height: var(--ring-a);
+      left: 0;
+      right: 0;
+      bottom: calc(14px + env(safe-area-inset-bottom, 0px) * 0);
       display: flex;
-      align-items: center;
       justify-content: center;
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
+    }
+    .wm-band {
+      position: relative;
+      width: var(--wm-w);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      padding: 6px 0 4px;
+    }
+    .wm-word {
+      display: inline-flex;
+      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
+      font-size: calc(var(--wm-w) / 5.45);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.18em;
+      padding-left: 0.18em;
+      color: var(--ink);
       opacity: 0;
-      transform: scale(0.8);
+      white-space: nowrap;
     }
-    #loading-screen.play .rings-shell {
-      animation: ringsEnter 0.55s var(--ease) 0s both, ringsParallax 11s ease-in-out 1.10s infinite alternate;
+    .ready .wm-word { opacity: 1; }
+    #loading-screen.exiting .wm-word {
+      animation: wmExit 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
     }
-    #loading-screen.reveal-out .rings-shell {
-      animation: ringsExit 300ms var(--ease) forwards;
-    }
-    @keyframes ringsEnter {
-      from { opacity: 0; transform: scale(0.8); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-    @keyframes ringsParallax {
-      from { transform: translate3d(0.6%, 0.4%, 0) scale(1); }
-      to   { transform: translate3d(-0.6%, -0.4%, 0) scale(1); }
-    }
-    @keyframes ringsExit {
-      from { opacity: 1; transform: scale(1); }
-      to   { opacity: 0; transform: scale(1.4); }
+    @keyframes wmExit {
+      to { opacity: 0; transform: scale(1.04); }
     }
 
-    /* Rim-lit Ring A: amber head starts on the LEFT (270deg) */
-    .ring-a-wrap {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      contain: layout paint;
+    .g-pos { display: inline-block; }
+    .g-rise { display: inline-block; }
+    .play .g-rise {
+      animation: riseOut 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
       will-change: transform, opacity;
-      backface-visibility: hidden;
     }
-    #loading-screen.play .ring-a-wrap {
-      animation:
-        ringARamp 0.55s var(--ease) 0s both,
-        ringAPulse 0.25s var(--ease) 0.85s,
-        ringAIdle 24s linear 0.55s infinite;
-    }
-    @keyframes ringARamp {
-      from { transform: rotate(-200deg); }
-      to   { transform: rotate(0deg); }
-    }
-    @keyframes ringAPulse {
-      0%, 100% { opacity: 1; }
-      50%      { opacity: 0.68; }
-    }
-    @keyframes ringAIdle {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-
-    /* Rim-lit Ring B: ice head starts on the RIGHT (180deg offset from amber) */
-    .ring-b {
-      position: absolute;
-      width: var(--ring-b);
-      height: var(--ring-b);
-      border-radius: 50%;
-      pointer-events: none;
-      contain: layout paint;
+    .play .g-pos {
+      animation: trackIn 550ms cubic-bezier(0.65, 0, 0.35, 1) 300ms both;
       will-change: transform;
-      backface-visibility: hidden;
-      border: 2px solid rgba(143, 211, 255, 0.42);
     }
-    #loading-screen.play .ring-b {
-      animation:
-        ringBRamp 0.55s var(--ease) 0s both,
-        ringBIdle 28s linear 0.55s infinite;
+    /* Centre-outward stagger: T(3)=60, T(2)&L(4)=105, E(1)&I(5)=150, S(0)&V(6)=195 */
+    .play .g-pos:nth-child(4) .g-rise { animation-delay: 60ms; }
+    .play .g-pos:nth-child(3) .g-rise,
+    .play .g-pos:nth-child(5) .g-rise { animation-delay: 105ms; }
+    .play .g-pos:nth-child(2) .g-rise,
+    .play .g-pos:nth-child(6) .g-rise { animation-delay: 150ms; }
+    .play .g-pos:nth-child(1) .g-rise,
+    .play .g-pos:nth-child(7) .g-rise { animation-delay: 195ms; }
+
+    .g-pos:nth-child(1) { --tx: -0.48em; }
+    .g-pos:nth-child(2) { --tx: -0.32em; }
+    .g-pos:nth-child(3) { --tx: -0.16em; }
+    .g-pos:nth-child(4) { --tx: 0em; }
+    .g-pos:nth-child(5) { --tx: 0.16em; }
+    .g-pos:nth-child(6) { --tx: 0.32em; }
+    .g-pos:nth-child(7) { --tx: 0.48em; }
+
+    @keyframes riseOut {
+      from { opacity: 0; transform: translateY(105%); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    @keyframes ringBRamp {
-      from { transform: rotate(190deg); }
-      to   { transform: rotate(0deg); }
-    }
-    @keyframes ringBIdle {
-      from { transform: rotate(360deg); }
-      to   { transform: rotate(0deg); }
+    @keyframes trackIn {
+      from { transform: translateX(var(--tx)); }
+      to   { transform: translateX(0); }
     }
 
-    .ring-a-core,
-    .ring-a-glow {
+    .sheen {
       position: absolute;
       inset: 0;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 178, 107, 0.50);
+      background: linear-gradient(105deg, transparent 32%, var(--sheen) 50%, transparent 68%);
+      transform: translateX(-115%);
+      pointer-events: none;
+      opacity: 0;
     }
-    .ring-a-glow {
-      opacity: 0.20;
-      border-width: 8px;
+    .play .sheen {
+      animation: sheenPass 300ms ease-out 1000ms both;
+      will-change: transform, opacity;
     }
-
-    @supports ((mask: radial-gradient(#000, #000)) or (-webkit-mask: radial-gradient(#000, #000))) and (background: conic-gradient(red, blue)) {
-      .ring-a-core {
-        border: 0;
-        background: conic-gradient(
-          from 165deg,
-          transparent 0deg 40deg,
-          rgba(255, 178, 107, 0.35) 95deg,
-          #FFB26B 145deg,
-          #FFF1DC 185deg,
-          rgba(255, 241, 220, 0.35) 205deg,
-          transparent 230deg 360deg
-        );
-        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0);
-        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0);
-      }
-      .ring-a-glow {
-        border: 0;
-        background: conic-gradient(
-          from 165deg,
-          transparent 0deg 40deg,
-          rgba(255, 178, 107, 0.35) 95deg,
-          #FFB26B 145deg,
-          #FFF1DC 185deg,
-          rgba(255, 241, 220, 0.35) 205deg,
-          transparent 230deg 360deg
-        );
-        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 0);
-        mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 0);
-      }
-      .ring-b {
-        border: 0;
-        background: conic-gradient(
-          from 345deg,
-          transparent 0deg 40deg,
-          rgba(143, 211, 255, 0.35) 95deg,
-          #8FD3FF 145deg,
-          #FFFFFF 185deg,
-          rgba(255, 255, 255, 0.35) 205deg,
-          transparent 230deg 360deg
-        );
-        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
-        mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
-      }
+    @keyframes sheenPass {
+      0%   { opacity: 1; transform: translateX(-115%); }
+      100% { opacity: 0; transform: translateX(115%); }
     }
 
-    .streak-diag {
+    /* Balance line at exact 50% vertical centre */
+    .seam {
       position: absolute;
       top: 50%;
-      left: -10vw;
-      width: 120vw;
+      left: 50%;
+      width: var(--wm-w);
       height: 2px;
       margin-top: -1px;
-      background: linear-gradient(90deg, transparent 0%, #FFD9A8 30%, #FFFFFF 50%, #8FD3FF 70%, transparent 100%);
+      transform: translateX(-50%);
       pointer-events: none;
-      contain: layout paint;
+    }
+    .seg {
+      position: absolute;
+      top: 0;
+      width: 50%;
+      height: 2px;
+      transform: scaleX(0);
+    }
+    .seg.em { left: 0; background: var(--emerald); transform-origin: left center; }
+    .seg.co { right: 0; background: var(--coral); transform-origin: right center; }
+    .play .seg.em,
+    .play .seg.co {
+      animation: segGrow 440ms ease-out 520ms both, segFade 140ms ease-out 960ms forwards;
       will-change: transform, opacity;
-      backface-visibility: hidden;
-      opacity: 0;
-      transform: rotate(-8deg) scaleX(0);
     }
-    #loading-screen.play .streak-diag {
-      animation: streakCross 0.20s var(--ease) 0.30s both;
-    }
-    @keyframes streakCross {
-      0%   { opacity: 0; transform: rotate(-8deg) scaleX(0); }
-      45%  { opacity: 1; transform: rotate(-8deg) scaleX(1); }
-      100% { opacity: 0; transform: rotate(-8deg) scaleX(1); }
-    }
+    @keyframes segGrow { to { transform: scaleX(1); } }
+    @keyframes segFade { to { opacity: 0; } }
 
-    /* Wordmark: larger, tighter tracking 0.14em, dimensional fill + 1px top edge + glossy reflection */
-    .brand-center {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-width: 60vw;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-    }
-    @media (max-width: 600px) {
-      .brand-center {
-        max-width: 82vw;
-      }
-    }
-    #loading-screen.reveal-out .brand-center {
-      animation: wordExit 300ms var(--ease) forwards;
-    }
-    @keyframes wordExit {
-      from { opacity: 1; transform: scale(1); }
-      to   { opacity: 0; transform: scale(1.03); }
-    }
-
-    .wordmark-stage {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .wordmark-typo {
-      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
-      font-size: clamp(24px, min(9.2vw, 132px), 132px);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      padding-left: 0.14em;
-      line-height: 1.04;
-      white-space: nowrap;
-    }
-    @media (max-width: 600px) {
-      .wordmark-typo {
-        font-size: clamp(24px, 7.6vw, 44px);
-      }
-    }
-
-    .loading-wordmark {
-      display: inline-flex;
-    }
-    .letter-mask {
-      display: inline-block;
-      overflow: hidden;
-      vertical-align: bottom;
-    }
-    .letter-mask span {
-      position: relative;
-      display: inline-block;
-      background: linear-gradient(180deg, #FFFFFF 0%, #E6ECFF 52%, #9FAACB 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      opacity: 0;
-      transform: translate3d(0, 105%, 0);
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-    }
-    .letter-mask span::after {
-      content: attr(data-ch);
+    .seam-ink {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 7%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      pointer-events: none;
-    }
-    #loading-screen.play .letter-mask span {
-      animation: letterUp 0.26s var(--ease) both;
-    }
-    #loading-screen.play .letter-mask:nth-child(1) span { animation-delay: 0.45s; }
-    #loading-screen.play .letter-mask:nth-child(2) span { animation-delay: 0.49s; }
-    #loading-screen.play .letter-mask:nth-child(3) span { animation-delay: 0.53s; }
-    #loading-screen.play .letter-mask:nth-child(4) span { animation-delay: 0.57s; }
-    #loading-screen.play .letter-mask:nth-child(5) span { animation-delay: 0.61s; }
-    #loading-screen.play .letter-mask:nth-child(6) span { animation-delay: 0.65s; }
-    #loading-screen.play .letter-mask:nth-child(7) span { animation-delay: 0.69s; }
-    @keyframes letterUp {
-      from { opacity: 0; transform: translate3d(0, 105%, 0); }
-      to   { opacity: 1; transform: translate3d(0, 0, 0); }
-    }
-
-    /* Glossy floor reflection (12% opacity, static linear fade mask) */
-    .word-reflection {
-      margin-top: 0.18em;
-      color: #DCE7FF;
+      background: var(--ink);
       opacity: 0;
-      transform: scaleY(-1);
-      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 76%);
-      mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 76%);
-      pointer-events: none;
-      contain: layout paint;
-      will-change: opacity;
-      backface-visibility: hidden;
+      transform-origin: center;
     }
-    #loading-screen.play .word-reflection {
-      animation: reflectionIn 0.50s var(--ease) 0.45s both;
+    .play .seam-ink {
+      animation: inkLock 140ms ease-out 960ms both;
+      will-change: transform, opacity;
     }
-    @keyframes reflectionIn {
-      from { opacity: 0; }
-      to   { opacity: 0.12; }
-    }
+    @keyframes inkLock { to { opacity: 1; } }
 
-    .wordmark-sweep {
+    .seam-dot {
       position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 26%, rgba(255, 248, 236, 0.58) 50%, transparent 74%);
-      transform: translate3d(-115%, 0, 0);
-      pointer-events: none;
-      will-change: transform;
-      backface-visibility: hidden;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      margin: -3px 0 0 -3px;
+      border-radius: 50%;
+      background: var(--ink);
+      opacity: 0;
     }
-    #loading-screen.play .wordmark-sweep {
-      animation: textSweep 0.25s var(--ease) 0.85s both;
+    .play .seam-dot {
+      animation: dotPulse 160ms ease-out 960ms both;
+      will-change: transform, opacity;
     }
-    @keyframes textSweep {
-      from { transform: translate3d(-115%, 0, 0); }
-      to   { transform: translate3d(115%, 0, 0); }
-    }
-
-    /* Weak device variant: one ring, no streak, no grain, no parallax, no bokeh, no type rows, no reflection */
-    .lite-splash .ring-b,
-    .lite-splash .streak-diag,
-    .lite-splash .grain,
-    .lite-splash .bokeh,
-    .lite-splash .outline-row,
-    .lite-splash .word-reflection {
-      display: none;
-    }
-    .lite-splash.play .bg-leaks,
-    .lite-splash.play .rings-shell {
-      animation-duration: 0.55s, 0s;
+    @keyframes dotPulse {
+      0%   { opacity: 0; transform: scale(0.6); }
+      50%  { opacity: 1; transform: scale(1.35); }
+      100% { opacity: 0; transform: scale(1); }
     }
 
-    /* Reduced motion: static composed frame (wordmark + rings only) with plain fade out */
+    #loading-screen.exiting .seam-ink {
+      animation: seamWiden 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    @keyframes seamWiden {
+      0%   { opacity: 1; transform: scaleX(1); }
+      100% { opacity: 0; transform: scaleX(4.6); }
+    }
+
+    /* Repeat / Reduced / Low-end static settled state + plain fade */
+    .settled .wm-word { opacity: 1; }
+    .settled .g-pos, .settled .g-rise { animation: none !important; transform: none !important; opacity: 1 !important; }
+    .settled .seg, .settled .seam-dot, .settled .sheen { display: none; }
+    .settled .seam-ink { opacity: 1; }
+    .lite-fade.exiting {
+      animation: plainFade 200ms ease-out forwards;
+    }
+    .repeat-fade.exiting {
+      animation: plainFade 320ms ease-out forwards;
+    }
+    .lite-fade.exiting .split-half,
+    .lite-fade.exiting .wm-word,
+    .lite-fade.exiting .seam-ink,
+    .repeat-fade.exiting .split-half,
+    .repeat-fade.exiting .wm-word,
+    .repeat-fade.exiting .seam-ink { animation: none !important; }
+    @keyframes plainFade { to { opacity: 0; } }
+
     @media (prefers-reduced-motion: reduce) {
-      #loading-screen.play .bg-leaks,
-      #loading-screen.play .bezel-svg,
-      #loading-screen.play .rings-shell,
-      #loading-screen.play .ring-a-wrap,
-      #loading-screen.play .ring-b,
-      #loading-screen.play .streak-diag,
-      #loading-screen.play .letter-mask span,
-      #loading-screen.play .wordmark-sweep {
-        animation: none !important;
-      }
-      .bg-leaks { opacity: 1; }
-      .rings-shell { opacity: 1; transform: scale(1); }
-      .streak-diag, .wordmark-sweep, .bokeh, .outline-row, .word-reflection { display: none; }
-      .letter-mask span { opacity: 1; transform: none; }
+      .g-pos, .g-rise, .seg, .seam-dot, .sheen { animation: none !important; }
+      .wm-word { opacity: 1; }
+      .seam-ink { opacity: 1; }
+      .seg, .seam-dot, .sheen { display: none; }
     }
   </style>
 
   <script>
-    if (!window.__settlivSplashInit) {
-      window.__settlivSplashInit = true;
+    (function () {
+      if (window.__settlivIntroInit) return;
+      window.__settlivIntroInit = true;
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          for (var i = 0; i < registrations.length; i++) {
-            registrations[i].unregister();
-          }
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          for (var i = 0; i < regs.length; i++) regs[i].unregister();
         });
       }
 
-      var __sequenceMs = 1100;
-      var __playStart = null;
-      var __firstFrameReady = false;
-      var __splashRemoved = false;
+      var t0 = performance.now();
+      var firstFrame = false;
+      var done = false;
+      var seen = false;
+      try { seen = sessionStorage.getItem('settliv_intro_seen') === '1'; } catch (_) {}
 
-      function __dismissSplash() {
-        if (__splashRemoved) return;
-        __splashRemoved = true;
-        var loading = document.getElementById('loading-screen');
-        if (!loading) return;
-        loading.classList.add('reveal-out');
-        setTimeout(function () {
-          if (loading.parentNode) {
-            loading.parentNode.removeChild(loading);
-          }
-        }, 310);
-      }
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var lowEnd = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+                   (navigator.deviceMemory && navigator.deviceMemory <= 4);
+      var lite = reduced || lowEnd;
 
-      function __maybeDismiss() {
-        if (!__firstFrameReady || __playStart === null) return;
-        var elapsed = performance.now() - __playStart;
-        var waitMs = Math.max(0, __sequenceMs - elapsed);
-        setTimeout(__dismissSplash, waitMs);
-      }
-
-      function __startAnimation() {
+      function finishImmediate() {
+        if (done) return;
+        done = true;
         var el = document.getElementById('loading-screen');
-        if (!el) return;
-        var cores = navigator.hardwareConcurrency || 8;
-        var mem = navigator.deviceMemory || 8;
-        if (cores <= 4 || mem <= 4) {
-          el.classList.add('lite-splash');
-        }
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            el.classList.add('play');
-            __playStart = performance.now();
-            __maybeDismiss();
-          });
-        });
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+        if (document.body) document.body.classList.remove('intro-lock');
+        try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
+        window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
+        window.dispatchEvent(new CustomEvent('settliv-intro-done'));
       }
+
+      function runExit(exitMs) {
+        if (done) return;
+        done = true;
+        var el = document.getElementById('loading-screen');
+        if (!el) { finishImmediate(); return; }
+        window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
+        el.classList.add('exiting');
+        try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
+        setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          if (document.body) document.body.classList.remove('intro-lock');
+          window.dispatchEvent(new CustomEvent('settliv-intro-done'));
+        }, exitMs);
+      }
+
+      function tryExit() {
+        if (!firstFrame || done) return;
+        var elapsed = performance.now() - t0;
+        if (seen) {
+          if (elapsed <= 250) { finishImmediate(); return; }
+          var el = document.getElementById('loading-screen');
+          if (el) el.classList.add('repeat-fade');
+          setTimeout(function () { runExit(320); }, Math.max(0, 200 - elapsed));
+          return;
+        }
+        if (lite) {
+          var el2 = document.getElementById('loading-screen');
+          if (el2) el2.classList.add('lite-fade');
+          setTimeout(function () { runExit(200); }, Math.max(0, 250 - elapsed));
+          return;
+        }
+        var wait = Math.max(0, 1250 - elapsed);
+        setTimeout(function () { runExit(520); }, wait);
+      }
+
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) finishImmediate();
+      });
 
       window.addEventListener('DOMContentLoaded', function () {
-        var fontReady = (document.fonts && document.fonts.load)
+        if (document.hidden) { finishImmediate(); return; }
+        var el = document.getElementById('loading-screen');
+        if (!el) return;
+        document.body.classList.add('intro-lock');
+
+        if (seen || lite) {
+          el.classList.add('settled', 'ready');
+          tryExit();
+          return;
+        }
+
+        var fontGate = (document.fonts && document.fonts.load)
           ? Promise.race([
               document.fonts.load('800 1em "BricolageGrotesque"'),
-              new Promise(function (resolve) { setTimeout(resolve, 500); })
+              new Promise(function (r) { setTimeout(r, 500); })
             ])
           : Promise.resolve();
-        fontReady.then(__startAnimation, __startAnimation);
+
+        fontGate.then(function () {
+          el.classList.add('ready', 'animating', 'play');
+          setTimeout(function () {
+            if (!firstFrame && !done) el.classList.add('slow-breathe');
+          }, 1250);
+          setTimeout(function () {
+            el.classList.remove('animating');
+          }, 1350);
+          tryExit();
+        });
       });
 
       window.addEventListener('flutter-first-frame', function () {
-        __firstFrameReady = true;
-        __maybeDismiss();
+        firstFrame = true;
+        tryExit();
       });
 
-      setTimeout(__dismissSplash, 8000);
-    }
+      setTimeout(finishImmediate, 8000);
+    })();
   </script>
 </head>
 <body>
   <div id="loading-screen">
-    <div class="vignette"></div>
-    <div class="grain"></div>
-    <div class="bokeh w1"></div>
-    <div class="bokeh w2"></div>
-    <div class="bokeh w3"></div>
-    <div class="bokeh c1"></div>
-    <div class="bokeh c2"></div>
-    <div class="bokeh c3"></div>
-    <div class="outline-row top" aria-hidden="true">SETTLIV &nbsp; SETTLIV &nbsp; SETTLIV</div>
-    <div class="outline-row bottom" aria-hidden="true">SETTLIV &nbsp; SETTLIV &nbsp; SETTLIV</div>
-    <div class="bg-leaks"></div>
-    <div class="warm-word-glow"></div>
-    <svg class="bezel-svg" viewBox="0 0 400 400" fill="none" aria-hidden="true">
-      <g stroke="rgba(255,255,255,0.9)" stroke-width="0.9">
-        <line x1="200" y1="6" x2="200" y2="16"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(15 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(30 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(45 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(60 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(75 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(90 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(105 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(120 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(135 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(150 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(165 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(180 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(195 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(210 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(225 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(240 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(255 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(270 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(285 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(300 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(315 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(330 200 200)"/>
-        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(345 200 200)"/>
-      </g>
-    </svg>
-    <div class="rings-shell">
-      <div class="ring-a-wrap">
-        <div class="ring-a-glow"></div>
-        <div class="ring-a-core"></div>
-      </div>
-      <div class="ring-b"></div>
-    </div>
-    <div class="streak-diag"></div>
-    <div class="brand-center">
-      <div class="wordmark-stage">
-        <div class="wordmark-typo loading-wordmark">
-          <span class="letter-mask"><span data-ch="S">S</span></span>
-          <span class="letter-mask"><span data-ch="E">E</span></span>
-          <span class="letter-mask"><span data-ch="T">T</span></span>
-          <span class="letter-mask"><span data-ch="T">T</span></span>
-          <span class="letter-mask"><span data-ch="L">L</span></span>
-          <span class="letter-mask"><span data-ch="I">I</span></span>
-          <span class="letter-mask"><span data-ch="V">V</span></span>
+    <div class="split-half top" aria-hidden="true">
+      <div class="grain"></div>
+      <svg class="orbit-svg" viewBox="0 0 400 400" fill="none">
+        <circle cx="200" cy="200" r="72" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="104" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="136" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="168" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="196" stroke="var(--orbit)" stroke-width="1"/>
+      </svg>
+      <div class="wm-anchor">
+        <div class="wm-band">
+          <div class="wm-word" role="img" aria-label="SETTLIV">
+            <span class="g-pos"><span class="g-rise">S</span></span><span class="g-pos"><span class="g-rise">E</span></span><span class="g-pos"><span class="g-rise">T</span></span><span class="g-pos"><span class="g-rise">T</span></span><span class="g-pos"><span class="g-rise">L</span></span><span class="g-pos"><span class="g-rise">I</span></span><span class="g-pos"><span class="g-rise">V</span></span>
+          </div>
+          <div class="sheen" aria-hidden="true"></div>
         </div>
-        <div class="wordmark-sweep"></div>
       </div>
-      <div class="wordmark-typo word-reflection" aria-hidden="true">SETTLIV</div>
+    </div>
+    <div class="split-half bottom" aria-hidden="true">
+      <div class="grain"></div>
+      <svg class="orbit-svg" viewBox="0 0 400 400" fill="none">
+        <circle cx="200" cy="200" r="72" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="104" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="136" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="168" stroke="var(--orbit)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="196" stroke="var(--orbit)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="seam" aria-hidden="true">
+      <div class="seg em"></div>
+      <div class="seg co"></div>
+      <div class="seam-ink"></div>
+      <div class="seam-dot"></div>
     </div>
   </div>
-
+  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0A0C1C;color:#ECEBF5;font:800 32px sans-serif;letter-spacing:.18em">SETTLIV</div></noscript>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

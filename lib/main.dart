@@ -12,6 +12,8 @@ import 'core/theme/theme_provider.dart';
 import 'core/widgets/experience_transition_overlay.dart';
 import 'core/widgets/phone_frame.dart';
 import 'data/repositories/in_memory_app_repository.dart';
+import 'intro_handshake_stub.dart'
+    if (dart.library.js_interop) 'intro_handshake_web.dart';
 import 'routes/app_router.dart';
 
 void main() async {
@@ -60,12 +62,32 @@ class SettlivScrollBehavior extends MaterialScrollBehavior {
       };
 }
 
-class SettlivApp extends ConsumerWidget {
+class SettlivApp extends ConsumerStatefulWidget {
   final GoRouter? router;
   const SettlivApp({super.key, this.router});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettlivApp> createState() => _SettlivAppState();
+}
+
+class _SettlivAppState extends ConsumerState<SettlivApp> {
+  late bool _revealReady;
+
+  @override
+  void initState() {
+    super.initState();
+    _revealReady = !isIntroRevealSupported;
+    if (!_revealReady) {
+      listenForIntroReveal(() {
+        if (mounted && !_revealReady) {
+          setState(() => _revealReady = true);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     final effectiveExperience = ref.watch(effectiveExperienceProvider);
 
@@ -76,7 +98,7 @@ class SettlivApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
-      routerConfig: router ?? appRouter,
+      routerConfig: widget.router ?? appRouter,
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
         final lockState = ref.watch(screenLockProvider);
@@ -91,7 +113,10 @@ class SettlivApp extends ConsumerWidget {
             (effectiveExperience == EffectiveExperience.app && isWideViewport)
                 ? PhoneFrame(child: content)
                 : content;
-        return ExperienceTransitionOverlay(child: framed);
+        return TickerMode(
+          enabled: _revealReady,
+          child: ExperienceTransitionOverlay(child: framed),
+        );
       },
     );
   }

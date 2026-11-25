@@ -746,3 +746,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Final Polish — Round 11 (Wordmark Restyle & Depth Fill)
 - [x] **Wordmark Restyle (`web/index.html`)**: Confirmed static `assets/fonts/BricolageGrotesque-ExtraBold.ttf` (`BricolageGrotesque`, weight 800); enlarged wordmark (`min(9.2vw, 132px)` desktop / `min(7.6vw, 44px)` phone, `0.14em` tracking + compensation), dimensional fill (`#FFFFFF → #E6ECFF → #9FAACB` + 1px top-edge highlight), `0.18em`-gap `scaleY(-1)` floor reflection (`12%` linear-masked opacity), and brighter specular sweep.
 - [x] **Balanced Depth Fill**: Offset Ring A (amber, left) and Ring B (ice, right) heads by `180°`; added 6 outer-edge drifting bokeh discs (3 warm left, 3 cool right, `80–250px`, `0.07–0.13` opacity) and 2 giant `5.5%`-opacity outline `SETTLIV` texture rows (`1.6` heights above/below, counter-drifting `40px` in idle); kept `23` animated elements (`<= 24`), `.lite-splash` & `prefers-reduced-motion` stripping bokeh/outline/reflection.
+
+
+---
+
+## Follow-Up Task: "The Settling Line" Intro + Flutter Handshake
+- [x] **The Settling Line (`web/index.html`)**: Replaced intro (`9.3KB` inline) with theme-aware (`flutter.settliv_theme_mode` / `prefers-color-scheme`) split-curtain (`100dvh`, continuous `100% 200%` backdrop, 5 static orbit hairlines, 3.5% tiled grain), centre-outward `SETTLIV` rise (`60–580ms`) + tracking tighten `0.34em→0.18em` (`300–850ms`), emerald/coral line meet (`520–960ms`) + ink lock & 6px dot (`960–1100ms`), sheen (`1000–1300ms`), and 520ms split exit at `max(firstFrame, 1250ms)`.
+- [x] **Edge Cases & Handshake (`main.dart`, `intro_handshake_*.dart`)**: Added `TickerMode` gated on `settliv-intro-reveal` (`dart:js_interop` / `package:web`, 1.8s fallback); handled `settliv_intro_seen` repeat visits (<=250ms skip, else 200ms min + 320ms fade), `pageshow` bfcache, `document.hidden`, `prefers-reduced-motion` / `<=4` cores/GB (250ms + 200ms fade), and `<noscript>`.
