@@ -739,3 +739,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Final Polish — Round 10 (Refined Rim-Light Intro)
 - [x] **Rim-Light Refinement (`web/index.html`)**: Replaced Balance Beam with refined Rim-Light (`135vmin` amber Ring A + `105vmin` ice Ring B >= `1.35x` wordmark width on desktop, `94vw`/`78vw` on phones, soft-edged conic heads, off-centre warm/cool light leaks, `14%` tick bezel, `-8deg` diagonal streak at `0.30–0.50s`, masked `SETTLIV` with no `text-shadow`/3D/ghosts + unclipped legibility pad).
 - [x] **Timeline, Font & Fallbacks (5 lines)**: Font gated via `document.fonts.load('800 1em "BricolageGrotesque"')` (500ms cap, asset `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf`, app stack fallback) + double-`rAF` `.play` start; `0–0.55s` rings scale `0.8→1` & leaks bloom; `0.30–0.50s` `-8deg` streak crosses; `0.45–0.95s` letters rise `40ms` stagger; `0.85–1.10s` sweep & Ring A pulse, then 3-layer parallax idle; `300ms` exit (`1.4x` rings / `1.03x` wordmark) on `flutter-first-frame` + `1.1s` (`@supports` borders, `.lite-splash`, `prefers-reduced-motion`, 8s removal).
+
+
+---
+
+## Final Polish — Round 11 (Wordmark Restyle & Depth Fill)
+- [x] **Wordmark Restyle (`web/index.html`)**: Confirmed static `assets/fonts/BricolageGrotesque-ExtraBold.ttf` (`BricolageGrotesque`, weight 800); enlarged wordmark (`min(9.2vw, 132px)` desktop / `min(7.6vw, 44px)` phone, `0.14em` tracking + compensation), dimensional fill (`#FFFFFF → #E6ECFF → #9FAACB` + 1px top-edge highlight), `0.18em`-gap `scaleY(-1)` floor reflection (`12%` linear-masked opacity), and brighter specular sweep.
+- [x] **Balanced Depth Fill**: Offset Ring A (amber, left) and Ring B (ice, right) heads by `180°`; added 6 outer-edge drifting bokeh discs (3 warm left, 3 cool right, `80–250px`, `0.07–0.13` opacity) and 2 giant `5.5%`-opacity outline `SETTLIV` texture rows (`1.6` heights above/below, counter-drifting `40px` in idle); kept `23` animated elements (`<= 24`), `.lite-splash` & `prefers-reduced-motion` stripping bokeh/outline/reflection.
