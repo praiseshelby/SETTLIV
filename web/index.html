@@ -8,53 +8,34 @@
   <title>Settliv — Expense Sharing & Group Ledger</title>
   <meta name="description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
 
-  <!-- Open Graph / Meta -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Settliv — Expense Sharing & Group Ledger">
   <meta property="og:description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
 
-  <!-- Theme color for light and dark -->
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F6F7FC">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#070914">
-
+  <meta name="theme-color" content="#070914">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Settliv">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
   <link rel="manifest" href="manifest.json">
 
   <style>
     :root {
-      --bg: #F6F7FC;
-      --ink: #12132B;
-      --muted: #5A5F7A;
-      --accent: #5B4BDB;
-      --emerald: #0FA37F;
-      --coral: #EF5B48;
-      --hairline: #E3E5F1;
-      --sweep-glow: rgba(91, 75, 219, 0.4);
+      --bg: #070914;
+      --ink: #ECEBF5;
+      --muted: #A5A8C0;
+      --accent: #7C5CFF;
+      --emerald: #4FE3B8;
+      --coral: #FF8D7C;
+      --hairline: #272B4A;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #070914;
-        --ink: #ECEBF5;
-        --muted: #A5A8C0;
-        --accent: #7C5CFF;
-        --emerald: #4FE3B8;
-        --coral: #FF8D7C;
-        --hairline: #272B4A;
-        --sweep-glow: rgba(124, 92, 255, 0.5);
-      }
-    }
-    body {
+    html, body {
       margin: 0;
+      width: 100%;
+      height: 100%;
       background-color: var(--bg);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow: hidden;
@@ -63,175 +44,166 @@
       position: fixed;
       inset: 0;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       background-color: var(--bg);
       z-index: 99999;
-      clip-path: circle(150% at 50% 50%);
-      transition: clip-path 450ms cubic-bezier(0.16, 1, 0.3, 1), opacity 450ms ease-out;
+      transition: opacity 280ms ease-out;
     }
     #loading-screen.reveal-out {
-      clip-path: circle(0% at 50% 50%);
       opacity: 0;
       pointer-events: none;
     }
 
-    .settle-container {
+    .orbit-scene {
+      position: relative;
+      width: min(60vw, 60vh);
+      height: min(60vw, 60vh);
+      min-width: 210px;
+      min-height: 210px;
+      max-width: 560px;
+      max-height: 560px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
-    /* SVG Settle Animation */
-    .settle-svg {
-      width: 140px;
-      height: 100px;
-      overflow: visible;
+    /* Expanding & fading concentric rings (transform & opacity only) */
+    .pulse-ring {
+      position: absolute;
+      inset: 8%;
+      border-radius: 50%;
+      border: 1px solid rgba(124, 92, 255, 0.28);
+      transform: scale(0.55);
+      opacity: 0;
+      animation: ringExpand 3.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+      pointer-events: none;
     }
-    .settle-ring {
-      fill: none;
-      stroke: var(--hairline);
-      stroke-width: 1px;
-    }
-    .settle-guide {
-      stroke: var(--hairline);
-      stroke-width: 1px;
-      stroke-dasharray: 4 4;
-    }
-    .settle-level-line {
-      stroke: var(--muted);
-      stroke-width: 1.2px;
-      transform-origin: 70px 50px;
-      animation: balanceRock 2.4s ease-in-out infinite;
-    }
-    .node-owed {
-      fill: var(--emerald);
-      transform-origin: 70px 50px;
-      animation: convergeOwed 2.0s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-    }
-    .node-owe {
-      fill: var(--coral);
-      transform-origin: 70px 50px;
-      animation: convergeOwe 2.0s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    .pulse-ring.r2 { animation-delay: 1.2s; }
+    .pulse-ring.r3 { animation-delay: 2.4s; }
+
+    @keyframes ringExpand {
+      0% { transform: scale(0.50); opacity: 0.48; }
+      100% { transform: scale(1.05); opacity: 0; }
     }
 
-    @keyframes convergeOwed {
-      0% {
-        transform: translate(-36px, -18px);
-        opacity: 0.2;
-      }
-      50% {
-        transform: translate(-12px, 0px);
-        opacity: 1;
-      }
-      100% {
-        transform: translate(-12px, 0px);
-        opacity: 1;
-      }
+    /* Orbit tracks */
+    .orbit-track {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--hairline);
+      pointer-events: none;
     }
-    @keyframes convergeOwe {
-      0% {
-        transform: translate(36px, 18px);
-        opacity: 0.2;
-      }
-      50% {
-        transform: translate(12px, 0px);
-        opacity: 1;
-      }
-      100% {
-        transform: translate(12px, 0px);
-        opacity: 1;
-      }
+    .orbit-track.outer { inset: 12%; }
+    .orbit-track.inner { inset: 24%; border-color: rgba(124, 92, 255, 0.25); }
+
+    /* Rotating node carriers */
+    .orbit-carrier {
+      position: absolute;
+      inset: 12%;
+      animation: orbitSpin 4.8s linear infinite;
+      pointer-events: none;
     }
-    @keyframes balanceRock {
-      0%, 100% {
-        transform: rotate(0deg);
-      }
-      25% {
-        transform: rotate(-3.5deg);
-      }
-      75% {
-        transform: rotate(2.5deg);
-      }
-      85% {
-        transform: rotate(0deg);
-      }
+    .orbit-carrier.inner {
+      inset: 24%;
+      animation: orbitSpinReverse 3.6s linear infinite;
+    }
+    @keyframes orbitSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes orbitSpinReverse {
+      from { transform: rotate(180deg); }
+      to { transform: rotate(-180deg); }
     }
 
-    /* Wordmark resolving from 0.6em to 0.18em tracking */
+    .orbit-node {
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      border-radius: 50%;
+    }
+    .orbit-node.emerald {
+      background: var(--emerald);
+      box-shadow: 0 0 12px rgba(79, 227, 184, 0.55);
+    }
+    .orbit-node.coral {
+      background: var(--coral);
+      box-shadow: 0 0 12px rgba(255, 141, 124, 0.55);
+    }
+
+    /* Wordmark with slow light sweep */
+    .brand-center {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .loading-wordmark {
-      font-size: 26px;
+      font-size: clamp(32px, 5vw, 44px);
       font-weight: 800;
       color: var(--ink);
       text-transform: uppercase;
-      letter-spacing: 0.6em;
-      margin-top: 12px;
-      animation: settleTracking 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      letter-spacing: 0.26em;
+      padding-left: 0.26em;
+      line-height: 1;
+      background: linear-gradient(110deg, var(--ink) 35%, #ffffff 50%, var(--ink) 65%);
+      background-size: 220% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: wordmarkSweep 2.4s ease-in-out infinite;
     }
-    @keyframes settleTracking {
-      0% {
-        letter-spacing: 0.6em;
-        opacity: 0.3;
-      }
-      100% {
-        letter-spacing: 0.18em;
-        opacity: 1;
-      }
+    @keyframes wordmarkSweep {
+      0% { background-position: 120% 0; }
+      100% { background-position: -120% 0; }
     }
 
-    /* Indeterminate hairline sweep underneath */
+    /* Thin progress hairline */
     .sweep-track {
       position: relative;
-      width: 120px;
-      height: 1px;
+      width: clamp(120px, 22vw, 180px);
+      height: 1.5px;
       background-color: var(--hairline);
-      margin-top: 14px;
+      margin-top: 16px;
       overflow: hidden;
       border-radius: 1px;
     }
     .sweep-bar {
       position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 48px;
+      inset: 0;
+      width: 45%;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      box-shadow: 0 0 8px var(--sweep-glow);
-      animation: sweepLine 1.6s ease-in-out infinite;
+      animation: sweepLine 1.5s ease-in-out infinite;
     }
     @keyframes sweepLine {
-      0% {
-        left: -48px;
-      }
-      100% {
-        left: 120px;
-      }
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(260%); }
     }
 
-    /* Reduced motion adjustments */
     @media (prefers-reduced-motion: reduce) {
-      .settle-level-line, .node-owed, .node-owe, .sweep-bar {
+      .pulse-ring, .orbit-carrier, .orbit-carrier.inner, .loading-wordmark, .sweep-bar {
         animation: none;
       }
+      .pulse-ring { opacity: 0.22; transform: scale(0.88); }
       .loading-wordmark {
-        animation: none;
-        letter-spacing: 0.18em;
+        background: none;
+        -webkit-text-fill-color: var(--ink);
+        color: var(--ink);
       }
-      #loading-screen {
-        transition: opacity 200ms ease-out;
-      }
-      #loading-screen.reveal-out {
-        clip-path: none;
-        opacity: 0;
-      }
+      .sweep-bar { transform: translateX(60%); }
     }
   </style>
 
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
+        for (let registration of registrations) {
           registration.unregister();
         }
       });
@@ -241,36 +213,28 @@
       const loading = document.getElementById('loading-screen');
       if (loading) {
         loading.classList.add('reveal-out');
-        setTimeout(function() {
+        setTimeout(function () {
           if (loading.parentNode) {
             loading.parentNode.removeChild(loading);
           }
-        }, 480);
+        }, 300);
       }
     });
   </script>
 </head>
 <body>
   <div id="loading-screen">
-    <div class="settle-container">
-      <svg class="settle-svg" viewBox="0 0 140 100">
-        <!-- Concentric rings -->
-        <circle class="settle-ring" cx="70" cy="50" r="42" />
-        <circle class="settle-ring" cx="70" cy="50" r="26" />
-        <!-- Leveling guide -->
-        <line class="settle-guide" x1="16" y1="50" x2="124" y2="50" />
-        <!-- Balancing line -->
-        <g class="settle-level-line">
-          <line x1="28" y1="50" x2="112" y2="50" />
-          <circle cx="70" cy="50" r="2" fill="var(--muted)" />
-          <!-- Converging nodes -->
-          <circle class="node-owed" cx="70" cy="50" r="4.5" />
-          <circle class="node-owe" cx="70" cy="50" r="4.5" />
-        </g>
-      </svg>
-      <div class="loading-wordmark">SETTLIV</div>
-      <div class="sweep-track">
-        <div class="sweep-bar"></div>
+    <div class="orbit-scene">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring r2"></div>
+      <div class="pulse-ring r3"></div>
+      <div class="orbit-track outer"></div>
+      <div class="orbit-track inner"></div>
+      <div class="orbit-carrier"><div class="orbit-node emerald"></div></div>
+      <div class="orbit-carrier inner"><div class="orbit-node coral"></div></div>
+      <div class="brand-center">
+        <div class="loading-wordmark">SETTLIV</div>
+        <div class="sweep-track"><div class="sweep-bar"></div></div>
       </div>
     </div>
   </div>

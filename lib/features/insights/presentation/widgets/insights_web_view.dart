@@ -176,14 +176,27 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                   initialDate: now,
                 ),
               ] else ...[
-                // Expanded / Medium: Bento Grid
-                MonthRecapCard(
-                  expenses: allExpenses,
-                  currentUserId: currentUserId,
-                  now: now,
+                // Expanded / Medium: Balanced Bento Grid
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 7,
+                      child: MonthRecapCard(
+                        expenses: allExpenses,
+                        currentUserId: currentUserId,
+                        now: now,
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      flex: 5,
+                      child: _buildHabitsCard(context, theme, avgPerDay, weekdaySpend),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
-                // Row 1: Spend summary (span 7) + Debts & settlements (span 5)
+                // Row 2: Spend summary (span 7) + Debts & settlements (span 5)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -200,28 +213,22 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                 ),
                 const SizedBox(height: 20),
 
-                // Row 2: Category breakdown (span 6) + Habits & Daily average (span 6)
+                // Row 3: Category breakdown uses freed space + compact Spending Calendar (maxWidth 440)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      flex: 6,
                       child: _buildCategoryCard(context, theme, activeCategories, totalYourSpend),
                     ),
                     const SizedBox(width: 20),
-                    Expanded(
-                      flex: 6,
-                      child: _buildHabitsCard(context, theme, avgPerDay, weekdaySpend),
+                    SpendingCalendar(
+                      expenses: allExpenses,
+                      currentUserId: currentUserId,
+                      initialDate: now,
+                      maxWidth: 440,
+                      compactCells: true,
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-
-                // Row 3: Spending Calendar
-                SpendingCalendar(
-                  expenses: allExpenses,
-                  currentUserId: currentUserId,
-                  initialDate: now,
                 ),
               ],
             ],

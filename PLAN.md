@@ -656,3 +656,12 @@
 - [x] **Item 4 ("This month" Web Card)**: Created `ThisMonthWebCard` with month header, count-up amount, sensible delta line, `CustomPainter` cumulative spend chart (solid + area, dashed last month, today dot, hover tooltip), Daily average & Biggest expense stats; removed purple bar.
 - [x] **Item 5 (Day-Countdown Dial)**: Enlarged dial to 86px, computed inner clear box inside tick/arc ring, wrapped center `"N / days left"` in `MediaQuery.withNoTextScaling` + `FittedBox.scaleDown` for guaranteed clearance.
 - [x] **Items 8 & 9 (Sidebar Wordmark & Add Expense Button)**: Enlarged sidebar wordmark to 22px (`0.28em` tracking) aligned with nav icons in a 72px header + optically centered rail/compact wordmarks; redesigned `_SidebarAddExpenseButton` (48px, deep ink vertical tonal gradient, 1px top highlight, glass circle `+`, Plus Jakarta Sans 600, hover lift + transform sheen, 0.98 press scale, focus ring, rail tooltip).
+
+
+---
+
+## Final Polish — Set 3 (Motion, Loading & Final QA)
+- [x] **Item 7 (App <-> Web Transition)**: Created `ExperienceTransitionOverlay` (650ms transform/opacity circle expansion from tapped tile + converging settle-orbit motif + target layout name, no BackdropFilter, 150ms cross-fade in reduced motion/lite mode); added short reverse settle in `ExperienceShell` and triggered from `ExperienceSettingsSection`.
+- [x] **Item 13 (First Loading Screen)**: Upgraded `web/index.html` CSS splash and added matching `SettleOrbitSplash` / `SettleOrbitSplashGate` (`#070914` dark palette, `min(60vw, 60vh)` orbit scene, expanding rings, orbiting emerald/coral nodes, `32–44px` SETTLIV wordmark sweep, thin progress hairline, 900ms min visible time, static reduced-motion state).
+- [x] **Item 12 (Spending Calendar Size)**: Capped PC Web `SpendingCalendar` at `maxWidth: 440` with `38px` compact cells and day hover tooltips, paired in a balanced bento row beside `CategoryBreakdown` in `InsightsWebView`.
+- [x] **Final QA**: Added `test/final_polish_set3_test.dart` covering transition overlay, 360px/1920px splash, 440px calendar, and Add Expense across 320px@1.3x and PhoneFrame contexts; refreshed `README.md`.

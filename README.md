@@ -10,7 +10,8 @@ A production-grade Flutter Web prototype for flatmates and trips with instant UP
 - **Compatibility preview** — experience Web (PC / mobile) or App layout from one link
 - **Screen lock** — WebAuthn device authentication (requires HTTPS or localhost)
 - **Help & Feedback** — local report queue, email via mailto
-- **Dark mode** — full token-driven theme (Manrope + Bricolage typography)
+- **Dark mode** — full token-driven theme (Manrope, Plus Jakarta Sans, Sora & Bricolage typography)
+- **Settle Orbit splash & layout transition** — viewport-scaled CSS + Flutter handoff splash and choreographed App ↔ Web preview transition
 
 ## Running Locally
 

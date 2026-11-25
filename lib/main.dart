@@ -9,7 +9,9 @@ import 'core/config/app_config.dart';
 import 'core/profile/experience_mode.dart' show effectiveExperienceProvider, EffectiveExperience;
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
+import 'core/widgets/experience_transition_overlay.dart';
 import 'core/widgets/phone_frame.dart';
+import 'core/widgets/settle_orbit_splash.dart';
 import 'data/repositories/in_memory_app_repository.dart';
 import 'routes/app_router.dart';
 
@@ -86,10 +88,13 @@ class SettlivApp extends ConsumerWidget {
         final media = MediaQuery.of(context);
         final isWideViewport = media.size.width > 600;
 
-        if (effectiveExperience == EffectiveExperience.app && isWideViewport) {
-          return PhoneFrame(child: content);
-        }
-        return content;
+        final Widget framed =
+            (effectiveExperience == EffectiveExperience.app && isWideViewport)
+                ? PhoneFrame(child: content)
+                : content;
+        return SettleOrbitSplashGate(
+          child: ExperienceTransitionOverlay(child: framed),
+        );
       },
     );
   }

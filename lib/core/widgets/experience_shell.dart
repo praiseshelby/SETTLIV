@@ -46,8 +46,13 @@ class _ExperienceShellState extends ConsumerState<ExperienceShell>
   @override
   Widget build(BuildContext context) {
     final effective = ref.watch(effectiveExperienceProvider);
+    final profile = ref.watch(deviceProfileProvider);
+    final isLite = MotionTokens.isLiteEffects(context, profile);
 
     if (_previousExperience != null && _previousExperience != effective) {
+      _controller.duration = isLite
+          ? const Duration(milliseconds: 150)
+          : const Duration(milliseconds: 300);
       _controller.forward(from: 0.0);
     }
     _previousExperience = effective;
@@ -62,8 +67,19 @@ class _ExperienceShellState extends ConsumerState<ExperienceShell>
             navigationShell: widget.navigationShell,
           );
 
-    return FadeTransition(
-      opacity: _fadeAnimation,
+    return AnimatedBuilder(
+      animation: _fadeAnimation,
+      builder: (context, builtChild) {
+        final t = _fadeAnimation.value;
+        final dy = isLite ? 0.0 : (1.0 - t) * 12.0;
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, dy),
+            child: builtChild,
+          ),
+        );
+      },
       child: child,
     );
   }

@@ -11,12 +11,16 @@ class SpendingCalendar extends StatefulWidget {
   final List<Expense> expenses;
   final String currentUserId;
   final DateTime initialDate;
+  final double? maxWidth;
+  final bool compactCells;
 
   const SpendingCalendar({
     super.key,
     required this.expenses,
     required this.currentUserId,
     required this.initialDate,
+    this.maxWidth,
+    this.compactCells = false,
   });
 
   @override
@@ -134,7 +138,7 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
     final isTodayInThisMonth = DateTime.now().year == year && DateTime.now().month == month;
     final today = DateTime.now().day;
 
-    return GlassSurface(
+    final calendarCard = GlassSurface(
       level: GlassLevel.level1,
       borderRadius: 20,
       padding: const EdgeInsets.all(18),
@@ -215,10 +219,11 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: 42, // 6 weeks
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
+              mainAxisSpacing: 5,
+              crossAxisSpacing: 5,
+              mainAxisExtent: widget.compactCells ? 38.0 : null,
             ),
             itemBuilder: (context, index) {
               final dayOffset = index - (firstDayOfWeek - 1);
@@ -231,15 +236,20 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
               final spend = dailyTotals[dayNumber] ?? 0;
               final isToday = isTodayInThisMonth && dayNumber == today;
               final intensity = maxDailySpend > 0 ? (spend / maxDailySpend).clamp(0.08, 0.85) : 0.0;
+              final tooltipMsg = spend > 0
+                  ? '$dayNumber ${_monthName(month)}: ${CurrencyFormatter.formatPaise(spend, absolute: true)}'
+                  : '$dayNumber ${_monthName(month)}: No spend';
 
-              return InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  final date = DateTime(year, month, dayNumber);
-                  final expenses = dailyExpensesMap[dayNumber] ?? [];
-                  _showDayExpensesSheet(context, date, expenses, spend);
-                },
-                child: Container(
+              return Tooltip(
+                message: tooltipMsg,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    final date = DateTime(year, month, dayNumber);
+                    final expenses = dailyExpensesMap[dayNumber] ?? [];
+                    _showDayExpensesSheet(context, date, expenses, spend);
+                  },
+                  child: Container(
                   decoration: BoxDecoration(
                     color: spend > 0 ? theme.accent.withValues(alpha: intensity) : theme.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -262,6 +272,7 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
                       ),
                     ),
                   ),
+                ),
                 ),
               );
             },
@@ -290,5 +301,12 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
         ],
       ),
     );
+    if (widget.maxWidth != null) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: widget.maxWidth!),
+        child: calendarCard,
+      );
+    }
+    return calendarCard;
   }
 }
