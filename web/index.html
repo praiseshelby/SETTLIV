@@ -12,7 +12,7 @@
   <meta property="og:title" content="Settliv — Expense Sharing & Group Ledger">
   <meta property="og:description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
 
-  <meta name="theme-color" content="#070914">
+  <meta name="theme-color" content="#070A14">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,10 +33,11 @@
     }
 
     :root {
-      --bg: #070914;
-      --ink: #ECEBF5;
-      --emerald: #4FE3B8;
-      --coral: #FF8D7C;
+      --bg: #070A14;
+      --ink: #F5F7FF;
+      --muted: rgba(236, 235, 245, 0.62);
+      --emerald: #12B48A;
+      --coral: #FF7A6B;
       --hairline: rgba(236, 235, 245, 0.085);
       --ease: cubic-bezier(.2, .8, .2, 1);
     }
@@ -56,167 +57,202 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 50%, #0D1226 0%, #070914 78%);
+      background-color: var(--bg);
       z-index: 99999;
       overflow: hidden;
       contain: layout paint;
       will-change: opacity;
-      transition: opacity 300ms ease-out;
+      transition: opacity 250ms ease-out;
     }
     #loading-screen.reveal-out {
       opacity: 0;
       pointer-events: none;
     }
 
-    /* Static background radial fields with transform drift + single opacity pulse */
+    /* Static aurora fields that drift and rotate only via transform */
     .bg-field {
       position: absolute;
-      inset: -14%;
+      inset: -22%;
       pointer-events: none;
       contain: layout paint;
-      will-change: transform, opacity;
+      will-change: transform;
     }
     .bg-field.teal {
-      background: radial-gradient(circle at 28% 34%, rgba(20, 74, 88, 0.24) 0%, rgba(20, 74, 88, 0) 54%);
-      animation: fieldPulseA 1.5s var(--ease) forwards, fieldDriftA 10s ease-in-out 1.5s infinite alternate;
+      background: radial-gradient(circle at 26% 32%, rgba(20, 184, 166, 0.18) 0%, rgba(20, 184, 166, 0) 56%);
+      animation: driftA 11s ease-in-out infinite alternate;
     }
-    .bg-field.warm {
-      background: radial-gradient(circle at 72% 66%, rgba(112, 60, 52, 0.14) 0%, rgba(112, 60, 52, 0) 50%);
-      animation: fieldPulseB 1.5s var(--ease) forwards, fieldDriftB 12s ease-in-out 1.5s infinite alternate;
+    .bg-field.emerald {
+      background: radial-gradient(circle at 74% 68%, rgba(18, 180, 138, 0.14) 0%, rgba(18, 180, 138, 0) 54%);
+      animation: driftB 13s ease-in-out infinite alternate;
     }
-    @keyframes fieldPulseA {
-      0%   { opacity: 0.7; transform: translate3d(-1.5%, -1%, 0); }
-      52%  { opacity: 1.0; transform: translate3d(0, 0, 0); }
-      100% { opacity: 0.82; transform: translate3d(1%, 1%, 0); }
+    .bg-field.peach {
+      background: radial-gradient(circle at 64% 24%, rgba(255, 200, 168, 0.08) 0%, rgba(255, 200, 168, 0) 48%);
+      animation: driftC 15s ease-in-out infinite alternate;
     }
-    @keyframes fieldPulseB {
-      0%   { opacity: 0.65; transform: translate3d(1.5%, 1%, 0); }
-      52%  { opacity: 1.0; transform: translate3d(0, 0, 0); }
-      100% { opacity: 0.8; transform: translate3d(-1%, -1%, 0); }
+    @keyframes driftA {
+      from { transform: translate3d(-2%, -1.5%, 0) rotate(0deg); }
+      to   { transform: translate3d(2%, 1.5%, 0) rotate(4deg); }
     }
-    @keyframes fieldDriftA {
-      from { transform: translate3d(1%, 1%, 0); }
-      to   { transform: translate3d(-1.5%, -1%, 0); }
+    @keyframes driftB {
+      from { transform: translate3d(2%, 1%, 0) rotate(0deg); }
+      to   { transform: translate3d(-2%, -1.5%, 0) rotate(-4deg); }
     }
-    @keyframes fieldDriftB {
-      from { transform: translate3d(-1%, -1%, 0); }
-      to   { transform: translate3d(1.5%, 1%, 0); }
+    @keyframes driftC {
+      from { transform: translate3d(-1%, 2%, 0) rotate(0deg); }
+      to   { transform: translate3d(1.5%, -1.5%, 0) rotate(3deg); }
     }
 
-    /* Viewport-spanning ring field: 1 animated wrapper + static ring divs */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, transparent 38%, rgba(4, 6, 14, 0.72) 100%);
+    }
+
+    /* Hairline ring field: 6 concentric rings */
     .ring-field {
       position: absolute;
-      width: 130vmax;
-      height: 130vmax;
+      width: 124vmax;
+      height: 124vmax;
       display: flex;
       align-items: center;
       justify-content: center;
       pointer-events: none;
       contain: layout paint;
       will-change: transform, opacity;
-      animation: ringsEnter 0.55s var(--ease) forwards, ringsBreathe 4.5s ease-in-out 1.35s infinite alternate;
+      animation: ringsEnter 0.45s var(--ease) forwards, ringsBreathe 4.2s ease-in-out 1.25s infinite alternate;
     }
     @keyframes ringsEnter {
-      from { opacity: 0; transform: scale(0.68); }
+      from { opacity: 0; transform: scale(0.76); }
       to   { opacity: 1; transform: scale(1.0); }
     }
     @keyframes ringsBreathe {
       from { transform: scale(1.0); }
-      to   { transform: scale(1.02); }
+      to   { transform: scale(1.025); }
     }
     .c-ring {
       position: absolute;
       border-radius: 50%;
       border: 1px solid var(--hairline);
     }
-    .c-ring.arc {
-      border-color: transparent;
-      border-top-color: rgba(236, 235, 245, 0.14);
-      border-right-color: rgba(79, 227, 184, 0.09);
+
+    /* Centre glass orb (radial-gradient sphere, thin border, inner highlight, no blur) */
+    .glass-orb {
+      position: absolute;
+      width: min(44vmin, 360px);
+      height: min(44vmin, 360px);
+      border-radius: 50%;
+      border: 1px solid rgba(245, 247, 255, 0.14);
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 44%),
+        radial-gradient(circle at 50% 54%, rgba(20, 184, 166, 0.12) 0%, rgba(13, 18, 38, 0.42) 66%, rgba(7, 10, 20, 0.65) 100%);
+      pointer-events: none;
+      contain: layout paint;
+      will-change: transform, opacity;
+      animation: orbEnter 0.45s var(--ease) forwards, orbBreathe 3.6s ease-in-out 1.25s infinite alternate;
+    }
+    @keyframes orbEnter {
+      from { opacity: 0.4; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes orbBreathe {
+      from { transform: scale(1); }
+      to   { transform: scale(1.02); }
     }
 
-    /* Node orbit wrappers (transform rotate+scale only, counter-scale node) */
-    .orbit-wrap {
+    .orb-flash {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: min(76vw, 76vh);
-      height: min(76vw, 76vh);
-      margin-left: calc(min(76vw, 76vh) / -2);
-      margin-top: calc(min(76vw, 76vh) / -2);
+      inset: -12%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(20, 184, 166, 0.45) 0%, rgba(18, 180, 138, 0.16) 45%, transparent 72%);
+      opacity: 0;
+      pointer-events: none;
+      contain: layout paint;
+      will-change: opacity, transform;
+      animation: orbPulse 0.45s var(--ease) 0.58s forwards;
+    }
+    @keyframes orbPulse {
+      0%   { opacity: 0; transform: scale(0.85); }
+      45%  { opacity: 1; transform: scale(1.06); }
+      100% { opacity: 0; transform: scale(1.18); }
+    }
+
+    /* Two balance cards entering from opposite sides and converging into the orb */
+    .bal-card {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(245, 247, 255, 0.16);
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%);
       pointer-events: none;
       contain: layout paint;
       will-change: transform, opacity;
     }
-    .orbit-wrap.emerald {
-      animation: orbitEmerald 0.85s var(--ease) forwards, idleSpin 10s linear 1.35s infinite;
+    .bal-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
     }
-    .orbit-wrap.coral {
-      animation: orbitCoral 0.85s var(--ease) forwards, idleSpinRev 12s linear 1.35s infinite;
+    .bal-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
-    @keyframes orbitEmerald {
-      0%   { opacity: 0; transform: rotate(-35deg) scale(1.18); }
-      45%  { opacity: 1; transform: rotate(95deg) scale(0.75); }
-      92%  { opacity: 1; transform: rotate(215deg) scale(0.05); }
-      100% { opacity: 0.85; transform: rotate(240deg) scale(0.32); }
-    }
-    @keyframes orbitCoral {
-      0%   { opacity: 0; transform: rotate(145deg) scale(1.18); }
-      45%  { opacity: 1; transform: rotate(275deg) scale(0.75); }
-      92%  { opacity: 1; transform: rotate(395deg) scale(0.05); }
-      100% { opacity: 0.85; transform: rotate(420deg) scale(0.32); }
-    }
-    @keyframes idleSpin {
-      from { transform: rotate(240deg) scale(0.32); }
-      to   { transform: rotate(600deg) scale(0.32); }
-    }
-    @keyframes idleSpinRev {
-      from { transform: rotate(420deg) scale(0.32); }
-      to   { transform: rotate(60deg) scale(0.32); }
+    .bal-dot.emerald { background: var(--emerald); }
+    .bal-dot.coral { background: var(--coral); }
+    .bal-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding-left: 14px;
+      white-space: nowrap;
     }
 
-    .node-dot {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 10px;
-      height: 10px;
-      margin: -5px 0 0 -5px;
-      border-radius: 50%;
+    .bal-card.left {
+      animation: cardLeft 0.8s var(--ease) forwards;
     }
-    .node-dot.emerald { background: var(--emerald); }
-    .node-dot.coral { background: var(--coral); }
-    .trail {
-      position: absolute;
-      top: 1px;
-      left: calc(50% - 14px);
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      opacity: 0.45;
+    .bal-card.right {
+      animation: cardRight 0.8s var(--ease) forwards;
     }
-    .trail.emerald { background: var(--emerald); }
-    .trail.coral { background: var(--coral); }
+    @keyframes cardLeft {
+      0%   { opacity: 0; transform: translate3d(clamp(-170px, -28vw, -110px), -26px, 0) scale(0.92); }
+      52%  { opacity: 1; transform: translate3d(clamp(-125px, -18vw, -76px), -14px, 0) scale(1); }
+      100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.28); }
+    }
+    @keyframes cardRight {
+      0%   { opacity: 0; transform: translate3d(clamp(110px, 28vw, 170px), 26px, 0) scale(0.92); }
+      52%  { opacity: 1; transform: translate3d(clamp(76px, 18vw, 125px), 14px, 0) scale(1); }
+      100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.28); }
+    }
 
-    /* Contact ripple ring expanding past screen edges */
+    /* Ripple ring expanding past screen edges on convergence */
     .ripple-ring {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 100vmax;
-      height: 100vmax;
-      margin: -50vmax 0 0 -50vmax;
+      width: 110vmax;
+      height: 110vmax;
+      margin: -55vmax 0 0 -55vmax;
       border-radius: 50%;
-      border: 1.5px solid rgba(236, 235, 245, 0.35);
+      border: 1.5px solid rgba(20, 184, 166, 0.36);
       opacity: 0;
-      transform: scale(0.02);
+      transform: scale(0.08);
       pointer-events: none;
       contain: layout paint;
       will-change: transform, opacity;
-      animation: contactRipple 0.65s var(--ease) 0.76s forwards;
+      animation: contactRipple 0.6s var(--ease) 0.68s forwards;
     }
     @keyframes contactRipple {
-      0%   { opacity: 0.65; transform: scale(0.02); }
+      0%   { opacity: 0.7; transform: scale(0.08); }
       100% { opacity: 0; transform: scale(1.15); }
     }
 
@@ -235,12 +271,12 @@
     .loading-wordmark {
       display: inline-flex;
       font-family: 'BricolageGrotesque', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: clamp(30px, 5vw, 48px);
+      font-size: clamp(34px, 5vw, 48px);
       font-weight: 800;
       color: var(--ink);
       text-transform: uppercase;
-      letter-spacing: 0.28em;
-      padding-left: 0.28em;
+      letter-spacing: 0.24em;
+      padding-left: 0.24em;
       line-height: 1;
     }
     .loading-wordmark span {
@@ -248,28 +284,27 @@
       opacity: 0;
       transform: translateY(14px);
       will-change: transform, opacity;
-      animation: letterReveal 0.32s var(--ease) forwards;
+      animation: letterReveal 0.28s var(--ease) forwards;
     }
-    .loading-wordmark span:nth-child(1) { animation-delay: 0.85s; }
-    .loading-wordmark span:nth-child(2) { animation-delay: 0.885s; }
-    .loading-wordmark span:nth-child(3) { animation-delay: 0.92s; }
-    .loading-wordmark span:nth-child(4) { animation-delay: 0.955s; }
-    .loading-wordmark span:nth-child(5) { animation-delay: 0.99s; }
-    .loading-wordmark span:nth-child(6) { animation-delay: 1.025s; }
-    .loading-wordmark span:nth-child(7) { animation-delay: 1.06s; }
+    .loading-wordmark span:nth-child(1) { animation-delay: 0.80s; }
+    .loading-wordmark span:nth-child(2) { animation-delay: 0.83s; }
+    .loading-wordmark span:nth-child(3) { animation-delay: 0.86s; }
+    .loading-wordmark span:nth-child(4) { animation-delay: 0.89s; }
+    .loading-wordmark span:nth-child(5) { animation-delay: 0.92s; }
+    .loading-wordmark span:nth-child(6) { animation-delay: 0.95s; }
+    .loading-wordmark span:nth-child(7) { animation-delay: 0.98s; }
     @keyframes letterReveal {
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Masked light sweep across wordmark */
     .wordmark-sweep {
       position: absolute;
       inset: 0;
-      background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+      background: linear-gradient(105deg, transparent 28%, rgba(255, 255, 255, 0.36) 50%, transparent 72%);
       transform: translateX(-110%);
       pointer-events: none;
       will-change: transform;
-      animation: textSweep 0.65s var(--ease) 1.05s forwards;
+      animation: textSweep 0.55s var(--ease) 0.96s forwards;
     }
     @keyframes textSweep {
       to { transform: translateX(110%); }
@@ -278,32 +313,31 @@
     .sweep-track {
       width: clamp(120px, 22vw, 190px);
       height: 1.5px;
-      background-color: rgba(236, 235, 245, 0.22);
+      background-color: rgba(245, 247, 255, 0.24);
       margin-top: 16px;
       transform: scaleX(0);
       will-change: transform;
-      animation: hairlineExpand 0.42s var(--ease) 1.05s forwards;
+      animation: hairlineExpand 0.38s var(--ease) 0.96s forwards;
     }
     @keyframes hairlineExpand {
       to { transform: scaleX(1); }
     }
 
-    /* Weak device variant */
-    .lite-splash .bg-field.warm,
-    .lite-splash .trail,
-    .lite-splash .c-ring.extra {
+    /* Weak device variant: 1 colour field, 3 rings, no cards */
+    .lite-splash .bg-field.emerald,
+    .lite-splash .bg-field.peach,
+    .lite-splash .c-ring.extra,
+    .lite-splash .bal-card {
       display: none;
     }
 
-    /* Reduced motion: static composed frame + plain fade out */
+    /* Reduced motion: static composed frame (aurora, orb, wordmark) + plain fade out */
     @media (prefers-reduced-motion: reduce) {
-      .bg-field, .ring-field, .orbit-wrap, .ripple-ring, .loading-wordmark span, .wordmark-sweep, .sweep-track {
+      .bg-field, .ring-field, .glass-orb, .orb-flash, .bal-card, .ripple-ring, .loading-wordmark span, .wordmark-sweep, .sweep-track {
         animation: none !important;
       }
-      .ring-field { opacity: 1; transform: scale(1); }
-      .orbit-wrap.emerald { opacity: 0.9; transform: rotate(270deg) scale(0.32); }
-      .orbit-wrap.coral { opacity: 0.9; transform: rotate(90deg) scale(0.32); }
-      .trail, .wordmark-sweep { display: none; }
+      .ring-field, .glass-orb { opacity: 1; transform: scale(1); }
+      .bal-card, .orb-flash, .ripple-ring, .wordmark-sweep { display: none; }
       .loading-wordmark span { opacity: 1; transform: none; }
       .sweep-track { transform: scaleX(1); }
     }
@@ -342,7 +376,7 @@
           if (loading.parentNode) {
             loading.parentNode.removeChild(loading);
           }
-        }, 320);
+        }, 260);
       }, waitMs);
     });
   </script>
@@ -350,25 +384,27 @@
 <body>
   <div id="loading-screen">
     <div class="bg-field teal"></div>
-    <div class="bg-field warm"></div>
+    <div class="bg-field emerald"></div>
+    <div class="bg-field peach"></div>
+    <div class="vignette"></div>
     <div class="ring-field">
-      <div class="c-ring" style="width:18%;height:18%"></div>
-      <div class="c-ring extra" style="width:28%;height:28%"></div>
-      <div class="c-ring arc" style="width:38%;height:38%"></div>
-      <div class="c-ring extra" style="width:48%;height:48%"></div>
-      <div class="c-ring arc" style="width:58%;height:58%"></div>
-      <div class="c-ring" style="width:68%;height:68%"></div>
-      <div class="c-ring extra" style="width:78%;height:78%"></div>
-      <div class="c-ring arc" style="width:88%;height:88%"></div>
+      <div class="c-ring" style="width:22%;height:22%"></div>
+      <div class="c-ring extra" style="width:36%;height:36%"></div>
+      <div class="c-ring" style="width:50%;height:50%"></div>
+      <div class="c-ring extra" style="width:66%;height:66%"></div>
+      <div class="c-ring" style="width:82%;height:82%"></div>
       <div class="c-ring extra" style="width:98%;height:98%"></div>
     </div>
-    <div class="orbit-wrap emerald">
-      <div class="trail emerald"></div>
-      <div class="node-dot emerald"></div>
+    <div class="glass-orb">
+      <div class="orb-flash"></div>
     </div>
-    <div class="orbit-wrap coral">
-      <div class="trail coral"></div>
-      <div class="node-dot coral"></div>
+    <div class="bal-card left">
+      <div class="bal-row"><span class="bal-dot emerald"></span><span>₹1,240</span></div>
+      <div class="bal-label">owed to you</div>
+    </div>
+    <div class="bal-card right">
+      <div class="bal-row"><span class="bal-dot coral"></span><span>₹380</span></div>
+      <div class="bal-label">you owe</div>
     </div>
     <div class="ripple-ring"></div>
     <div class="brand-center">

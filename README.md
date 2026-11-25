@@ -22,9 +22,9 @@ flutter run -d chrome
 Or serve the release build:
 
 ```bash
-flutter build web --release --no-web-resources-cdn
-python3 -m http.server 8080 --directory build/web
-# Open http://localhost:8080
+flutter build web --release --no-web-resources-cdn --pwa-strategy=none
+python3 -m http.server 3000 --directory build/web
+# Open http://localhost:3000
 ```
 
 > **Note:** Screen lock (WebAuthn) requires a secure context. Use `localhost` or HTTPS.
@@ -39,7 +39,7 @@ flutter analyze       # static analysis (must be 0 issues)
 ## Building & Deploying
 
 ```bash
-flutter build web --release --no-web-resources-cdn
+flutter build web --release --no-web-resources-cdn --pwa-strategy=none
 cp vercel.json build/web/
 cd build/web
 npx vercel --prod --yes

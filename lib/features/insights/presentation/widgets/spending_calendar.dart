@@ -13,6 +13,8 @@ class SpendingCalendar extends StatefulWidget {
   final DateTime initialDate;
   final double? maxWidth;
   final bool compactCells;
+  final EdgeInsetsGeometry? padding;
+  final bool uppercaseHeader;
 
   const SpendingCalendar({
     super.key,
@@ -21,6 +23,8 @@ class SpendingCalendar extends StatefulWidget {
     required this.initialDate,
     this.maxWidth,
     this.compactCells = false,
+    this.padding,
+    this.uppercaseHeader = false,
   });
 
   @override
@@ -139,9 +143,9 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
     final today = DateTime.now().day;
 
     final calendarCard = GlassSurface(
-      level: GlassLevel.level1,
-      borderRadius: 20,
-      padding: const EdgeInsets.all(18),
+      level: GlassLevel.level2,
+      borderRadius: 24,
+      padding: widget.padding ?? const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -152,11 +156,13 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
             runSpacing: 6,
             children: [
               Text(
-                'Spending Calendar',
-                style: AppTypography.bodySemiBold.copyWith(
-                  color: theme.ink,
-                  fontWeight: FontWeight.w700,
-                ),
+                widget.uppercaseHeader ? 'SPENDING CALENDAR' : 'Spending Calendar',
+                style: widget.uppercaseHeader
+                    ? AppTypography.eyebrow.copyWith(color: theme.muted)
+                    : AppTypography.bodySemiBold.copyWith(
+                        color: theme.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -198,33 +204,41 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
           ),
           const SizedBox(height: 16),
 
-          // Day headers (Mon - Sun)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                .map((day) => SizedBox(
-                      width: 32,
-                      child: Text(
-                        day,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.muted),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 8),
+          // Day headers (Mon - Sun) + Calendar Grid
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: widget.compactCells ? 296.0 : double.infinity,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                        .map((day) => SizedBox(
+                              width: widget.compactCells ? 38 : 32,
+                              child: Text(
+                                day,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.muted),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
 
-          // Calendar Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 42, // 6 weeks
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 5,
-              crossAxisSpacing: 5,
-              mainAxisExtent: widget.compactCells ? 38.0 : null,
-            ),
+                  // Calendar Grid
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 42, // 6 weeks
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      mainAxisSpacing: 5,
+                      crossAxisSpacing: 5,
+                      childAspectRatio: 1.0,
+                      mainAxisExtent: widget.compactCells ? 38.0 : null,
+                    ),
             itemBuilder: (context, index) {
               final dayOffset = index - (firstDayOfWeek - 1);
               final dayNumber = dayOffset + 1;
@@ -276,6 +290,10 @@ class _SpendingCalendarState extends State<SpendingCalendar> {
                 ),
               );
             },
+          ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Row(

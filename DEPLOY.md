@@ -3,7 +3,7 @@
 ## 1. Build
 
 ```bash
-flutter build web --release --no-web-resources-cdn
+flutter build web --release --no-web-resources-cdn --pwa-strategy=none
 ```
 
 Output is in `build/web/`.
@@ -22,8 +22,8 @@ npx vercel --prod --yes
 
 ```bash
 # After building:
-python3 -m http.server 8080 --directory build/web
-# Open http://localhost:8080
+python3 -m http.server 3000 --directory build/web
+# Open http://localhost:3000
 ```
 
 > **Screen lock (WebAuthn)** requires HTTPS or `localhost`. It is **not available** on plain HTTP deployments.

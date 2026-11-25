@@ -1,3 +1,5 @@
+Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never use any D: path.
+
 # Settliv v0 - Functional Correctness Plan & Progress
 
 ## Part 1: Foundation and Audit
@@ -683,3 +685,12 @@
 - [x] **Fix 2 (Remove Settings Scroll-Progress Rail)**: Deleted `_SettingsDotProgressRail`, `_onDesktopScroll`, and dot-rail tooltips from `SettingsScreen` and tests; preserved sticky profile card, section order, and `/settings?section=<name>` deep-link scroll + highlight.
 - [x] **Fix 1 (Compositor-Only 60fps Splash & Font Preload)**: Removed SVG `feTurbulence` and Flutter-side `SettleOrbitSplashGate` Ticker/painter; preloaded `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf` with `font-display: block` in `web/index.html`.
 - **Splash Timeline (1.5s, `cubic-bezier(.2,.8,.2,1)`, transform/opacity only, `contain: layout paint`)**: `0.00–0.45s` viewport rings scale up + emerald/coral wrappers orbit in; `0.45–0.85s` nodes spiral to center, contact ripple expands + fields pulse; `0.85–1.35s` letter-by-letter `SETTLIV` reveal + masked sweep + `scaleX` hairline; `1.35s+` calm idle; fades immediately once `flutter-first-frame` & 1.2s wordmark beat complete (lighter `.lite-splash` on `<=4` cores/GB, static under `prefers-reduced-motion`).
+
+
+---
+
+## Final Polish — Round 4 (Items A, B, C)
+- [x] **Item A (Workspace Path & Stale Cache)**: Added `Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never use any D: path.` to `PLAN.md`, removed `- assets/fonts/` from `pubspec.yaml` `assets:` to stop bundling 4 unused variable TTFs (`Manrope-VariableFont_wght.ttf`, `BricolageGrotesque[opsz,wdth,wght].ttf`, `PlusJakartaSans[wght].ttf`, `Sora[wght].ttf`), and updated `README.md`/`DEPLOY.md` to `--pwa-strategy=none` on port `3000`.
+- [x] **Item B (Compositor-Only "Settle" Intro)**: Rebuilt `web/index.html` inline splash (`#070A14`, 3 drifting aurora fields: teal/emerald/peach, 6 concentric rings, `min(44vmin, 360px)` glass orb, `₹1,240`/`₹380` glass cards, `.lite-splash` & `prefers-reduced-motion` variants, 250ms fade on `flutter-first-frame` + 1.2s beat).
+- [x] **Item B Timeline (5 lines)**: `0.00–0.45s` aurora drifts, 6 hairline rings expand, orb enters, `₹1,240` & `₹380` glass cards glide in; `0.45–0.80s` cards converge into the orb and shrink while orb flashes and ripple expands past viewport edges; `0.80–1.25s` `SETTLIV` (`BricolageGrotesque` 800, 30ms stagger) rises letter-by-letter with masked sweep and `scaleX` hairline; `1.25s+` orb breathes 2% & aurora drifts until ready; `250ms` opacity fade once `flutter-first-frame` + `1.2s` beat complete.
+- [x] **Item C (Web Insights Bento Alignment)**: Rebuilt `InsightsWebView` (`12`-col grid, `24px` gutters/padding, `IntrinsicHeight` equal-height rows, uppercase headers, two-row spend comparison bar, `formatSpendDelta` suppressing `%` below ₹5,000 or >300%, recap without repeated spend, 120px weekday bars with tooltips, 38x38 square `SpendingCalendar` + `By group & Personal` stack) and added `test/final_polish_round4_test.dart`.
