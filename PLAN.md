@@ -753,3 +753,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Follow-Up Task: "The Settling Line" Intro + Flutter Handshake
 - [x] **The Settling Line (`web/index.html`)**: Replaced intro (`9.3KB` inline) with theme-aware (`flutter.settliv_theme_mode` / `prefers-color-scheme`) split-curtain (`100dvh`, continuous `100% 200%` backdrop, 5 static orbit hairlines, 3.5% tiled grain), centre-outward `SETTLIV` rise (`60–580ms`) + tracking tighten `0.34em→0.18em` (`300–850ms`), emerald/coral line meet (`520–960ms`) + ink lock & 6px dot (`960–1100ms`), sheen (`1000–1300ms`), and 520ms split exit at `max(firstFrame, 1250ms)`.
 - [x] **Edge Cases & Handshake (`main.dart`, `intro_handshake_*.dart`)**: Added `TickerMode` gated on `settliv-intro-reveal` (`dart:js_interop` / `package:web`, 1.8s fallback); handled `settliv_intro_seen` repeat visits (<=250ms skip, else 200ms min + 320ms fade), `pageshow` bfcache, `document.hidden`, `prefers-reduced-motion` / `<=4` cores/GB (250ms + 200ms fade), and `<noscript>`.
+
+
+---
+
+## Follow-Up Task: "The Settle Impact" Intro Rebuild
+- [x] **The Settle Impact (`web/index.html`)**: Replaced previous intro with fixed night palette (`#070914`, violet/blue/teal radial fields, vignette, 32px/128px masked ledger rules, 3.5% grain); single JS `sceneHtml` template mirrored in top (`calc(50% + 1px)`) & bottom (`top: 50%`) split halves with 2px cut-edge highlights.
+- [x] **Sequence & Optical Centring (`web/index.html`, `intro_handshake_web.dart`)**: Emerald & coral currents collide at 50% (`60–420ms`) -> impact ripples (`400–820ms`) -> `SETTLIV` (`BricolageGrotesque-ExtraBold.ttf`, `span:last-child { letter-spacing: 0; }` for exact optical centre) snaps from emerald/coral ghosts (`420–920ms`) -> sheen (`920–1220ms`) -> 520ms split exit at `max(firstFrame, 1250ms)` dispatching `settliv-intro-reveal` & `settliv-intro-done`. Updated `#intro` check in `intro_handshake_web.dart`.

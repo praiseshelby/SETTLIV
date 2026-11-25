@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html style="background:#070914">
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <title>Settliv — Expense Sharing & Group Ledger</title>
   <meta name="description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
-  <meta name="theme-color" content="#0A0C1C">
+  <meta name="theme-color" content="#070914">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,22 +15,6 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
   <link rel="preload" href="assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
-
-  <script>
-    (function () {
-      var mode = null;
-      try {
-        mode = localStorage.getItem('flutter.settliv_theme_mode') || localStorage.getItem('settliv_theme_mode');
-        if (mode && mode.charAt(0) === '"') mode = JSON.parse(mode);
-      } catch (_) {}
-      var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      var root = document.documentElement;
-      root.dataset.theme = dark ? 'dark' : 'light';
-      root.style.backgroundColor = dark ? '#0A0C1C' : '#F6F7FC';
-      var mc = document.querySelector('meta[name="theme-color"]');
-      if (mc) mc.content = dark ? '#0A0C1C' : '#F6F7FC';
-    })();
-  </script>
 
   <style>
     @font-face {
@@ -41,285 +25,218 @@
       font-display: block;
     }
     :root {
-      --bg: #F6F7FC;
-      --glow-a: #E9E5FF;
-      --glow-b: #F6F7FC;
-      --ink: #12132B;
-      --emerald: #0FA37F;
-      --coral: #EF5B48;
-      --orbit: rgba(18, 19, 43, 0.05);
-      --sheen: rgba(255, 255, 255, 0.55);
-      --wm-w: clamp(220px, 34vw, 520px);
-    }
-    :root[data-theme="dark"] {
-      --bg: #0A0C1C;
-      --glow-a: #2A1B6B;
-      --glow-b: #1A1640;
-      --ink: #ECEBF5;
+      --bg: #070914;
+      --ink: #F2F0FA;
       --emerald: #4FE3B8;
       --coral: #FF8D7C;
-      --orbit: rgba(236, 235, 245, 0.05);
-      --sheen: rgba(255, 255, 255, 0.28);
+      --ripple: rgba(201, 194, 255, 0.5);
+      --wm-w: min(86vw, clamp(280px, 52vw, 720px));
     }
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      background: var(--bg);
+      background: #070914;
     }
     body.intro-lock { overflow: hidden; }
 
-    #loading-screen {
+    #intro {
       position: fixed;
       inset: 0;
       height: 100dvh;
       z-index: 99999;
+      contain: strict;
       overflow: hidden;
-      pointer-events: auto;
     }
-    #loading-screen.exiting { pointer-events: none; }
+    #intro.exiting { pointer-events: none; }
 
-    .split-half {
+    .half {
       position: absolute;
       left: 0;
       right: 0;
-      height: 50%;
       overflow: hidden;
-      background-color: var(--bg);
-      background-image: radial-gradient(circle at 50% 50%, var(--glow-a) 0%, var(--glow-b) 36%, transparent 72%);
-      background-size: 100% 200%;
-      background-repeat: no-repeat;
+      will-change: transform;
     }
-    .split-half.top { top: 0; background-position: 0 0; }
-    .split-half.bottom { bottom: 0; background-position: 0 100%; }
+    .half.top { top: 0; height: calc(50% + 1px); }
+    .half.bottom { top: 50%; height: 50%; }
 
-    .animating .split-half { will-change: transform, opacity; }
-    #loading-screen.exiting .split-half.top {
-      animation: splitUp 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    .scene {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 100dvh;
     }
-    #loading-screen.exiting .split-half.bottom {
-      animation: splitDown 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    .half.top .scene { top: 0; }
+    .half.bottom .scene { top: -100%; }
+
+    .cut-edge {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+      opacity: 0;
+      pointer-events: none;
     }
+    .half.top .cut-edge { bottom: 0; }
+    .half.bottom .cut-edge { top: 0; }
+
+    #intro.exiting .cut-edge { opacity: 1; transition: opacity 140ms ease-out; }
+    #intro.exiting .half.top { animation: splitUp 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+    #intro.exiting .half.bottom { animation: splitDown 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
     @keyframes splitUp { to { transform: translateY(-100%); } }
     @keyframes splitDown { to { transform: translateY(100%); } }
 
-    .slow-breathe .split-half {
-      animation: bgBreathe 4s ease-in-out infinite alternate;
+    /* Backdrop: fields + vignette + ledger rules + grain */
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      background-color: #070914;
+      background-image:
+        radial-gradient(60vmax 60vmax at 15% 20%, rgba(106, 76, 255, 0.40) 0%, transparent 60%),
+        radial-gradient(55vmax 55vmax at 85% 80%, rgba(40, 90, 255, 0.28) 0%, transparent 60%),
+        radial-gradient(40vmax 40vmax at 70% 15%, rgba(12, 120, 140, 0.22) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
     }
-    @keyframes bgBreathe {
-      from { transform: scale(1); }
-      to   { transform: scale(1.05); }
+    .rules {
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 128px),
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 32px);
+      -webkit-mask-image: radial-gradient(ellipse 74% 66% at 50% 50%, #000 18%, transparent 88%);
+      mask-image: radial-gradient(ellipse 74% 66% at 50% 50%, #000 18%, transparent 88%);
     }
-
     .grain {
       position: absolute;
       inset: 0;
       opacity: 0.035;
-      pointer-events: none;
       background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAH0lEQVQYV2NkYGD4z8DAwMgABXAGNgGwSgwVAFbmAgAw1wYFBcX5AAAAAElFTkSuQmCC");
     }
 
-    .orbit-svg {
-      position: absolute;
-      left: 50%;
-      width: min(94vmin, 820px);
-      height: min(94vmin, 820px);
-      transform: translateX(-50%);
-      pointer-events: none;
-    }
-    .split-half.top .orbit-svg { bottom: calc(-0.5 * min(94vmin, 820px)); }
-    .split-half.bottom .orbit-svg { top: calc(-0.5 * min(94vmin, 820px)); }
-
-    .wm-anchor {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: calc(14px + env(safe-area-inset-bottom, 0px) * 0);
-      display: flex;
-      justify-content: center;
-    }
-    .wm-band {
-      position: relative;
-      width: var(--wm-w);
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      padding: 6px 0 4px;
-    }
-    .wm-word {
-      display: inline-flex;
-      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
-      font-size: calc(var(--wm-w) / 5.45);
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: 0.18em;
-      padding-left: 0.18em;
-      color: var(--ink);
-      opacity: 0;
-      white-space: nowrap;
-    }
-    .ready .wm-word { opacity: 1; }
-    #loading-screen.exiting .wm-word {
-      animation: wmExit 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-    }
-    @keyframes wmExit {
-      to { opacity: 0; transform: scale(1.04); }
-    }
-
-    .g-pos { display: inline-block; }
-    .g-rise { display: inline-block; }
-    .play .g-rise {
-      animation: riseOut 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
-      will-change: transform, opacity;
-    }
-    .play .g-pos {
-      animation: trackIn 550ms cubic-bezier(0.65, 0, 0.35, 1) 300ms both;
-      will-change: transform;
-    }
-    /* Centre-outward stagger: T(3)=60, T(2)&L(4)=105, E(1)&I(5)=150, S(0)&V(6)=195 */
-    .play .g-pos:nth-child(4) .g-rise { animation-delay: 60ms; }
-    .play .g-pos:nth-child(3) .g-rise,
-    .play .g-pos:nth-child(5) .g-rise { animation-delay: 105ms; }
-    .play .g-pos:nth-child(2) .g-rise,
-    .play .g-pos:nth-child(6) .g-rise { animation-delay: 150ms; }
-    .play .g-pos:nth-child(1) .g-rise,
-    .play .g-pos:nth-child(7) .g-rise { animation-delay: 195ms; }
-
-    .g-pos:nth-child(1) { --tx: -0.48em; }
-    .g-pos:nth-child(2) { --tx: -0.32em; }
-    .g-pos:nth-child(3) { --tx: -0.16em; }
-    .g-pos:nth-child(4) { --tx: 0em; }
-    .g-pos:nth-child(5) { --tx: 0.16em; }
-    .g-pos:nth-child(6) { --tx: 0.32em; }
-    .g-pos:nth-child(7) { --tx: 0.48em; }
-
-    @keyframes riseOut {
-      from { opacity: 0; transform: translateY(105%); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes trackIn {
-      from { transform: translateX(var(--tx)); }
-      to   { transform: translateX(0); }
-    }
-
-    .sheen {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 32%, var(--sheen) 50%, transparent 68%);
-      transform: translateX(-115%);
-      pointer-events: none;
-      opacity: 0;
-    }
-    .play .sheen {
-      animation: sheenPass 300ms ease-out 1000ms both;
-      will-change: transform, opacity;
-    }
-    @keyframes sheenPass {
-      0%   { opacity: 1; transform: translateX(-115%); }
-      100% { opacity: 0; transform: translateX(115%); }
-    }
-
-    /* Balance line at exact 50% vertical centre */
-    .seam {
+    /* Centre-line currents racing from opposite edges */
+    .line-group {
       position: absolute;
       top: 50%;
-      left: 50%;
-      width: var(--wm-w);
+      left: 0;
+      right: 0;
       height: 2px;
       margin-top: -1px;
-      transform: translateX(-50%);
-      pointer-events: none;
     }
-    .seg {
+    .curr {
       position: absolute;
       top: 0;
       width: 50%;
       height: 2px;
       transform: scaleX(0);
-    }
-    .seg.em { left: 0; background: var(--emerald); transform-origin: left center; }
-    .seg.co { right: 0; background: var(--coral); transform-origin: right center; }
-    .play .seg.em,
-    .play .seg.co {
-      animation: segGrow 440ms ease-out 520ms both, segFade 140ms ease-out 960ms forwards;
       will-change: transform, opacity;
     }
-    @keyframes segGrow { to { transform: scaleX(1); } }
-    @keyframes segFade { to { opacity: 0; } }
+    .curr.em { left: 0; background: linear-gradient(90deg, transparent 10%, var(--emerald)); transform-origin: left center; }
+    .curr.co { right: 0; background: linear-gradient(270deg, transparent 10%, var(--coral)); transform-origin: right center; }
+    .play .curr { animation: raceIn 360ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both, currFade 220ms ease-out 440ms forwards; }
+    @keyframes raceIn { to { transform: scaleX(1); } }
+    @keyframes currFade { to { opacity: 0; } }
 
-    .seam-ink {
+    /* Impact ripples */
+    .ripple {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(68vmin, 520px);
+      height: min(68vmin, 520px);
+      margin: calc(-0.5 * min(68vmin, 520px)) 0 0 calc(-0.5 * min(68vmin, 520px));
+      border-radius: 50%;
+      border: 1.5px solid var(--ripple);
+      opacity: 0;
+      transform: scale(0.05);
+      will-change: transform, opacity;
+    }
+    .play .ripple.r1 { animation: impactRing 440ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both; }
+    .play .ripple.r2 { animation: impactRing 520ms cubic-bezier(0.16, 1, 0.3, 1) 460ms both; }
+    @keyframes impactRing {
+      0%   { opacity: 0.9; transform: scale(0.05); }
+      100% { opacity: 0; transform: scale(1.35); }
+    }
+
+    /* Wordmark centred at 50% x 50% (no trailing advance) */
+    .wm-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: var(--wm-w);
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .wm {
+      font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
+      font-size: calc(var(--wm-w) / 5.15);
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      display: inline-flex;
+      opacity: 0;
+    }
+    .wm span { letter-spacing: 0.12em; }
+    .wm span:last-child { letter-spacing: 0; }
+
+    .wm.ink { color: var(--ink); }
+    .wm.gh { position: absolute; inset: 0; justify-content: center; }
+    .wm.gh.em { color: var(--emerald); }
+    .wm.gh.co { color: var(--coral); }
+
+    .play .wm.ink { animation: snapInk 420ms cubic-bezier(0.16, 1, 0.3, 1) 460ms both; will-change: transform, opacity; }
+    .play .wm.gh.em { animation: ghostEm 480ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both; will-change: transform, opacity; }
+    .play .wm.gh.co { animation: ghostCo 480ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both; will-change: transform, opacity; }
+    @keyframes snapInk {
+      0%   { opacity: 0; transform: scale(0.94); }
+      40%  { opacity: 1; }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes ghostEm {
+      0%   { opacity: 0.85; transform: translateX(-28px); }
+      85%  { opacity: 0.7; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(0); }
+    }
+    @keyframes ghostCo {
+      0%   { opacity: 0.85; transform: translateX(28px); }
+      85%  { opacity: 0.7; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(0); }
+    }
+
+    .sheen {
       position: absolute;
       inset: 0;
-      background: var(--ink);
+      background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.42) 50%, transparent 68%);
+      transform: translateX(-115%);
       opacity: 0;
-      transform-origin: center;
+      pointer-events: none;
     }
-    .play .seam-ink {
-      animation: inkLock 140ms ease-out 960ms both;
-      will-change: transform, opacity;
-    }
-    @keyframes inkLock { to { opacity: 1; } }
-
-    .seam-dot {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 6px;
-      height: 6px;
-      margin: -3px 0 0 -3px;
-      border-radius: 50%;
-      background: var(--ink);
-      opacity: 0;
-    }
-    .play .seam-dot {
-      animation: dotPulse 160ms ease-out 960ms both;
-      will-change: transform, opacity;
-    }
-    @keyframes dotPulse {
-      0%   { opacity: 0; transform: scale(0.6); }
-      50%  { opacity: 1; transform: scale(1.35); }
-      100% { opacity: 0; transform: scale(1); }
+    .play .sheen { animation: sheenPass 300ms ease-out 920ms both; will-change: transform, opacity; }
+    @keyframes sheenPass {
+      0%   { opacity: 1; transform: translateX(-115%); }
+      100% { opacity: 0; transform: translateX(115%); }
     }
 
-    #loading-screen.exiting .seam-ink {
-      animation: seamWiden 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-    }
-    @keyframes seamWiden {
-      0%   { opacity: 1; transform: scaleX(1); }
-      100% { opacity: 0; transform: scaleX(4.6); }
-    }
-
-    /* Repeat / Reduced / Low-end static settled state + plain fade */
-    .settled .wm-word { opacity: 1; }
-    .settled .g-pos, .settled .g-rise { animation: none !important; transform: none !important; opacity: 1 !important; }
-    .settled .seg, .settled .seam-dot, .settled .sheen { display: none; }
-    .settled .seam-ink { opacity: 1; }
-    .lite-fade.exiting {
-      animation: plainFade 200ms ease-out forwards;
-    }
-    .repeat-fade.exiting {
-      animation: plainFade 320ms ease-out forwards;
-    }
-    .lite-fade.exiting .split-half,
-    .lite-fade.exiting .wm-word,
-    .lite-fade.exiting .seam-ink,
-    .repeat-fade.exiting .split-half,
-    .repeat-fade.exiting .wm-word,
-    .repeat-fade.exiting .seam-ink { animation: none !important; }
+    /* Repeat / Lite / Reduced motion */
+    .settled .wm.ink { opacity: 1; }
+    .settled .curr, .settled .ripple, .settled .wm.gh, .settled .sheen { display: none; }
+    .plain-exit.exiting { animation: plainFade 240ms ease-out forwards; }
+    .plain-exit.exiting .half { animation: none !important; }
     @keyframes plainFade { to { opacity: 0; } }
 
     @media (prefers-reduced-motion: reduce) {
-      .g-pos, .g-rise, .seg, .seam-dot, .sheen { animation: none !important; }
-      .wm-word { opacity: 1; }
-      .seam-ink { opacity: 1; }
-      .seg, .seam-dot, .sheen { display: none; }
+      .curr, .ripple, .wm.gh, .sheen, .wm.ink { animation: none !important; }
+      .wm.ink { opacity: 1; }
+      .curr, .ripple, .wm.gh, .sheen { display: none; }
     }
   </style>
 
   <script>
     (function () {
-      if (window.__settlivIntroInit) return;
-      window.__settlivIntroInit = true;
+      if (window.__settlivImpactInit) return;
+      window.__settlivImpactInit = true;
 
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -338,10 +255,28 @@
                    (navigator.deviceMemory && navigator.deviceMemory <= 4);
       var lite = reduced || lowEnd;
 
+      function sceneHtml(isTop) {
+        var letters = '<span>S</span><span>E</span><span>T</span><span>T</span><span>L</span><span>I</span><span>V</span>';
+        return '<div class="scene">' +
+          '<div class="backdrop" aria-hidden="true"></div>' +
+          '<div class="rules" aria-hidden="true"></div>' +
+          '<div class="grain" aria-hidden="true"></div>' +
+          '<div class="line-group" aria-hidden="true"><div class="curr em"></div><div class="curr co"></div></div>' +
+          '<div class="ripple r1" aria-hidden="true"></div>' +
+          '<div class="ripple r2" aria-hidden="true"></div>' +
+          '<div class="wm-wrap" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' +
+            '<div class="wm gh em" aria-hidden="true">' + letters + '</div>' +
+            '<div class="wm gh co" aria-hidden="true">' + letters + '</div>' +
+            '<div class="wm ink">' + letters + '</div>' +
+            '<div class="sheen" aria-hidden="true"></div>' +
+          '</div>' +
+        '</div>';
+      }
+
       function finishImmediate() {
         if (done) return;
         done = true;
-        var el = document.getElementById('loading-screen');
+        var el = document.getElementById('intro');
         if (el && el.parentNode) el.parentNode.removeChild(el);
         if (document.body) document.body.classList.remove('intro-lock');
         try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
@@ -349,10 +284,10 @@
         window.dispatchEvent(new CustomEvent('settliv-intro-done'));
       }
 
-      function runExit(exitMs) {
+      function runExit(ms) {
         if (done) return;
         done = true;
-        var el = document.getElementById('loading-screen');
+        var el = document.getElementById('intro');
         if (!el) { finishImmediate(); return; }
         window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
         el.classList.add('exiting');
@@ -361,7 +296,7 @@
           if (el.parentNode) el.parentNode.removeChild(el);
           if (document.body) document.body.classList.remove('intro-lock');
           window.dispatchEvent(new CustomEvent('settliv-intro-done'));
-        }, exitMs);
+        }, ms);
       }
 
       function tryExit() {
@@ -369,33 +304,33 @@
         var elapsed = performance.now() - t0;
         if (seen) {
           if (elapsed <= 250) { finishImmediate(); return; }
-          var el = document.getElementById('loading-screen');
-          if (el) el.classList.add('repeat-fade');
-          setTimeout(function () { runExit(320); }, Math.max(0, 200 - elapsed));
+          var el = document.getElementById('intro');
+          if (el) el.classList.add('plain-exit');
+          setTimeout(function () { runExit(240); }, Math.max(0, 200 - elapsed));
           return;
         }
         if (lite) {
-          var el2 = document.getElementById('loading-screen');
-          if (el2) el2.classList.add('lite-fade');
-          setTimeout(function () { runExit(200); }, Math.max(0, 250 - elapsed));
+          var el2 = document.getElementById('intro');
+          if (el2) el2.classList.add('plain-exit');
+          setTimeout(function () { runExit(240); }, Math.max(0, 250 - elapsed));
           return;
         }
-        var wait = Math.max(0, 1250 - elapsed);
-        setTimeout(function () { runExit(520); }, wait);
+        setTimeout(function () { runExit(520); }, Math.max(0, 1250 - elapsed));
       }
 
-      window.addEventListener('pageshow', function (e) {
-        if (e.persisted) finishImmediate();
-      });
+      window.addEventListener('pageshow', function (e) { if (e.persisted) finishImmediate(); });
 
       window.addEventListener('DOMContentLoaded', function () {
         if (document.hidden) { finishImmediate(); return; }
-        var el = document.getElementById('loading-screen');
+        var el = document.getElementById('intro');
         if (!el) return;
         document.body.classList.add('intro-lock');
+        el.innerHTML =
+          '<div class="half top">' + sceneHtml(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
+          '<div class="half bottom">' + sceneHtml(false) + '<div class="cut-edge" aria-hidden="true"></div></div>';
 
         if (seen || lite) {
-          el.classList.add('settled', 'ready');
+          el.classList.add('settled');
           tryExit();
           return;
         }
@@ -408,14 +343,10 @@
           : Promise.resolve();
 
         fontGate.then(function () {
-          el.classList.add('ready', 'animating', 'play');
-          setTimeout(function () {
-            if (!firstFrame && !done) el.classList.add('slow-breathe');
-          }, 1250);
-          setTimeout(function () {
-            el.classList.remove('animating');
-          }, 1350);
-          tryExit();
+          requestAnimationFrame(function () {
+            el.classList.add('play');
+            tryExit();
+          });
         });
       });
 
@@ -429,43 +360,8 @@
   </script>
 </head>
 <body>
-  <div id="loading-screen">
-    <div class="split-half top" aria-hidden="true">
-      <div class="grain"></div>
-      <svg class="orbit-svg" viewBox="0 0 400 400" fill="none">
-        <circle cx="200" cy="200" r="72" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="104" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="136" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="168" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="196" stroke="var(--orbit)" stroke-width="1"/>
-      </svg>
-      <div class="wm-anchor">
-        <div class="wm-band">
-          <div class="wm-word" role="img" aria-label="SETTLIV">
-            <span class="g-pos"><span class="g-rise">S</span></span><span class="g-pos"><span class="g-rise">E</span></span><span class="g-pos"><span class="g-rise">T</span></span><span class="g-pos"><span class="g-rise">T</span></span><span class="g-pos"><span class="g-rise">L</span></span><span class="g-pos"><span class="g-rise">I</span></span><span class="g-pos"><span class="g-rise">V</span></span>
-          </div>
-          <div class="sheen" aria-hidden="true"></div>
-        </div>
-      </div>
-    </div>
-    <div class="split-half bottom" aria-hidden="true">
-      <div class="grain"></div>
-      <svg class="orbit-svg" viewBox="0 0 400 400" fill="none">
-        <circle cx="200" cy="200" r="72" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="104" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="136" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="168" stroke="var(--orbit)" stroke-width="1"/>
-        <circle cx="200" cy="200" r="196" stroke="var(--orbit)" stroke-width="1"/>
-      </svg>
-    </div>
-    <div class="seam" aria-hidden="true">
-      <div class="seg em"></div>
-      <div class="seg co"></div>
-      <div class="seam-ink"></div>
-      <div class="seam-dot"></div>
-    </div>
-  </div>
-  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0A0C1C;color:#ECEBF5;font:800 32px sans-serif;letter-spacing:.18em">SETTLIV</div></noscript>
+  <div id="intro"></div>
+  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#070914;color:#F2F0FA;font:800 32px sans-serif;letter-spacing:.12em">SETTLIV</div></noscript>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -18,7 +18,7 @@ void listenForIntroReveal(VoidCallback onReveal) {
   }
 
   // If the intro already finished or was skipped before Flutter booted:
-  if (web.document.getElementById('loading-screen') == null) {
+  if (web.document.getElementById('intro') == null) {
     trigger();
     return;
   }
