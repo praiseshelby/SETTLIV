@@ -1,4 +1,4 @@
-Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never use any D: path.
+Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anything on D:.
 
 # Settliv v0 - Functional Correctness Plan & Progress
 
@@ -690,7 +690,16 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never use any D: path.
 ---
 
 ## Final Polish — Round 4 (Items A, B, C)
-- [x] **Item A (Workspace Path & Stale Cache)**: Added `Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never use any D: path.` to `PLAN.md`, removed `- assets/fonts/` from `pubspec.yaml` `assets:` to stop bundling 4 unused variable TTFs (`Manrope-VariableFont_wght.ttf`, `BricolageGrotesque[opsz,wdth,wght].ttf`, `PlusJakartaSans[wght].ttf`, `Sora[wght].ttf`), and updated `README.md`/`DEPLOY.md` to `--pwa-strategy=none` on port `3000`.
+- [x] **Item A (Workspace Path & Stale Cache)**: Added `Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anything on D:.` to `PLAN.md`, removed `- assets/fonts/` from `pubspec.yaml` `assets:` to stop bundling 4 unused variable TTFs (`Manrope-VariableFont_wght.ttf`, `BricolageGrotesque[opsz,wdth,wght].ttf`, `PlusJakartaSans[wght].ttf`, `Sora[wght].ttf`), and updated `README.md`/`DEPLOY.md` to `--pwa-strategy=none` on port `3000`.
 - [x] **Item B (Compositor-Only "Settle" Intro)**: Rebuilt `web/index.html` inline splash (`#070A14`, 3 drifting aurora fields: teal/emerald/peach, 6 concentric rings, `min(44vmin, 360px)` glass orb, `₹1,240`/`₹380` glass cards, `.lite-splash` & `prefers-reduced-motion` variants, 250ms fade on `flutter-first-frame` + 1.2s beat).
 - [x] **Item B Timeline (5 lines)**: `0.00–0.45s` aurora drifts, 6 hairline rings expand, orb enters, `₹1,240` & `₹380` glass cards glide in; `0.45–0.80s` cards converge into the orb and shrink while orb flashes and ripple expands past viewport edges; `0.80–1.25s` `SETTLIV` (`BricolageGrotesque` 800, 30ms stagger) rises letter-by-letter with masked sweep and `scaleX` hairline; `1.25s+` orb breathes 2% & aurora drifts until ready; `250ms` opacity fade once `flutter-first-frame` + `1.2s` beat complete.
 - [x] **Item C (Web Insights Bento Alignment)**: Rebuilt `InsightsWebView` (`12`-col grid, `24px` gutters/padding, `IntrinsicHeight` equal-height rows, uppercase headers, two-row spend comparison bar, `formatSpendDelta` suppressing `%` below ₹5,000 or >300%, recap without repeated spend, 120px weekday bars with tooltips, 38x38 square `SpendingCalendar` + `By group & Personal` stack) and added `test/final_polish_round4_test.dart`.
+
+
+---
+
+## Final Polish — Round 5 (Items A, B, C)
+- [x] **Item A (Narrow Rail Wordmark)**: Updated `SettlivWordmark` (`maxLines: 1`, `softWrap: false`, `overflow: TextOverflow.visible`, `FittedBox(fit: BoxFit.scaleDown)` around `RotatedBox`) and `_buildIconRail` (`51px` fixed-width slot, flexible height, `16px` gap above Add button); added `test/final_polish_round5_test.dart` for heights 480, 600, and 900.
+- [x] **Item B (Glass Reveal Intro)**: Replaced `web/index.html` splash visuals (removed `₹1,240`/`₹380` cards, orb, dots, and all emerald/coral) with `#070A14–#0B1020` ink, ice/lavender fields, 2 hairline rings, 3 frosted glass planes (no blur), 2 diagonal light streaks, and `SETTLIV` with 2 motion-blur ghosts + light sweep + `scaleX` hairline.
+- [x] **Item B Timeline (5 lines)**: `0.00–0.50s` 3 glass planes glide in with parallax while 2 hairline rings fade up; `0.35–0.90s` `SETTLIV` rises 28px letter-by-letter (30ms stagger) with 2 trailing ghost copies; `0.85–1.20s` diagonal light streaks, masked letter sweep, and `scaleX` hairline play; `1.20s+` planes drift 1–2% & rings breathe 2% until ready; `300ms` fade-out scales planes to `1.15` once `flutter-first-frame` & `1.2s` beat complete.
+- [x] **Item C (No D: References)**: Updated `PLAN.md` root rule; checked `.dart_tool/package_config.json`, `.flutter-plugins-dependencies`, `.metadata`, and `SETTLIV-X.code-workspace` (none found pointing to `D:`); IDE workspace cwd remains `d:\FAnTaSTiC -357™\SETTLIV-X`, so exact local commands are printed.

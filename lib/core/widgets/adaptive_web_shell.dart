@@ -449,22 +449,27 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
         color: theme.surface.withValues(alpha: 0.85),
         border: Border(right: BorderSide(color: theme.hairline)),
       ),
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 72,
-            child: Center(
-              child: SettlivWordmark(
-                fontSize: 13,
-                rotated: true,
-                opticallyCenter: true,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wordmarkSlotHeight = (constraints.maxHeight - 424).clamp(36.0, 96.0);
+          return Column(
+            children: [
+              SizedBox(
+                width: 51,
+                height: wordmarkSlotHeight,
+                child: const Center(
+                  child: SettlivWordmark(
+                    fontSize: 13,
+                    rotated: true,
+                    opticallyCenter: true,
+                  ),
+                ),
               ),
-            ),
-          ),
-          _SidebarAddExpenseButton(
-            compact: true,
-            onTap: () => context.push('/add'),
-          ),
+              const SizedBox(height: 16),
+              _SidebarAddExpenseButton(
+                compact: true,
+                onTap: () => context.push('/add'),
+              ),
           const SizedBox(height: 16),
           _buildRailIcon(
             icon: Icons.dashboard_rounded,
@@ -528,6 +533,8 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
           ),
           const SizedBox(height: 16),
         ],
+      );
+        },
       ),
     );
   }

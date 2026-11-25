@@ -29,6 +29,9 @@ class SettlivWordmark extends StatelessWidget {
 
     final text = Text(
       'SETTLIV',
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.visible,
       style: TextStyle(
         fontFamily: AppTypography.fontBrand,
         fontFamilyFallback: AppTypography.brandFallback,
@@ -41,13 +44,17 @@ class SettlivWordmark extends StatelessWidget {
     );
 
     if (rotated) {
-      // 90 degrees vertical, reading bottom-to-top
+      // 90 degrees vertical, reading bottom-to-top, scaled down if needed so it never wraps
       final child = opticallyCenter
           ? Padding(padding: EdgeInsets.only(top: tracking), child: text)
           : text;
-      return RotatedBox(
-        quarterTurns: 3,
-        child: child,
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: RotatedBox(
+          quarterTurns: 3,
+          child: child,
+        ),
       );
     }
 
