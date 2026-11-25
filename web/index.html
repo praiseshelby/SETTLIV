@@ -12,7 +12,7 @@
   <meta property="og:title" content="Settliv — Expense Sharing & Group Ledger">
   <meta property="og:description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
 
-  <meta name="theme-color" content="#070A14">
+  <meta name="theme-color" content="#04060D">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,16 +33,18 @@
     }
 
     :root {
-      --bg-deep: #070A14;
-      --bg-mid: #0B1020;
+      --base: #04060D;
       --ease: cubic-bezier(.2, .8, .2, 1);
+      --ring-a-size: min(92vmin, 880px);
+      --ring-b-size: calc(var(--ring-a-size) * 0.72);
+      --ring-c-size: calc(var(--ring-a-size) * 0.46);
     }
 
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      background-color: var(--bg-deep);
+      background-color: var(--base);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow: hidden;
     }
@@ -53,7 +55,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(155deg, var(--bg-deep) 0%, var(--bg-mid) 100%);
+      background-color: var(--base);
+      background-image: radial-gradient(circle at 74% 74%, rgba(120, 200, 255, 0.16) 0%, rgba(120, 200, 255, 0) 56%);
       z-index: 99999;
       overflow: hidden;
       contain: layout paint;
@@ -65,38 +68,12 @@
       pointer-events: none;
     }
 
-    /* Static radial colour fields (pearl/ice + lavender), transform drift only */
-    .bg-field {
-      position: absolute;
-      inset: -18%;
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform;
-    }
-    .bg-field.ice {
-      background:
-        radial-gradient(circle at 30% 30%, rgba(159, 216, 255, 0.075) 0%, rgba(159, 216, 255, 0) 52%),
-        radial-gradient(circle at 50% 50%, rgba(245, 247, 255, 0.035) 0%, rgba(245, 247, 255, 0) 48%);
-      animation: driftA 14s ease-in-out infinite alternate;
-    }
-    .bg-field.lavender {
-      background: radial-gradient(circle at 72% 68%, rgba(185, 180, 255, 0.08) 0%, rgba(185, 180, 255, 0) 54%);
-      animation: driftB 16s ease-in-out infinite alternate;
-    }
-    @keyframes driftA {
-      from { transform: translate3d(-1.5%, -1%, 0); }
-      to   { transform: translate3d(1.5%, 1.5%, 0); }
-    }
-    @keyframes driftB {
-      from { transform: translate3d(1.5%, 1%, 0); }
-      to   { transform: translate3d(-1.5%, -1.5%, 0); }
-    }
-
+    /* Strong vignette so the centre feels luminous */
     .vignette {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(circle at 50% 50%, transparent 38%, rgba(4, 6, 14, 0.74) 100%);
+      background: radial-gradient(circle at 50% 50%, rgba(4, 6, 13, 0) 30%, rgba(0, 0, 0, 0.58) 100%);
     }
 
     .grain {
@@ -108,131 +85,230 @@
       background-repeat: repeat;
     }
 
-    /* Precision SVG Dial (110vmin, 3 concentric rings + bezel ticks) */
-    .dial-stage {
+    /* Warm core bloom behind wordmark (static gradient, opacity/scale only) */
+    .bloom-warm {
       position: absolute;
-      width: 110vmin;
-      height: 110vmin;
+      width: min(96vmin, 900px);
+      height: min(96vmin, 900px);
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 170, 110, 0.34) 0%,
+        rgba(255, 110, 150, 0.14) 28%,
+        rgba(255, 110, 150, 0) 62%
+      );
+      pointer-events: none;
+      contain: layout paint;
+      will-change: transform, opacity;
+      opacity: 0.35;
+      animation:
+        bloomSequence 0.65s var(--ease) forwards,
+        bloomBreathe 3.8s ease-in-out 1.10s infinite alternate;
+    }
+    @keyframes bloomSequence {
+      0%   { opacity: 0.35; transform: scale(0.92); }
+      55%  { opacity: 1.0; transform: scale(1.04); }
+      100% { opacity: 0.85; transform: scale(1); }
+    }
+    @keyframes bloomBreathe {
+      from { transform: scale(1); opacity: 0.85; }
+      to   { transform: scale(1.02); opacity: 0.92; }
+    }
+
+    /* Inline SVG tick dial (<= 100vmin, 20% opacity, slow rotation) */
+    .bezel-svg {
+      position: absolute;
+      width: min(98vmin, 960px);
+      height: min(98vmin, 960px);
+      pointer-events: none;
+      contain: layout paint;
+      will-change: transform;
+      opacity: 0.2;
+      animation: bezelSpin 60s linear infinite;
+    }
+    @keyframes bezelSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* Shared rings container: 0-0.55s scale 0.7->1 + fade; handoff scale 1.6 + fade */
+    .rings-shell {
+      position: absolute;
+      width: var(--ring-a-size);
+      height: var(--ring-a-size);
       display: flex;
       align-items: center;
       justify-content: center;
       pointer-events: none;
       contain: layout paint;
       will-change: transform, opacity;
-      animation: dialEnter 0.5s var(--ease) forwards;
+      animation: ringsIn 0.55s var(--ease) forwards;
       transition: transform 300ms var(--ease), opacity 300ms ease-out;
     }
-    @keyframes dialEnter {
-      from { opacity: 0; transform: scale(0.92); }
+    @keyframes ringsIn {
+      from { opacity: 0; transform: scale(0.7); }
       to   { opacity: 1; transform: scale(1); }
     }
-    #loading-screen.reveal-out .dial-stage {
+    #loading-screen.reveal-out .rings-shell {
       opacity: 0;
-      transform: scale(1.2) rotate(8deg);
+      transform: scale(1.6);
     }
 
-    .dial-svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
+    /* Rim-lit Ring A + soft 16px glow duplicate inside one rotating wrapper */
+    .ring-a-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      contain: layout paint;
+      will-change: transform, opacity;
+      animation:
+        ringARamp 0.55s var(--ease) forwards,
+        ringAPulse 0.28s var(--ease) 0.85s,
+        ringAIdle 22s linear 0.55s infinite;
     }
-    .dial-outer {
-      transform-origin: 200px 200px;
-      will-change: transform;
-      animation: spinCW 28s linear infinite;
+    @keyframes ringARamp {
+      from { transform: rotate(-230deg); }
+      to   { transform: rotate(0deg); }
     }
-    .dial-inner {
-      transform-origin: 200px 200px;
-      will-change: transform;
-      animation: spinCCW 22s linear infinite;
+    @keyframes ringAPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.65; }
     }
-    @keyframes spinCW {
+    @keyframes ringAIdle {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
     }
-    @keyframes spinCCW {
+
+    /* Ring B (72% of A), ice counter-rotating */
+    .ring-b {
+      position: absolute;
+      width: var(--ring-b-size);
+      height: var(--ring-b-size);
+      border-radius: 50%;
+      pointer-events: none;
+      contain: layout paint;
+      will-change: transform;
+      border: 2px solid rgba(143, 211, 255, 0.45);
+      animation:
+        ringBRamp 0.55s var(--ease) forwards,
+        ringBIdle 26s linear 0.55s infinite;
+    }
+    @keyframes ringBRamp {
+      from { transform: rotate(210deg); }
+      to   { transform: rotate(0deg); }
+    }
+    @keyframes ringBIdle {
       from { transform: rotate(360deg); }
       to   { transform: rotate(0deg); }
     }
 
-    /* Two luminous pearl points with short comet tails spiraling to centre (0-0.55s) */
-    .comet-wrap {
+    .ring-a-core,
+    .ring-a-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 178, 107, 0.52);
+    }
+    .ring-a-glow {
+      opacity: 0.22;
+      border-width: 8px;
+    }
+
+    @supports ((mask: radial-gradient(#000, #000)) or (-webkit-mask: radial-gradient(#000, #000))) and (background: conic-gradient(red, blue)) {
+      .ring-a-core {
+        border: 0;
+        background: conic-gradient(from 0deg, transparent 0deg 200deg, #FFB26B 285deg, #FFF1DC 346deg, transparent 360deg);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0);
+        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0);
+      }
+      .ring-a-glow {
+        border: 0;
+        background: conic-gradient(from 0deg, transparent 0deg 200deg, #FFB26B 285deg, #FFF1DC 346deg, transparent 360deg);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 0);
+        mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 0);
+      }
+      .ring-b {
+        border: 0;
+        background: conic-gradient(from 0deg, transparent 0deg 200deg, #8FD3FF 285deg, #FFFFFF 346deg, transparent 360deg);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+        mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+      }
+    }
+
+    /* Ring C (46% of A): static 1px hairline at 10% white */
+    .ring-c {
+      position: absolute;
+      width: var(--ring-c-size);
+      height: var(--ring-c-size);
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      pointer-events: none;
+    }
+
+    /* Dark glass disc inside Ring B with inner top crescent highlight */
+    .glass-disc {
+      position: absolute;
+      width: calc(var(--ring-b-size) - 6px);
+      height: calc(var(--ring-b-size) - 6px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(4, 6, 13, 0.55) 0%, rgba(4, 6, 13, 0.15) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      pointer-events: none;
+    }
+
+    /* Light streak (0.30-0.50s): 2px core + 10px 14% glow duplicate */
+    .streak-core,
+    .streak-glow {
       position: absolute;
       top: 50%;
-      left: 50%;
-      width: 78vmin;
-      height: 78vmin;
-      margin: -39vmin 0 0 -39vmin;
+      left: -10vw;
+      width: 120vw;
       pointer-events: none;
       contain: layout paint;
       will-change: transform, opacity;
-    }
-    .comet-wrap.a { animation: cometA 0.54s var(--ease) forwards; }
-    .comet-wrap.b { animation: cometB 0.54s var(--ease) forwards; }
-    @keyframes cometA {
-      0%   { opacity: 0; transform: rotate(-40deg) scale(1); }
-      35%  { opacity: 1; transform: rotate(85deg) scale(0.62); }
-      92%  { opacity: 1; transform: rotate(200deg) scale(0.03); }
-      100% { opacity: 0; transform: rotate(215deg) scale(0.01); }
-    }
-    @keyframes cometB {
-      0%   { opacity: 0; transform: rotate(140deg) scale(1); }
-      35%  { opacity: 1; transform: rotate(265deg) scale(0.62); }
-      92%  { opacity: 1; transform: rotate(380deg) scale(0.03); }
-      100% { opacity: 0; transform: rotate(395deg) scale(0.01); }
-    }
-    .comet-head {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 6px;
-      height: 6px;
-      margin: -3px 0 0 -3px;
-      border-radius: 50%;
-      background: #FFFFFF;
-    }
-    .comet-tail {
-      position: absolute;
-      top: -1px;
-      left: calc(50% - 38px);
-      width: 38px;
-      height: 2px;
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(235, 244, 255, 0.78) 100%);
-      transform-origin: right center;
-      transform: rotate(-8deg);
-    }
-
-    /* Soft centre glow pulse at convergence + idle 2% breathe */
-    .zero-glow {
-      position: absolute;
-      width: min(64vmin, 460px);
-      height: min(64vmin, 460px);
-      border-radius: 50%;
-      background: radial-gradient(circle at 50% 50%, rgba(235, 245, 255, 0.20) 0%, rgba(159, 216, 255, 0.06) 40%, transparent 72%);
       opacity: 0;
-      pointer-events: none;
-      contain: layout paint;
-      will-change: transform, opacity;
-      animation: glowIgnite 0.55s var(--ease) 0.48s forwards, glowBreathe 3.8s ease-in-out 1.2s infinite alternate;
+      transform: scaleX(0);
     }
-    @keyframes glowIgnite {
-      0%   { opacity: 0; transform: scale(0.75); }
-      45%  { opacity: 0.95; transform: scale(1.04); }
-      100% { opacity: 0.42; transform: scale(1); }
+    .streak-core {
+      height: 2px;
+      margin-top: -1px;
+      background: linear-gradient(90deg, transparent 0%, #FFD9A8 30%, #FFFFFF 50%, #FFD9A8 70%, transparent 100%);
+      animation: streakCore 0.22s var(--ease) 0.30s forwards;
     }
-    @keyframes glowBreathe {
-      from { transform: scale(1); opacity: 0.42; }
-      to   { transform: scale(1.02); opacity: 0.52; }
+    .streak-glow {
+      height: 10px;
+      margin-top: -5px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 217, 168, 0.14) 30%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 217, 168, 0.14) 70%, transparent 100%);
+      animation: streakGlow 0.24s var(--ease) 0.30s forwards;
+    }
+    @keyframes streakCore {
+      0%   { opacity: 0; transform: scaleX(0); }
+      45%  { opacity: 1; transform: scaleX(1); }
+      100% { opacity: 0; transform: scaleX(1); }
+    }
+    @keyframes streakGlow {
+      0%   { opacity: 0; transform: scaleX(0); }
+      45%  { opacity: 1; transform: scaleX(1); }
+      100% { opacity: 0; transform: scaleX(1); }
     }
 
-    /* Brand centre: wordmark rises out of zero line, zero line contracts to underline */
+    /* Wordmark: 3D rotateX flip + ghost blur trail + underline + specular sweep */
     .brand-center {
       position: relative;
       z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
+      max-width: 82vw;
+      will-change: transform, opacity;
+      transition: transform 300ms var(--ease), opacity 300ms ease-out;
     }
+    #loading-screen.reveal-out .brand-center {
+      opacity: 0;
+      transform: scale(1.04);
+    }
+
     .wordmark-stage {
       position: relative;
       display: inline-flex;
@@ -242,231 +318,212 @@
     }
     .wordmark-typo {
       font-family: 'BricolageGrotesque', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: clamp(40px, 6vw, 64px);
+      font-size: clamp(28px, min(10.5vw, 120px), 120px);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.22em;
       padding-left: 0.22em;
-      line-height: 1;
+      line-height: 1.05;
       white-space: nowrap;
+      text-shadow: 0 0 40px rgba(255, 170, 110, 0.35);
     }
     .ghost-wordmark {
       position: absolute;
       inset: 0;
-      color: rgba(240, 246, 255, 0.9);
+      color: rgba(255, 241, 224, 0.9);
+      text-shadow: none;
       pointer-events: none;
       opacity: 0;
       contain: layout paint;
       will-change: transform, opacity;
     }
-    .ghost-wordmark.g1 { animation: ghostRise1 0.46s var(--ease) 0.70s forwards; }
-    .ghost-wordmark.g2 { animation: ghostRise2 0.46s var(--ease) 0.70s forwards; }
-    @keyframes ghostRise1 {
-      0%   { opacity: 0.22; transform: translate3d(0, 26px, 0) scaleY(1.1); }
+    .ghost-wordmark.g1 { animation: ghostTrail1 0.48s var(--ease) 0.45s forwards; }
+    .ghost-wordmark.g2 { animation: ghostTrail2 0.48s var(--ease) 0.45s forwards; }
+    @keyframes ghostTrail1 {
+      0%   { opacity: 0.22; transform: translate3d(0, 30px, 0) scaleY(1.12); }
       100% { opacity: 0; transform: translate3d(0, 0, 0) scaleY(1); }
     }
-    @keyframes ghostRise2 {
-      0%   { opacity: 0.10; transform: translate3d(0, 32px, 0) scaleY(1.14); }
+    @keyframes ghostTrail2 {
+      0%   { opacity: 0.10; transform: translate3d(0, 36px, 0) scaleY(1.16); }
       100% { opacity: 0; transform: translate3d(0, 0, 0) scaleY(1); }
     }
 
     .loading-wordmark {
       display: inline-flex;
+      perspective: 800px;
     }
-    .letter-mask {
+    .loading-wordmark span {
       display: inline-block;
-      overflow: hidden;
-      vertical-align: bottom;
-    }
-    .letter-mask span {
-      display: inline-block;
-      background: linear-gradient(180deg, #FFFFFF 0%, #DCE6FF 100%);
+      background: linear-gradient(180deg, #FFFFFF 0%, #DCE7FF 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      transform: translateY(110%);
-      will-change: transform;
-      animation: letterUp 0.34s var(--ease) forwards;
+      transform-origin: bottom center;
+      opacity: 0;
+      transform: rotateX(-80deg) translateY(40%);
+      will-change: transform, opacity;
+      animation: letterFlip 0.26s var(--ease) forwards;
     }
-    .letter-mask:nth-child(1) span { animation-delay: 0.70s; }
-    .letter-mask:nth-child(2) span { animation-delay: 0.735s; }
-    .letter-mask:nth-child(3) span { animation-delay: 0.77s; }
-    .letter-mask:nth-child(4) span { animation-delay: 0.805s; }
-    .letter-mask:nth-child(5) span { animation-delay: 0.84s; }
-    .letter-mask:nth-child(6) span { animation-delay: 0.875s; }
-    .letter-mask:nth-child(7) span { animation-delay: 0.91s; }
-    @keyframes letterUp {
-      to { transform: translateY(0); }
+    .loading-wordmark span:nth-child(1) { animation-delay: 0.45s; }
+    .loading-wordmark span:nth-child(2) { animation-delay: 0.49s; }
+    .loading-wordmark span:nth-child(3) { animation-delay: 0.53s; }
+    .loading-wordmark span:nth-child(4) { animation-delay: 0.57s; }
+    .loading-wordmark span:nth-child(5) { animation-delay: 0.61s; }
+    .loading-wordmark span:nth-child(6) { animation-delay: 0.65s; }
+    .loading-wordmark span:nth-child(7) { animation-delay: 0.69s; }
+    @keyframes letterFlip {
+      to { opacity: 1; transform: rotateX(0deg) translateY(0); }
     }
 
     .wordmark-sweep {
       position: absolute;
       inset: 0;
-      background: linear-gradient(105deg, transparent 26%, rgba(255, 255, 255, 0.45) 50%, transparent 74%);
+      background: linear-gradient(105deg, transparent 28%, rgba(255, 241, 220, 0.46) 50%, transparent 72%);
       transform: translateX(-115%);
       pointer-events: none;
       will-change: transform;
-      animation: textSweep 0.42s var(--ease) 1.05s forwards;
+      animation: specularSweep 0.28s var(--ease) 0.85s forwards;
     }
-    @keyframes textSweep {
+    @keyframes specularSweep {
       to { transform: translateX(115%); }
     }
 
-    /* Zero line: ignites from centre to 70vw, then contracts to wordmark underline */
-    .zero-line-wrap {
-      position: relative;
-      width: 70vw;
-      height: 1.5px;
-      margin-top: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .zero-line {
-      width: 100%;
-      height: 1.5px;
-      background-color: rgba(240, 246, 255, 0.36);
+    .word-underline {
+      width: min(260px, 54vw);
+      height: 1px;
+      margin-top: 14px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 241, 220, 0.55) 50%, transparent 100%);
       transform: scaleX(0);
       will-change: transform;
-      animation: zeroLineSequence 0.65s var(--ease) 0.50s forwards;
+      animation: underlineExpand 0.35s var(--ease) 0.72s forwards;
     }
-    @keyframes zeroLineSequence {
-      0%   { transform: scaleX(0); }
-      38%  { transform: scaleX(1); }
-      100% { transform: scaleX(0.28); }
-    }
-    .zero-core {
-      position: absolute;
-      width: 90px;
-      height: 1.5px;
-      background: linear-gradient(90deg, transparent 0%, #FFFFFF 50%, transparent 100%);
-      opacity: 0;
-      transform: translateX(-35vw);
-      will-change: transform, opacity;
-      animation: coreTravel 0.42s var(--ease) 0.50s forwards;
-    }
-    @keyframes coreTravel {
-      0%   { opacity: 0; transform: translateX(-35vw); }
-      30%  { opacity: 1; }
-      100% { opacity: 0; transform: translateX(35vw); }
+    @keyframes underlineExpand {
+      to { transform: scaleX(1); }
     }
 
-    /* Weak device variant: one ring group, no ghosts, no grain */
-    .lite-splash .dial-inner,
+    /* Weak device variant: Ring A only, no ghosts, no grain, no streak glow duplicate */
+    .lite-splash .ring-b,
     .lite-splash .ghost-wordmark,
-    .lite-splash .grain {
+    .lite-splash .grain,
+    .lite-splash .streak-glow {
       display: none;
     }
 
-    /* Reduced motion: static composed frame (dial, line, wordmark) + plain fade out */
+    /* Reduced motion: static composed frame (rings, disc, wordmark) + plain fade out */
     @media (prefers-reduced-motion: reduce) {
-      .bg-field, .dial-stage, .dial-outer, .dial-inner, .comet-wrap, .zero-glow, .ghost-wordmark, .letter-mask span, .wordmark-sweep, .zero-line, .zero-core {
+      .bloom-warm, .bezel-svg, .rings-shell, .ring-a-wrap, .ring-b, .streak-core, .streak-glow, .ghost-wordmark, .loading-wordmark span, .wordmark-sweep, .word-underline {
         animation: none !important;
       }
-      .dial-stage { opacity: 1; transform: scale(1); }
-      .comet-wrap, .ghost-wordmark, .wordmark-sweep, .zero-core { display: none; }
-      .zero-glow { opacity: 0.4; transform: scale(1); }
-      .letter-mask span { transform: translateY(0); }
-      .zero-line { transform: scaleX(0.28); }
+      .bloom-warm { opacity: 0.85; transform: scale(1); }
+      .rings-shell { opacity: 1; transform: scale(1); }
+      .streak-core, .streak-glow, .ghost-wordmark, .wordmark-sweep { display: none; }
+      .loading-wordmark span { opacity: 1; transform: none; }
+      .word-underline { transform: scaleX(1); }
     }
   </style>
 
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
+    if (!window.__settlivSplashInit) {
+      window.__settlivSplashInit = true;
 
-    const __splashStart = performance.now();
-    const __wordmarkBeatMs = 1200;
-
-    window.addEventListener('DOMContentLoaded', function () {
-      const el = document.getElementById('loading-screen');
-      if (!el) return;
-      const cores = navigator.hardwareConcurrency || 8;
-      const mem = navigator.deviceMemory || 8;
-      if (cores <= 4 || mem <= 4) {
-        el.classList.add('lite-splash');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
+          }
+        });
       }
-    });
 
-    window.addEventListener('flutter-first-frame', function () {
-      const loading = document.getElementById('loading-screen');
-      if (!loading) return;
-      const elapsed = performance.now() - __splashStart;
-      const waitMs = Math.max(0, __wordmarkBeatMs - elapsed);
-      setTimeout(function () {
+      var __splashStart = performance.now();
+      var __sequenceMs = 1100;
+      var __splashRemoved = false;
+
+      function __dismissSplash() {
+        if (__splashRemoved) return;
+        __splashRemoved = true;
+        var loading = document.getElementById('loading-screen');
+        if (!loading) return;
         loading.classList.add('reveal-out');
         setTimeout(function () {
           if (loading.parentNode) {
             loading.parentNode.removeChild(loading);
           }
         }, 310);
-      }, waitMs);
-    });
+      }
+
+      window.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('loading-screen');
+        if (!el) return;
+        var cores = navigator.hardwareConcurrency || 8;
+        var mem = navigator.deviceMemory || 8;
+        if (cores <= 4 || mem <= 4) {
+          el.classList.add('lite-splash');
+        }
+      });
+
+      window.addEventListener('flutter-first-frame', function () {
+        var elapsed = performance.now() - __splashStart;
+        var waitMs = Math.max(0, __sequenceMs - elapsed);
+        setTimeout(__dismissSplash, waitMs);
+      });
+
+      // Hard fallback: remove splash 8s after load even if first-frame is missed
+      setTimeout(__dismissSplash, 8000);
+    }
   </script>
 </head>
 <body>
   <div id="loading-screen">
-    <div class="bg-field ice"></div>
-    <div class="bg-field lavender"></div>
     <div class="vignette"></div>
     <div class="grain"></div>
-    <div class="dial-stage">
-      <svg class="dial-svg" viewBox="0 0 400 400" fill="none" aria-hidden="true">
-        <g class="dial-outer" stroke="rgba(235,244,255,0.12)" stroke-width="0.9">
-          <circle cx="200" cy="200" r="186"/>
-          <circle cx="200" cy="200" r="144" stroke-opacity="0.75"/>
-          <g stroke-opacity="0.85">
-            <line x1="200" y1="8" x2="200" y2="18"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(15 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(30 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(45 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(60 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(75 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(90 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(105 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(120 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(135 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(150 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(165 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(180 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(195 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(210 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(225 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(240 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(255 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(270 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(285 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(300 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(315 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="18" transform="rotate(330 200 200)"/>
-            <line x1="200" y1="8" x2="200" y2="15" transform="rotate(345 200 200)"/>
-          </g>
-        </g>
-        <g class="dial-inner" stroke="rgba(185,180,255,0.11)" stroke-width="0.9">
-          <circle cx="200" cy="200" r="102" stroke-dasharray="6 8"/>
-        </g>
-      </svg>
+    <div class="bloom-warm"></div>
+    <svg class="bezel-svg" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+      <g stroke="rgba(255,255,255,0.9)" stroke-width="0.9">
+        <line x1="200" y1="6" x2="200" y2="16"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(15 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(30 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(45 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(60 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(75 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(90 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(105 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(120 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(135 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(150 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(165 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(180 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(195 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(210 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(225 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(240 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(255 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(270 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(285 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(300 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(315 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="16" transform="rotate(330 200 200)"/>
+        <line x1="200" y1="6" x2="200" y2="12" transform="rotate(345 200 200)"/>
+      </g>
+    </svg>
+    <div class="rings-shell">
+      <div class="ring-a-wrap">
+        <div class="ring-a-glow"></div>
+        <div class="ring-a-core"></div>
+      </div>
+      <div class="ring-b"></div>
+      <div class="glass-disc"></div>
+      <div class="ring-c"></div>
     </div>
-    <div class="comet-wrap a"><div class="comet-tail"></div><div class="comet-head"></div></div>
-    <div class="comet-wrap b"><div class="comet-tail"></div><div class="comet-head"></div></div>
-    <div class="zero-glow"></div>
+    <div class="streak-glow"></div>
+    <div class="streak-core"></div>
     <div class="brand-center">
       <div class="wordmark-stage">
         <div class="wordmark-typo ghost-wordmark g1" aria-hidden="true">SETTLIV</div>
         <div class="wordmark-typo ghost-wordmark g2" aria-hidden="true">SETTLIV</div>
-        <div class="wordmark-typo loading-wordmark"><span class="letter-mask"><span>S</span></span><span class="letter-mask"><span>E</span></span><span class="letter-mask"><span>T</span></span><span class="letter-mask"><span>T</span></span><span class="letter-mask"><span>L</span></span><span class="letter-mask"><span>I</span></span><span class="letter-mask"><span>V</span></span></div>
+        <div class="wordmark-typo loading-wordmark"><span>S</span><span>E</span><span>T</span><span>T</span><span>L</span><span>I</span><span>V</span></div>
         <div class="wordmark-sweep"></div>
       </div>
-      <div class="zero-line-wrap">
-        <div class="zero-line"></div>
-        <div class="zero-core"></div>
-      </div>
+      <div class="word-underline"></div>
     </div>
   </div>
 

@@ -718,3 +718,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Final Polish — Round 7 (App Balances Two-Tier Person Row)
 - [x] **App Balances Row (`_buildAppPersonRow`)**: Restructured App Balances person cards (both `Owed to you` and `You owe` tabs) into 3 tiers: Tier 1 header (`40px` avatar, `maxLines: 1` ellipsized name, single-line `FittedBox.scaleDown` Sora tabular amount, `48x48` expand chevron), Tier 2 direction + group caption (`owes you · Flatmates`), Tier 3 full-width `48px`-tall action row (`Nudge` + `Mark received` or full-width `Settle`, stacking vertically via `LayoutBuilder` when inner width `< 280` or `textScale >= 1.3`).
 - [x] **Expanded Breakdown & Tests**: Indented per-group & IOU lines cleanly under `68px` left padding and added [final_polish_round7_test.dart](file:///C:/Users/shelb/Downloads/SETTLIV-X/test/final_polish_round7_test.dart) covering widths `320`/`360`/`430`, text scales `1.0`/`1.3`, and light/dark themes.
+
+
+---
+
+## Final Polish — Round 8 ("Rim Light" Intro)
+- [x] **Rim Light Intro (`web/index.html`)**: Rebuilt inline compositor-only splash (`#04060D` base + strong vignette, warm amber-rose core bloom + cool ice counter-light, SVG bezel ticks, masked conic-gradient Rim A + 16px glow + ice counter-rotating Rim B + hairline Ring C + dark glass disc, 2px/10px light streak, 3D `rotateX(-80deg)` `SETTLIV` reveal with 2 ghost trails + specular sweep + underline, double-init guard & 8s fallback).
+- [x] **Timeline & Fallbacks (5 lines)**: `0.00–0.55s` bloom rises & rings A/B scale `0.7→1` spinning fast; `0.30–0.50s` light streak `scaleX` flashes bloom; `0.45–0.95s` 3D letters + ghosts land; `0.85–1.10s` specular sweep & Ring A pulse, then slow idle + `2%` bloom breathe; `300ms` fade scales rings `1.6` & wordmark `1.04` on `flutter-first-frame` + `1.1s` (fallbacks: `@supports` border rings, `.lite-splash` Ring A only, `prefers-reduced-motion` static frame, 8s DOM removal).
