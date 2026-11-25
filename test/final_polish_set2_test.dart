@@ -85,8 +85,6 @@ void main() {
       expect(find.text('Account & Theme'), findsNothing);
       expect(find.text('Edit profile'), findsOneWidget);
       expect(find.text('Current layout: PC website'), findsOneWidget);
-      expect(find.byTooltip('Experience'), findsOneWidget);
-      expect(find.byTooltip('Privacy and data'), findsOneWidget);
     });
   });
 

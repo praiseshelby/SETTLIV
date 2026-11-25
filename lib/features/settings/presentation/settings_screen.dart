@@ -54,7 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = repo.currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
     _upiController = TextEditingController(text: user?.upiId ?? '');
-    _scrollController = ScrollController()..addListener(_onDesktopScroll);
+    _scrollController = ScrollController();
     _selectedNavSection = widget.initialSection ?? 'appearance';
 
     if (widget.initialSection != null) {
@@ -101,36 +101,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  void _onDesktopScroll() {
-    if (!mounted) return;
-    const sections = [
-      'appearance',
-      'experience',
-      'ledger',
-      'backup',
-      'security',
-      'help',
-      'privacy',
-    ];
-    String best = _selectedNavSection;
-    double bestDist = double.infinity;
-    for (final s in sections) {
-      final ctx = _keyForSection(s)?.currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject() as RenderBox?;
-      if (box == null || !box.hasSize) continue;
-      final dy = box.localToGlobal(Offset.zero).dy;
-      final dist = (dy - 120).abs();
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = s;
-      }
-    }
-    if (best != _selectedNavSection) {
-      setState(() => _selectedNavSection = best);
-    }
-  }
-
   void _scrollToSection(String section) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = _keyForSection(section);
@@ -150,7 +120,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void dispose() {
     _nameController.dispose();
     _upiController.dispose();
-    _scrollController.removeListener(_onDesktopScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -980,60 +949,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onBack: () => BackNavigation.handleBack(context, currentPath: '/settings'),
                 ),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1040),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(32, 16, 48, 0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 288,
-                                  child: _buildDesktopProfileSummaryCard(
-                                    theme: theme,
-                                    user: user,
-                                    effective: effective,
-                                  ),
-                                ),
-                                const SizedBox(width: 36),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.only(bottom: 40),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: desktopRightSections,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1040),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 288,
+                              child: _buildDesktopProfileSummaryCard(
+                                theme: theme,
+                                user: user,
+                                effective: effective,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 36),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.only(bottom: 40),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: desktopRightSections,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Positioned(
-                        right: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: _SettingsDotProgressRail(
-                            selectedSection: _selectedNavSection,
-                            onSelectSection: (section) {
-                              setState(() {
-                                _selectedNavSection = section;
-                                if (section == 'experience') {
-                                  _highlightExperience = true;
-                                }
-                              });
-                              _scrollToSection(section);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -1243,69 +1189,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SettingsDotProgressRail extends StatelessWidget {
-  final String selectedSection;
-  final ValueChanged<String> onSelectSection;
-
-  const _SettingsDotProgressRail({
-    required this.selectedSection,
-    required this.onSelectSection,
-  });
-
-  static const List<({String id, String label})> _sections = [
-    (id: 'appearance', label: 'Appearance'),
-    (id: 'experience', label: 'Experience'),
-    (id: 'ledger', label: 'Ledger features'),
-    (id: 'backup', label: 'Backup and export'),
-    (id: 'security', label: 'Security'),
-    (id: 'help', label: 'Help and feedback'),
-    (id: 'privacy', label: 'Privacy and data'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.settliv;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-      decoration: BoxDecoration(
-        color: theme.surface.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.hairline),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final section in _sections) ...[
-            Tooltip(
-              message: section.label,
-              preferBelow: false,
-              child: InkWell(
-                onTap: () => onSelectSection(section.id),
-                borderRadius: BorderRadius.circular(999),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: selectedSection == section.id ? 8 : 6,
-                    height: selectedSection == section.id ? 18 : 6,
-                    decoration: BoxDecoration(
-                      color: selectedSection == section.id
-                          ? theme.accent
-                          : theme.muted.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }

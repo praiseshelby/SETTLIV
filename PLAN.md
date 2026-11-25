@@ -675,3 +675,11 @@
 - [x] **Fix 2 (Device-Morph App <-> Web Transition)**: Replaced text overlay in `ExperienceTransitionOverlay` with 650ms monitor ↔ phone outline & skeleton morph + converging emerald/coral nodes + ripple + scale-out exit (150ms cross-fade under reduced motion/lite).
 - [x] **Fix 3 (Cinematic Settle Orbit Loading Screen)**: Upgraded `web/index.html` and `SettleOrbitSplash` with drifting cool teal-slate & warm fields, film grain, 9 viewport-spanning rings/arcs, 1.8s curved-arc convergence + ripple, letter-by-letter `SETTLIV` reveal + hairline sweep.
 - [x] **Tests Added**: `test/final_polish_round2_test.dart` covering Settings icon AA contrast, Add expense vertical alignment, wordless device-morph transition, and 360px/1920px splash.
+
+
+---
+
+## Final Polish — Round 3 (2 Fixes)
+- [x] **Fix 2 (Remove Settings Scroll-Progress Rail)**: Deleted `_SettingsDotProgressRail`, `_onDesktopScroll`, and dot-rail tooltips from `SettingsScreen` and tests; preserved sticky profile card, section order, and `/settings?section=<name>` deep-link scroll + highlight.
+- [x] **Fix 1 (Compositor-Only 60fps Splash & Font Preload)**: Removed SVG `feTurbulence` and Flutter-side `SettleOrbitSplashGate` Ticker/painter; preloaded `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf` with `font-display: block` in `web/index.html`.
+- **Splash Timeline (1.5s, `cubic-bezier(.2,.8,.2,1)`, transform/opacity only, `contain: layout paint`)**: `0.00–0.45s` viewport rings scale up + emerald/coral wrappers orbit in; `0.45–0.85s` nodes spiral to center, contact ripple expands + fields pulse; `0.85–1.35s` letter-by-letter `SETTLIV` reveal + masked sweep + `scaleX` hairline; `1.35s+` calm idle; fades immediately once `flutter-first-frame` & 1.2s wordmark beat complete (lighter `.lite-splash` on `<=4` cores/GB, static under `prefers-reduced-motion`).
