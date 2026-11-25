@@ -725,3 +725,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Final Polish — Round 8 ("Rim Light" Intro)
 - [x] **Rim Light Intro (`web/index.html`)**: Rebuilt inline compositor-only splash (`#04060D` base + strong vignette, warm amber-rose core bloom + cool ice counter-light, SVG bezel ticks, masked conic-gradient Rim A + 16px glow + ice counter-rotating Rim B + hairline Ring C + dark glass disc, 2px/10px light streak, 3D `rotateX(-80deg)` `SETTLIV` reveal with 2 ghost trails + specular sweep + underline, double-init guard & 8s fallback).
 - [x] **Timeline & Fallbacks (5 lines)**: `0.00–0.55s` bloom rises & rings A/B scale `0.7→1` spinning fast; `0.30–0.50s` light streak `scaleX` flashes bloom; `0.45–0.95s` 3D letters + ghosts land; `0.85–1.10s` specular sweep & Ring A pulse, then slow idle + `2%` bloom breathe; `300ms` fade scales rings `1.6` & wordmark `1.04` on `flutter-first-frame` + `1.1s` (fallbacks: `@supports` border rings, `.lite-splash` Ring A only, `prefers-reduced-motion` static frame, 8s DOM removal).
+
+
+---
+
+## Final Polish — Round 9 ("The Balance Beam" Intro)
+- [x] **Balance Beam Intro (`web/index.html`)**: Replaced rings/discs/3D-flips with `#04060D` vignette, warm amber + cool ice end blooms, elliptical legibility pad, masked upward light fan, tilted `3px` balance beam (`#FFB26B → #FFFFFF → #8FD3FF` + `14px` glow + `18%` ruler ticks + end flares), masked `SETTLIV` (`BricolageGrotesque` 800, no `text-shadow` inside masks) + specular sweep.
+- [x] **Timeline, Fallbacks & Font Method (5 lines)**: Font gated via `document.fonts.load('800 1em "BricolageGrotesque"')` (500ms timeout, asset `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf`, app stack fallback) + double-`rAF` `.play` start; `0–0.55s` beam settles `-16°→+4°→-1.5°→0°` as fan rises; `0.50–0.95s` bloom pulses & letters rise `40ms` stagger; `0.90–1.15s` sweep crosses & beam contracts to underline, then `2%` bloom / `1°` fan idle; `300ms` exit (`1.03` scale + fade) on `flutter-first-frame` + `1.15s` (`.lite-splash`, `prefers-reduced-motion`, 8s hard removal).
