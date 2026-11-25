@@ -421,7 +421,7 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                                 ),
                               ] else ...[
                                 for (final summary in currentList) ...[
-                                  _buildPersonRow(summary, theme),
+                                  _buildAppPersonRow(summary, theme),
                                   const SizedBox(height: 12),
                                 ],
                               ],
@@ -530,6 +530,453 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildPersonRow(summary, theme),
               )),
+      ],
+    );
+  }
+
+  Widget _buildAppPersonRow(PersonDebtSummary summary, SettlivThemeExtension theme) {
+    final isExpanded = _expandedPersonIds.contains(summary.person.id);
+    final isOwedToUser = summary.personOwesUser;
+    final amountText = CurrencyFormatter.formatPaise(summary.amountPaise);
+    final directionLabel = isOwedToUser ? 'owes you' : 'you owe';
+    final contextParts = <String>[
+      for (final l in summary.lines) l.groupName,
+      if (summary.iouNotes.isNotEmpty) 'IOU note',
+    ];
+    final contextSuffix =
+        contextParts.isNotEmpty ? ' · ${contextParts.join(' · ')}' : '';
+
+    Widget buildActionButton({
+      required String label,
+      required VoidCallback onPressed,
+      required bool isPrimary,
+      Color? bgColor,
+      Color? fgColor,
+    }) {
+      final child = FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+        ),
+      );
+      if (isPrimary) {
+        return SizedBox(
+          height: 48,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: bgColor ?? theme.primaryButtonBg,
+              foregroundColor: fgColor ?? theme.primaryButtonText,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(48, 48),
+            ),
+            onPressed: onPressed,
+            child: child,
+          ),
+        );
+      }
+      return SizedBox(
+        height: 48,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: theme.hairline),
+            foregroundColor: theme.ink,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            minimumSize: const Size(48, 48),
+          ),
+          onPressed: onPressed,
+          child: child,
+        ),
+      );
+    }
+
+    return SectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Tier 1 + Tier 2: Avatar, Name/Caption, Amount, 48px Chevron
+                InkWell(
+                  onTap: () => _toggleExpanded(summary.person.id),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      PersonAvatar(person: summary.person, size: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              summary.person.name,
+                              style: AppTypography.sectionTitle.copyWith(
+                                color: theme.ink,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: directionLabel,
+                                    style: AppTypography.caption.copyWith(
+                                      color: isOwedToUser
+                                          ? theme.textEmerald
+                                          : theme.textCoral,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                  if (contextSuffix.isNotEmpty)
+                                    TextSpan(
+                                      text: contextSuffix,
+                                      style: AppTypography.caption.copyWith(
+                                        color: theme.muted,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 112),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            amountText,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.visible,
+                            style: TextStyle(
+                              fontFamily: AppTypography.fontDisplay,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: isOwedToUser
+                                  ? theme.textEmerald
+                                  : theme.textCoral,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          onPressed: () => _toggleExpanded(summary.person.id),
+                          icon: Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: theme.muted,
+                            size: 22,
+                          ),
+                          tooltip: isExpanded ? 'Collapse' : 'Expand',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Tier 3: Full-width action row (stacks vertically on narrow/large text)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final textScale =
+                        MediaQuery.textScalerOf(context).scale(1.0);
+                    final stackVertically = constraints.maxWidth < 280 ||
+                        (textScale >= 1.3 && constraints.maxWidth < 330);
+
+                    if (summary.lines.isEmpty && summary.iouNotes.isNotEmpty) {
+                      return buildActionButton(
+                        label: isOwedToUser ? 'View IOU' : 'Settle',
+                        isPrimary: true,
+                        onPressed: () => IouDetailSheet.show(
+                          context,
+                          note: summary.iouNotes.first,
+                        ),
+                      );
+                    }
+
+                    if (isOwedToUser) {
+                      final nudgeBtn = buildActionButton(
+                        label: 'Nudge',
+                        isPrimary: false,
+                        onPressed: () => _onNudge(
+                          summary.person,
+                          summary.amountPaise,
+                          summary.lines,
+                        ),
+                      );
+                      final markBtn = buildActionButton(
+                        label: 'Mark received',
+                        isPrimary: true,
+                        bgColor: theme.emerald,
+                        fgColor: theme.white,
+                        onPressed: () => _onMarkReceived(summary),
+                      );
+                      if (stackVertically) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            nudgeBtn,
+                            const SizedBox(height: 8),
+                            markBtn,
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: nudgeBtn),
+                          const SizedBox(width: 8),
+                          Expanded(child: markBtn),
+                        ],
+                      );
+                    }
+
+                    return buildActionButton(
+                      label: 'Settle',
+                      isPrimary: true,
+                      onPressed: () {
+                        if (summary.lines.length == 1) {
+                          _onSettleGroupLine(
+                            summary.person,
+                            summary.lines.first,
+                          );
+                        } else {
+                          _onSettleAll(summary);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Expanded Breakdown Section
+          if (isExpanded) ...[
+            Divider(height: 1, color: theme.hairline),
+            Container(
+              padding: const EdgeInsets.fromLTRB(68, 12, 16, 12),
+              color: theme.surface.withValues(alpha: 0.3),
+              child: _buildExpandedBreakdown(summary, theme),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandedBreakdown(
+    PersonDebtSummary summary,
+    SettlivThemeExtension theme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final line in summary.lines) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        line.groupName,
+                        style: AppTypography.bodySemiBold.copyWith(
+                          color: theme.ink,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      CurrencyFormatter.formatPaise(line.amountPaise),
+                      maxLines: 1,
+                      softWrap: false,
+                      style: AppTypography.caption.copyWith(
+                        color: line.personOwesUser
+                            ? theme.textEmerald
+                            : theme.textCoral,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (line.personOwesUser) ...[
+                      TextButton(
+                        onPressed: () {
+                          final repo = ref.read(appRepositoryProvider);
+                          final grp = repo.getGroup(line.groupId);
+                          if (grp != null) {
+                            NudgeSheet.show(
+                              context: context,
+                              group: grp,
+                              debtor: summary.person,
+                              amountPaise: line.amountPaise,
+                            );
+                          }
+                        },
+                        child: Text(
+                          'Nudge',
+                          style: TextStyle(
+                            color: theme.ink,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            _onMarkReceivedGroupLine(summary.person, line),
+                        child: Text(
+                          'Mark received',
+                          style: TextStyle(
+                            color: theme.textEmerald,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ] else
+                      TextButton(
+                        onPressed: () =>
+                            _onSettleGroupLine(summary.person, line),
+                        child: Text(
+                          'Settle',
+                          style: TextStyle(
+                            color: theme.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+        for (final iou in summary.iouNotes) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: InkWell(
+              onTap: () => IouDetailSheet.show(context, note: iou),
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          iou.note.isNotEmpty ? iou.note : 'Personal loan',
+                          style: AppTypography.bodySemiBold.copyWith(
+                            color: theme.ink,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${iou.isOwedToMe ? 'Owes you' : 'You owe'} ${CurrencyFormatter.formatPaise(iou.remainingPaise)}',
+                          style: AppTypography.caption.copyWith(
+                            color: iou.isOwedToMe
+                                ? theme.textEmerald
+                                : theme.textCoral,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => IouDetailSheet.show(context, note: iou),
+                    child: Text(
+                      iou.isOwedToMe ? 'Manage' : 'Pay',
+                      style: TextStyle(
+                        color: theme.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        if (summary.lines.length > 1) ...[
+          const SizedBox(height: 8),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: summary.personOwesUser
+                  ? theme.emerald
+                  : theme.primaryButtonBg,
+              foregroundColor: summary.personOwesUser
+                  ? theme.white
+                  : theme.primaryButtonText,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              minimumSize: const Size(48, 48),
+            ),
+            onPressed: () => summary.personOwesUser
+                ? _onMarkReceived(summary)
+                : _onSettleAll(summary),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                summary.personOwesUser
+                    ? 'Mark all received (${CurrencyFormatter.formatPaise(summary.amountPaise)})'
+                    : 'Settle all with ${summary.person.name} (${CurrencyFormatter.formatPaise(summary.amountPaise)})',
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -824,7 +1271,57 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                       ),
                     ),
                   ],
-                  if (summary.lines.length > 1) ...[
+                  for (final iou in summary.iouNotes) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: InkWell(
+              onTap: () => IouDetailSheet.show(context, note: iou),
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          iou.note.isNotEmpty ? iou.note : 'Personal loan',
+                          style: AppTypography.bodySemiBold.copyWith(
+                            color: theme.ink,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${iou.isOwedToMe ? 'Owes you' : 'You owe'} ${CurrencyFormatter.formatPaise(iou.remainingPaise)}',
+                          style: AppTypography.caption.copyWith(
+                            color: iou.isOwedToMe
+                                ? theme.textEmerald
+                                : theme.textCoral,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => IouDetailSheet.show(context, note: iou),
+                    child: Text(
+                      iou.isOwedToMe ? 'Manage' : 'Pay',
+                      style: TextStyle(
+                        color: theme.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        if (summary.lines.length > 1) ...[
                     const SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
