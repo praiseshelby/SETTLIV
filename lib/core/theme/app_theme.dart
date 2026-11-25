@@ -194,7 +194,7 @@ class SettlivThemeExtension extends ThemeExtension<SettlivThemeExtension> {
     navy: AppColors.anchorIndigo,
     accent: AppColors.accentViolet,
     onNavy: Color(0xFFECEBF5),
-    primaryButtonBg: AppColors.offWhite,
+    primaryButtonBg: Color(0xFFF5F7FF),
     primaryButtonText: AppColors.lightInk,
     emerald: AppColors.emerald,
     textEmerald: AppColors.textEmeraldDark,

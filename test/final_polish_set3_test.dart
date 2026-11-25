@@ -40,17 +40,19 @@ void main() {
       await tester.pump();
 
       container.read(experienceTransitionProvider.notifier).trigger(
-            origin: const Offset(200, 300),
-            targetLabel: 'Mobile app',
+            fromWeb: true,
+            toWeb: false,
           );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 250));
 
-      expect(find.text('Mobile app'), findsOneWidget);
+      // Device-morph overlay paints without target-name text
+      expect(find.byType(CustomPaint), findsWidgets);
+      expect(find.text('Mobile app'), findsNothing);
       expect(find.text('Underneath'), findsOneWidget);
 
       await tester.pumpAndSettle();
-      expect(find.text('Mobile app'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -69,7 +71,8 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('SETTLIV'), findsOneWidget);
+        expect(find.text('S'), findsOneWidget);
+        expect(find.text('V'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
@@ -86,7 +89,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SETTLIV'), findsOneWidget);
+      expect(find.text('S'), findsOneWidget);
+      expect(find.text('V'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

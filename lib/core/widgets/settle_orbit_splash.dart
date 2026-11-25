@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-/// Gates the app on initial launch for at least 900ms (skipped in tests/reduced
-/// motion) using the exact same dark Settle Orbit geometry as web/index.html.
+/// Gates the app on initial launch for at least 900ms (skipped in tests)
+/// using the exact same cinematic Settle Orbit geometry & dark Midnight
+/// palette as web/index.html so the handoff has zero flash.
 class SettleOrbitSplashGate extends StatefulWidget {
   final Widget child;
   final bool skipInTests;
@@ -37,7 +38,7 @@ class _SettleOrbitSplashGateState extends State<SettleOrbitSplashGate> {
     _minTimer = Timer(const Duration(milliseconds: 900), () {
       if (!mounted) return;
       setState(() => _fadingOut = true);
-      Future<void>.delayed(const Duration(milliseconds: 280), () {
+      Future<void>.delayed(const Duration(milliseconds: 320), () {
         if (mounted) setState(() => _visible = false);
       });
     });
@@ -60,9 +61,9 @@ class _SettleOrbitSplashGateState extends State<SettleOrbitSplashGate> {
             ignoring: _fadingOut,
             child: AnimatedOpacity(
               opacity: _fadingOut ? 0.0 : 1.0,
-              duration: const Duration(milliseconds: 280),
+              duration: const Duration(milliseconds: 320),
               curve: Curves.easeOut,
-              child: SettleOrbitSplash(converging: _fadingOut),
+              child: SettleOrbitSplash(exiting: _fadingOut),
             ),
           ),
         ),
@@ -72,11 +73,11 @@ class _SettleOrbitSplashGateState extends State<SettleOrbitSplashGate> {
 }
 
 class SettleOrbitSplash extends StatefulWidget {
-  final bool converging;
+  final bool exiting;
 
   const SettleOrbitSplash({
     super.key,
-    this.converging = false,
+    this.exiting = false,
   });
 
   @override
@@ -86,14 +87,15 @@ class SettleOrbitSplash extends StatefulWidget {
 class _SettleOrbitSplashState extends State<SettleOrbitSplash>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
+  static const List<String> _letters = ['S', 'E', 'T', 'T', 'L', 'I', 'V'];
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3600),
-    )..repeat();
+      duration: const Duration(milliseconds: 1800),
+    )..forward();
   }
 
   @override
@@ -105,199 +107,287 @@ class _SettleOrbitSplashState extends State<SettleOrbitSplash>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final shorter = math.min(size.width, size.height);
-    final sceneSize = (shorter * 0.60).clamp(210.0, 560.0);
-    final wordmarkSize = (size.width * 0.05).clamp(32.0, 44.0);
-    final tracking = wordmarkSize * 0.26;
-    final hairlineWidth = (size.width * 0.22).clamp(120.0, 180.0);
+    final wordmarkSize = (size.width * 0.05).clamp(30.0, 48.0);
+    final tracking = wordmarkSize * 0.28;
+    final hairlineWidth = (size.width * 0.22).clamp(120.0, 190.0);
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
     if (reduceMotion) {
-      _ctrl.stop();
+      _ctrl.value = 1.0;
     }
 
     return ColoredBox(
       color: AppColors.farDarkInkBase, // #070914 matching web/index.html
-      child: Center(
-        child: SizedBox(
-          width: sceneSize,
-          height: sceneSize,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(
-                child: RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Living background + 8-10 viewport-spanning rings + convergence nodes
+          RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (context, _) {
+                final t = reduceMotion ? 1.0 : _ctrl.value;
+                return Transform.scale(
+                  scale: widget.exiting && !reduceMotion ? 1.06 : 1.0,
+                  child: CustomPaint(
+                    painter: _CinematicOrbitPainter(
+                      t: t,
+                      reduceMotion: reduceMotion,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // 2. Centered wordmark (letter-by-letter reveal) + hairline + sweep
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(left: tracking),
                   child: AnimatedBuilder(
                     animation: _ctrl,
                     builder: (context, _) {
-                      return CustomPaint(
-                        painter: _SplashOrbitPainter(
-                          t: reduceMotion ? 0.25 : _ctrl.value,
-                          converge: widget.converging ? 1.0 : 0.0,
-                          reduceMotion: reduceMotion,
-                        ),
+                      final t = reduceMotion ? 1.0 : _ctrl.value;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0; i < _letters.length; i++) ...[
+                            Builder(builder: (context) {
+                              if (reduceMotion) {
+                                return Text(
+                                  _letters[i],
+                                  style: _letterStyle(wordmarkSize, tracking),
+                                );
+                              }
+                              final start = 0.50 + i * 0.022;
+                              final local = ((t - start) / 0.18).clamp(0.0, 1.0);
+                              final eased = Curves.easeOutCubic.transform(local);
+                              return Opacity(
+                                opacity: eased,
+                                child: Transform.translate(
+                                  offset: Offset(0, (1.0 - eased) * 10.0),
+                                  child: Text(
+                                    _letters[i],
+                                    style: _letterStyle(wordmarkSize, tracking),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
                       );
                     },
                   ),
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: tracking),
-                    child: Text(
-                      'SETTLIV',
-                      style: TextStyle(
-                        fontFamily: AppTypography.fontBrand,
-                        fontFamilyFallback: AppTypography.brandFallback,
-                        fontSize: wordmarkSize,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: tracking,
-                        height: 1.0,
-                        color: AppColors.darkInk,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(1),
-                    child: SizedBox(
-                      width: hairlineWidth,
-                      height: 1.5,
-                      child: ColoredBox(
-                        color: AppColors.darkHairline,
-                        child: reduceMotion
-                            ? const Align(
-                                alignment: Alignment.center,
-                                child: SizedBox(
-                                  width: 48,
-                                  height: 1.5,
-                                  child: ColoredBox(color: AppColors.prismViolet),
-                                ),
-                              )
-                            : AnimatedBuilder(
-                                animation: _ctrl,
-                                builder: (context, _) {
-                                  final sweepT = (_ctrl.value * 2.4) % 1.0;
-                                  final dx = -60.0 + sweepT * (hairlineWidth + 120.0);
-                                  return Transform.translate(
-                                    offset: Offset(dx, 0),
-                                    child: const Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: SizedBox(
-                                        width: 56,
-                                        height: 1.5,
-                                        child: ColoredBox(
-                                          color: AppColors.prismViolet,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                const SizedBox(height: 16),
+                AnimatedBuilder(
+                  animation: _ctrl,
+                  builder: (context, _) {
+                    final t = reduceMotion ? 1.0 : _ctrl.value;
+                    final drawT = reduceMotion
+                        ? 1.0
+                        : Curves.easeOutCubic
+                            .transform(((t - 0.65) / 0.25).clamp(0.0, 1.0));
+                    final sweepT = reduceMotion
+                        ? 0.5
+                        : ((t - 0.72) / 0.28).clamp(0.0, 1.0);
+                    return Transform.scale(
+                      scaleX: drawT,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(1),
+                        child: SizedBox(
+                          width: hairlineWidth,
+                          height: 1.5,
+                          child: ColoredBox(
+                            color: AppColors.darkInk.withValues(alpha: 0.14),
+                            child: Transform.translate(
+                              offset: Offset(
+                                -50.0 + sweepT * (hairlineWidth + 100.0),
+                                0,
                               ),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 1.5,
+                                  child: ColoredBox(
+                                    color:
+                                        AppColors.darkInk.withValues(alpha: 0.65),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+
+  TextStyle _letterStyle(double fontSize, double tracking) => TextStyle(
+        fontFamily: AppTypography.fontBrand,
+        fontFamilyFallback: AppTypography.brandFallback,
+        fontSize: fontSize,
+        fontWeight: FontWeight.w800,
+        letterSpacing: tracking,
+        height: 1.0,
+        color: AppColors.darkInk,
+      );
 }
 
-class _SplashOrbitPainter extends CustomPainter {
+class _CinematicOrbitPainter extends CustomPainter {
   final double t;
-  final double converge;
   final bool reduceMotion;
 
-  const _SplashOrbitPainter({
+  const _CinematicOrbitPainter({
     required this.t,
-    required this.converge,
     required this.reduceMotion,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final maxR = size.width / 2;
+    final maxDim = math.max(size.width, size.height);
 
-    // Expanding concentric pulse rings (transform & opacity)
-    if (reduceMotion) {
-      canvas.drawCircle(
-        center,
-        maxR * 0.88,
-        Paint()
-          ..color = AppColors.prismViolet.withValues(alpha: 0.22)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.0,
-      );
-    } else {
-      for (int i = 0; i < 3; i++) {
-        final phase = (t + i / 3.0) % 1.0;
-        final scale = 0.50 + phase * 0.55;
-        final alpha = (1.0 - phase) * 0.45;
-        canvas.drawCircle(
-          center,
-          maxR * 0.88 * scale,
-          Paint()
-            ..color = AppColors.prismViolet.withValues(alpha: alpha)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0,
+    // Soft radial vignette + drifting cool teal-slate & faint warm hint (no purple-blue AI gradient)
+    final drift = math.sin(t * math.pi) * 18.0;
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment(-0.48 + (drift / size.width), -0.36),
+          radius: 0.85,
+          colors: const [
+            Color(0x44144A58), // muted cool teal-slate
+            Color(0x00070914),
+          ],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment(0.48 - (drift / size.width), 0.36),
+          radius: 0.78,
+          colors: const [
+            Color(0x28703C34), // faint warm hint
+            Color(0x00070914),
+          ],
+        ).createShader(Offset.zero & size),
+    );
+
+    // 9 hairline concentric rings + partial arcs spanning the viewport
+    final ringBase = maxDim * 0.70;
+    final breath = reduceMotion ? 1.0 : (0.985 + 0.03 * t);
+    final ringPaint = Paint()
+      ..color = AppColors.darkInk.withValues(alpha: 0.075)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final arcPaint = Paint()
+      ..color = AppColors.textEmeraldDark.withValues(alpha: 0.11)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    for (int i = 1; i <= 9; i++) {
+      final r = (ringBase * (i / 9.0)) * breath;
+      canvas.drawCircle(center, r, ringPaint);
+      if (i == 3 || i == 5 || i == 8) {
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: r),
+          -math.pi * 0.35 + (t * 0.4),
+          math.pi * 0.55,
+          false,
+          arcPaint,
         );
       }
     }
 
-    // Orbit tracks
-    final outerR = maxR * 0.76;
-    final innerR = maxR * 0.52;
-    canvas.drawCircle(
-      center,
-      outerR,
-      Paint()
-        ..color = AppColors.darkHairline
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
-    );
-    canvas.drawCircle(
-      center,
-      innerR,
-      Paint()
-        ..color = AppColors.prismViolet.withValues(alpha: 0.25)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
-    );
+    // Nodes: reduced motion shows composed placement; otherwise curved arc convergence + comet trail + ripple
+    if (reduceMotion) {
+      canvas.drawCircle(
+        Offset(center.dx - 44, center.dy),
+        5.0,
+        Paint()..color = AppColors.textEmeraldDark,
+      );
+      canvas.drawCircle(
+        Offset(center.dx + 44, center.dy),
+        5.0,
+        Paint()..color = AppColors.textCoralDark,
+      );
+      return;
+    }
 
-    // Emerald & coral nodes orbiting and converging on ready
-    final factor = 1.0 - (converge * 0.75);
-    final emeraldAngle = -math.pi / 2 + t * 2 * math.pi;
-    final coralAngle = math.pi / 2 - t * 2 * math.pi;
+    final moveT = Curves.easeOutCubic.transform((t / 0.58).clamp(0.0, 1.0));
+    if (moveT < 1.0) {
+      final startX = size.width * 0.42;
+      final startY = size.height * 0.20;
+      final arcLift = math.sin(moveT * math.pi) * 28.0;
 
-    canvas.drawCircle(
-      Offset(
-        center.dx + outerR * factor * math.cos(emeraldAngle),
-        center.dy + outerR * factor * math.sin(emeraldAngle),
-      ),
-      5.0,
-      Paint()..color = AppColors.textEmeraldDark,
-    );
-    canvas.drawCircle(
-      Offset(
-        center.dx + innerR * factor * math.cos(coralAngle),
-        center.dy + innerR * factor * math.sin(coralAngle),
-      ),
-      5.0,
-      Paint()..color = AppColors.textCoralDark,
-    );
+      final ePos = Offset(
+        center.dx - startX * (1.0 - moveT),
+        center.dy - startY * (1.0 - moveT) - arcLift,
+      );
+      final cPos = Offset(
+        center.dx + startX * (1.0 - moveT),
+        center.dy + startY * (1.0 - moveT) + arcLift,
+      );
+
+      // Short comet trail
+      for (int s = 1; s <= 3; s++) {
+        final backT = (moveT - s * 0.045).clamp(0.0, 1.0);
+        final backLift = math.sin(backT * math.pi) * 28.0;
+        final alpha = 0.35 - s * 0.09;
+        canvas.drawCircle(
+          Offset(
+            center.dx - startX * (1.0 - backT),
+            center.dy - startY * (1.0 - backT) - backLift,
+          ),
+          5.0 - s * 0.8,
+          Paint()..color = AppColors.textEmeraldDark.withValues(alpha: alpha),
+        );
+        canvas.drawCircle(
+          Offset(
+            center.dx + startX * (1.0 - backT),
+            center.dy + startY * (1.0 - backT) + backLift,
+          ),
+          5.0 - s * 0.8,
+          Paint()..color = AppColors.textCoralDark.withValues(alpha: alpha),
+        );
+      }
+
+      canvas.drawCircle(ePos, 5.2, Paint()..color = AppColors.textEmeraldDark);
+      canvas.drawCircle(cPos, 5.2, Paint()..color = AppColors.textCoralDark);
+    }
+
+    // Contact ripple ring
+    if (t >= 0.52) {
+      final rippleT = Curves.easeOutCubic.transform(((t - 0.52) / 0.36).clamp(0.0, 1.0));
+      if (rippleT < 1.0) {
+        canvas.drawCircle(
+          center,
+          12.0 + rippleT * 84.0,
+          Paint()
+            ..color = AppColors.darkInk.withValues(alpha: (1.0 - rippleT) * 0.45)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.4,
+        );
+      }
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _SplashOrbitPainter oldDelegate) =>
-      oldDelegate.t != t ||
-      oldDelegate.converge != converge ||
-      oldDelegate.reduceMotion != reduceMotion;
+  bool shouldRepaint(covariant _CinematicOrbitPainter oldDelegate) =>
+      oldDelegate.t != t || oldDelegate.reduceMotion != reduceMotion;
 }

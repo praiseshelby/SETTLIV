@@ -712,7 +712,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => context.push('/settings/recurring'),
               child: Row(
                 children: [
-                  Icon(Icons.repeat_rounded, color: theme.navy, size: 24),
+                  Icon(Icons.repeat_rounded, color: theme.ink, size: 24),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(

@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'settliv_wordmark.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -108,11 +107,25 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                               const SettlivWordmark(fontSize: 20, trackingFactor: 0.24),
                               const Spacer(),
                               // Add button
-                              IconButton(
-                                icon: const Icon(Icons.add_rounded),
-                                color: theme.ink,
-                                tooltip: 'Add expense',
-                                onPressed: () => context.push('/add'),
+                              Material(
+                                color: theme.primaryButtonBg,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InkWell(
+                                  onTap: () => context.push('/add'),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Tooltip(
+                                    message: 'Add expense',
+                                    child: SizedBox(
+                                      width: 48,
+                                      height: 48,
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        size: 20,
+                                        color: theme.primaryButtonText,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -224,6 +237,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
 
                       // Primary "Add expense" button
                       _SidebarAddExpenseButton(
@@ -751,33 +765,10 @@ class _SidebarAddExpenseButton extends StatefulWidget {
       _SidebarAddExpenseButtonState();
 }
 
-class _SidebarAddExpenseButtonState extends State<_SidebarAddExpenseButton>
-    with SingleTickerProviderStateMixin {
+class _SidebarAddExpenseButtonState extends State<_SidebarAddExpenseButton> {
   bool _isHovered = false;
   bool _isPressed = false;
   bool _isFocused = false;
-  late final AnimationController _sheenCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _sheenCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 520),
-    );
-  }
-
-  @override
-  void dispose() {
-    _sheenCtrl.dispose();
-    super.dispose();
-  }
-
-  void _triggerSheen() {
-    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduce) return;
-    _sheenCtrl.forward(from: 0.0);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -785,178 +776,91 @@ class _SidebarAddExpenseButtonState extends State<_SidebarAddExpenseButton>
     final isDark = theme.isDark;
     final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
-    final List<Color> gradientColors = isDark
-        ? [theme.raised, theme.surfaceSolid]
-        : [theme.ink, theme.navy];
-    final Color fgColor = isDark ? theme.ink : theme.white;
-    final Color glassCircleBg = isDark
-        ? theme.ink.withValues(alpha: 0.12)
-        : theme.white.withValues(alpha: 0.16);
+    final Color bgColor = theme.primaryButtonBg;
+    final Color fgColor = theme.primaryButtonText;
 
     final double scale = _isPressed ? 0.98 : 1.0;
     final double liftY = (_isHovered && !_isPressed && !reduceMotion) ? -1.0 : 0.0;
 
-    final buttonBody = Semantics(
+    final Widget content = widget.compact
+        ? Center(
+            child: Icon(
+              Icons.add_rounded,
+              size: 20,
+              color: fgColor,
+            ),
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_rounded,
+                size: 20,
+                color: fgColor,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Add expense',
+                style: TextStyle(
+                  fontFamily: AppTypography.fontBody,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  height: 1.0,
+                  color: fgColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          );
+
+    final button = Semantics(
       button: true,
       label: 'Add expense',
-      child: Focus(
-        onFocusChange: (focused) => setState(() => _isFocused = focused),
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent &&
-              (event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.space)) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (_) {
-            setState(() => _isHovered = true);
-            _triggerSheen();
-          },
-          onExit: (_) => setState(() => _isHovered = false),
-          child: GestureDetector(
-            onTapDown: (_) => setState(() => _isPressed = true),
-            onTapUp: (_) => setState(() => _isPressed = false),
-            onTapCancel: () => setState(() => _isPressed = false),
-            onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: reduceMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 140),
-              curve: Curves.easeOutCubic,
-              transform: Matrix4.identity()
-                ..scale(scale)
-                ..translate(0.0, liftY),
-              width: widget.compact ? 48 : double.infinity,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: gradientColors,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _isFocused
-                      ? theme.accent
-                      : (isDark
-                          ? theme.hairline
-                          : theme.ink.withValues(alpha: 0.12)),
-                  width: _isFocused ? 2.0 : 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.shadow.withValues(alpha: isDark ? 0.35 : 0.16),
-                    blurRadius: _isHovered ? 16 : 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(13),
-                child: Stack(
-                  children: [
-                    // 1px inner top highlight
-                    Positioned(
-                      top: 0,
-                      left: 10,
-                      right: 10,
-                      height: 1,
-                      child: Container(
-                        color: theme.innerHighlight.withValues(
-                          alpha: isDark ? 0.18 : 0.28,
-                        ),
-                      ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()
+            ..scale(scale)
+            ..translate(0.0, liftY),
+          width: widget.compact ? 48 : double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _isFocused ? theme.accent : theme.hairline,
+              width: _isFocused ? 2.0 : 1.0,
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: theme.shadow.withValues(alpha: _isHovered ? 0.18 : 0.12),
+                      blurRadius: _isHovered ? 14 : 8,
+                      offset: const Offset(0, 3),
                     ),
-                    // Soft sheen sweep via transform (no blur)
-                    if (!reduceMotion)
-                      AnimatedBuilder(
-                        animation: _sheenCtrl,
-                        builder: (context, _) {
-                          if (_sheenCtrl.value <= 0.0 ||
-                              _sheenCtrl.value >= 1.0) {
-                            return const SizedBox.shrink();
-                          }
-                          final x = -60.0 + (_sheenCtrl.value * 320.0);
-                          return Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: 0,
-                            child: Transform.translate(
-                              offset: Offset(x, 0),
-                              child: Container(
-                                width: 48,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      fgColor.withValues(alpha: 0.0),
-                                      fgColor.withValues(alpha: 0.12),
-                                      fgColor.withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    // Button content
-                    if (widget.compact)
-                      Center(
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: glassCircleBg,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            size: 18,
-                            color: fgColor,
-                          ),
-                        ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: glassCircleBg,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.add_rounded,
-                                size: 17,
-                                color: fgColor,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Add expense',
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontBody,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: fgColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
-                ),
+          ),
+          child: Material(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(13),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(13),
+              onFocusChange: (focused) => setState(() => _isFocused = focused),
+              onHighlightChanged: (pressed) => setState(() => _isPressed = pressed),
+              onTap: widget.onTap,
+              child: Padding(
+                padding: widget.compact
+                    ? EdgeInsets.zero
+                    : const EdgeInsets.symmetric(horizontal: 12),
+                child: content,
               ),
             ),
           ),
@@ -967,9 +871,9 @@ class _SidebarAddExpenseButtonState extends State<_SidebarAddExpenseButton>
     if (widget.compact) {
       return Tooltip(
         message: 'Add expense',
-        child: buttonBody,
+        child: button,
       );
     }
-    return buttonBody;
+    return button;
   }
 }

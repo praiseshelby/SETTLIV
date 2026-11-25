@@ -1,20 +1,19 @@
-import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
-import '../theme/app_typography.dart';
 import '../theme/motion_tokens.dart';
 
 class ExperienceTransitionEvent {
   final int id;
-  final Offset origin;
-  final String targetLabel;
+  final bool fromWeb;
+  final bool toWeb;
 
   const ExperienceTransitionEvent({
     required this.id,
-    required this.origin,
-    required this.targetLabel,
+    required this.fromWeb,
+    required this.toWeb,
   });
 }
 
@@ -25,14 +24,14 @@ class ExperienceTransitionNotifier extends Notifier<ExperienceTransitionEvent?> 
   ExperienceTransitionEvent? build() => null;
 
   void trigger({
-    required Offset origin,
-    required String targetLabel,
+    required bool fromWeb,
+    required bool toWeb,
   }) {
     _counter++;
     state = ExperienceTransitionEvent(
       id: _counter,
-      origin: origin,
-      targetLabel: targetLabel,
+      fromWeb: fromWeb,
+      toWeb: toWeb,
     );
   }
 }
@@ -42,8 +41,9 @@ final experienceTransitionProvider =
   ExperienceTransitionNotifier.new,
 );
 
-/// Full-viewport choreographed transition overlay (650ms) when switching
-/// between App and Web layouts. Uses transform & opacity only, no BackdropFilter.
+/// Full-viewport 650ms device-morph transition overlay when switching
+/// between App and Web layouts. No text, no blur, transform & opacity +
+/// paint-only CustomPainter inside RepaintBoundary.
 class ExperienceTransitionOverlay extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -113,11 +113,6 @@ class _ExperienceTransitionOverlayState
     }
 
     final theme = context.settliv;
-    final size = MediaQuery.sizeOf(context);
-    final origin = _activeEvent!.origin;
-    final maxDx = math.max(origin.dx, size.width - origin.dx);
-    final maxDy = math.max(origin.dy, size.height - origin.dy);
-    final maxRadius = math.sqrt(maxDx * maxDx + maxDy * maxDy) + 24;
 
     return Stack(
       children: [
@@ -130,95 +125,82 @@ class _ExperienceTransitionOverlayState
                 final t = _ctrl.value;
 
                 if (_liteMode) {
-                  // Plain 150ms cross-fade
-                  final fadeOut = (1.0 - t).clamp(0.0, 1.0);
+                  final fade = (1.0 - t).clamp(0.0, 1.0);
                   return Opacity(
-                    opacity: fadeOut * 0.6,
+                    opacity: fade * 0.75,
                     child: ColoredBox(color: theme.surfaceSolid),
                   );
                 }
 
-                // 0.00 -> 0.40: Circle scales out from tapped tile
-                final expandT = Curves.easeOutCubic.transform(
-                  (t / 0.40).clamp(0.0, 1.0),
+                // 0-120ms (0.00..0.185): veil fades in
+                // 120-480ms (0.185..0.738): device morph + nodes converge + ripple
+                // 480-650ms (0.738..1.00): new outline scales up past viewport & veil fades out
+                final double veilOpacity;
+                if (t < 0.185) {
+                  veilOpacity = Curves.easeOut.transform(t / 0.185);
+                } else if (t <= 0.738) {
+                  veilOpacity = 1.0;
+                } else {
+                  veilOpacity = 1.0 -
+                      Curves.easeIn.transform(
+                        ((t - 0.738) / 0.262).clamp(0.0, 1.0),
+                      );
+                }
+
+                final double morphT = Curves.easeInOutCubic.transform(
+                  ((t - 0.185) / (0.738 - 0.185)).clamp(0.0, 1.0),
                 );
-                // 0.12 -> 0.65: Orbit converges
-                final orbitT = Curves.easeInOutCubic.transform(
-                  ((t - 0.12) / 0.53).clamp(0.0, 1.0),
-                );
-                // 0.65 -> 1.00: Overlay fades out
-                final overlayOpacity = t < 0.65
+
+                final double exitScale = t <= 0.738
                     ? 1.0
-                    : 1.0 -
-                        Curves.easeOut.transform(
-                          ((t - 0.65) / 0.35).clamp(0.0, 1.0),
-                        );
+                    : 1.0 +
+                        Curves.easeInCubic.transform(
+                              ((t - 0.738) / 0.262).clamp(0.0, 1.0),
+                            ) *
+                            3.2;
 
-                final circleScale = expandT.clamp(0.02, 1.0);
-                final contentOpacity = t < 0.12
-                    ? 0.0
-                    : (t < 0.25 ? (t - 0.12) / 0.13 : 1.0);
+                final double deviceOpacity = t < 0.12
+                    ? (t / 0.12).clamp(0.0, 1.0)
+                    : (t > 0.738
+                        ? (1.0 - ((t - 0.738) / 0.262)).clamp(0.0, 1.0)
+                        : 1.0);
 
-                return Opacity(
-                  opacity: overlayOpacity,
-                  child: Stack(
-                    children: [
-                      // Expanding theme-coloured circle (transform only)
-                      Positioned(
-                        left: origin.dx - maxRadius,
-                        top: origin.dy - maxRadius,
-                        width: maxRadius * 2,
-                        height: maxRadius * 2,
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: veilOpacity,
+                        child: ColoredBox(color: theme.surfaceSolid),
+                      ),
+                    ),
+                    Center(
+                      child: Opacity(
+                        opacity: deviceOpacity,
                         child: Transform.scale(
-                          scale: circleScale,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: theme.surfaceSolid,
-                              shape: BoxShape.circle,
+                          scale: exitScale,
+                          child: RepaintBoundary(
+                            child: SizedBox(
+                              width: 240,
+                              height: 220,
+                              child: CustomPaint(
+                                painter: _DeviceMorphPainter(
+                                  morphT: morphT,
+                                  fromWeb: _activeEvent!.fromWeb,
+                                  toWeb: _activeEvent!.toWeb,
+                                  inkColor: theme.ink,
+                                  mutedColor: theme.muted,
+                                  hairlineColor: theme.hairline,
+                                  accentColor: theme.accent,
+                                  emeraldColor: theme.emerald,
+                                  coralColor: theme.coral,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      // Center Settle Orbit motif + target layout name
-                      Center(
-                        child: Opacity(
-                          opacity: contentOpacity,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              RepaintBoundary(
-                                child: SizedBox(
-                                  width: 112,
-                                  height: 112,
-                                  child: CustomPaint(
-                                    painter: _OrbitConvergePainter(
-                                      progress: orbitT,
-                                      ringColor: theme.hairline,
-                                      accentColor: theme.accent,
-                                      emeraldColor: theme.emerald,
-                                      coralColor: theme.coral,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _activeEvent!.targetLabel,
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontBrand,
-                                  fontFamilyFallback: AppTypography.brandFallback,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: theme.ink,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -229,16 +211,24 @@ class _ExperienceTransitionOverlayState
   }
 }
 
-class _OrbitConvergePainter extends CustomPainter {
-  final double progress;
-  final Color ringColor;
+class _DeviceMorphPainter extends CustomPainter {
+  final double morphT;
+  final bool fromWeb;
+  final bool toWeb;
+  final Color inkColor;
+  final Color mutedColor;
+  final Color hairlineColor;
   final Color accentColor;
   final Color emeraldColor;
   final Color coralColor;
 
-  const _OrbitConvergePainter({
-    required this.progress,
-    required this.ringColor,
+  const _DeviceMorphPainter({
+    required this.morphT,
+    required this.fromWeb,
+    required this.toWeb,
+    required this.inkColor,
+    required this.mutedColor,
+    required this.hairlineColor,
     required this.accentColor,
     required this.emeraldColor,
     required this.coralColor,
@@ -247,50 +237,143 @@ class _OrbitConvergePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final outerR = size.width * 0.44;
-    final innerR = size.width * 0.28;
 
-    canvas.drawCircle(
-      center,
-      outerR,
+    // Monitor dimensions vs Phone dimensions
+    const double monW = 200;
+    const double monH = 132;
+    const double monR = 10;
+
+    const double phoneW = 102;
+    const double phoneH = 192;
+    const double phoneR = 22;
+
+    final startW = fromWeb ? monW : phoneW;
+    final startH = fromWeb ? monH : phoneH;
+    final startR = fromWeb ? monR : phoneR;
+
+    final endW = toWeb ? monW : phoneW;
+    final endH = toWeb ? monH : phoneH;
+    final endR = toWeb ? monR : phoneR;
+
+    final w = lerpDouble(startW, endW, morphT)!;
+    final h = lerpDouble(startH, endH, morphT)!;
+    final r = lerpDouble(startR, endR, morphT)!;
+
+    final rect = Rect.fromCenter(center: center, width: w, height: h);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(r));
+
+    // Device outline
+    canvas.drawRRect(
+      rrect,
       Paint()
-        ..color = ringColor
+        ..color = inkColor.withValues(alpha: 0.72)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4,
-    );
-    canvas.drawCircle(
-      center,
-      innerR,
-      Paint()
-        ..color = accentColor.withValues(alpha: 0.30)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4,
+        ..strokeWidth = 1.6,
     );
 
-    // Emerald & coral nodes converge smoothly toward the center
-    final convergeFactor = 1.0 - (progress * 0.85);
-    final emeraldAngle = -math.pi / 4 + progress * math.pi * 0.75;
-    final coralAngle = (3 * math.pi) / 4 + progress * math.pi * 0.75;
+    // Cross-fade skeletons inside the morphed frame
+    canvas.save();
+    canvas.clipRRect(rrect);
+    final double webAlpha = fromWeb == toWeb
+        ? (toWeb ? 1.0 : 0.0)
+        : (toWeb ? morphT : (1.0 - morphT));
+    final double phoneAlpha = 1.0 - webAlpha;
 
-    canvas.drawCircle(
-      Offset(
-        center.dx + outerR * convergeFactor * math.cos(emeraldAngle),
-        center.dy + outerR * convergeFactor * math.sin(emeraldAngle),
-      ),
-      5.5,
-      Paint()..color = emeraldColor,
-    );
-    canvas.drawCircle(
-      Offset(
-        center.dx + innerR * convergeFactor * math.cos(coralAngle),
-        center.dy + innerR * convergeFactor * math.sin(coralAngle),
-      ),
-      5.5,
-      Paint()..color = coralColor,
-    );
+    if (webAlpha > 0.02) {
+      final p = Paint()..color = mutedColor.withValues(alpha: 0.16 * webAlpha);
+      // Sidebar
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + 8, rect.top + 8, w * 0.22, h - 16),
+          const Radius.circular(4),
+        ),
+        p,
+      );
+      // Hero + card
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+              rect.left + 14 + w * 0.22, rect.top + 8, w * 0.70 - 20, h * 0.44),
+          const Radius.circular(5),
+        ),
+        p,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + 14 + w * 0.22, rect.top + 14 + h * 0.44,
+              w * 0.70 - 20, h * 0.36),
+          const Radius.circular(5),
+        ),
+        p,
+      );
+    }
+
+    if (phoneAlpha > 0.02) {
+      final p = Paint()..color = mutedColor.withValues(alpha: 0.16 * phoneAlpha);
+      // Top header strip
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + 10, rect.top + 14, w - 20, 14),
+          const Radius.circular(4),
+        ),
+        p,
+      );
+      // Hero card
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + 10, rect.top + 36, w - 20, h * 0.30),
+          const Radius.circular(6),
+        ),
+        p,
+      );
+      // List card
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+              rect.left + 10, rect.top + 44 + h * 0.30, w - 20, h * 0.24),
+          const Radius.circular(6),
+        ),
+        p,
+      );
+      // Docked bottom bar
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + 10, rect.bottom - 24, w - 20, 14),
+          const Radius.circular(7),
+        ),
+        p,
+      );
+    }
+    canvas.restore();
+
+    // Emerald & coral nodes slide from opposite sides of outline and meet at center
+    final nodeProgress = (morphT / 0.72).clamp(0.0, 1.0);
+    final offsetX = lerpDouble(w * 0.48, 0.0, nodeProgress)!;
+    final emeraldPos = Offset(center.dx - offsetX, center.dy);
+    final coralPos = Offset(center.dx + offsetX, center.dy);
+
+    canvas.drawCircle(emeraldPos, 5.0, Paint()..color = emeraldColor);
+    canvas.drawCircle(coralPos, 5.0, Paint()..color = coralColor);
+
+    // One soft ring ripple when nodes meet (nodeProgress >= 0.72)
+    if (morphT > 0.65) {
+      final rippleT = ((morphT - 0.65) / 0.35).clamp(0.0, 1.0);
+      final rippleR = lerpDouble(6.0, 36.0, rippleT)!;
+      final rippleAlpha = (1.0 - rippleT) * 0.55;
+      canvas.drawCircle(
+        center,
+        rippleR,
+        Paint()
+          ..color = accentColor.withValues(alpha: rippleAlpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _OrbitConvergePainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _DeviceMorphPainter oldDelegate) =>
+      oldDelegate.morphT != morphT ||
+      oldDelegate.fromWeb != fromWeb ||
+      oldDelegate.toWeb != toWeb;
 }

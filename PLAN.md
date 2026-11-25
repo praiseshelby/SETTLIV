@@ -665,3 +665,13 @@
 - [x] **Item 13 (First Loading Screen)**: Upgraded `web/index.html` CSS splash and added matching `SettleOrbitSplash` / `SettleOrbitSplashGate` (`#070914` dark palette, `min(60vw, 60vh)` orbit scene, expanding rings, orbiting emerald/coral nodes, `32–44px` SETTLIV wordmark sweep, thin progress hairline, 900ms min visible time, static reduced-motion state).
 - [x] **Item 12 (Spending Calendar Size)**: Capped PC Web `SpendingCalendar` at `maxWidth: 440` with `38px` compact cells and day hover tooltips, paired in a balanced bento row beside `CategoryBreakdown` in `InsightsWebView`.
 - [x] **Final QA**: Added `test/final_polish_set3_test.dart` covering transition overlay, 360px/1920px splash, 440px calendar, and Add Expense across 320px@1.3x and PhoneFrame contexts; refreshed `README.md`.
+
+
+---
+
+## Final Polish — Round 2 (4 Fixes)
+- [x] **Fix 4 (Recurring Expenses Icon)**: Changed `Icons.repeat_rounded` in `SettingsScreen` from `theme.navy` (dark in dark mode) to `theme.ink` matching all sibling Settings icons.
+- [x] **Fix 1 (Sidebar Add Expense Button)**: Replaced `_SidebarAddExpenseButton` with plain `Material` + `InkWell` (`48px` height, centered `Row` with `20px` `+` + `10px` gap + `'Add expense'`, no `Stack`/`Positioned`/glass circle), using `theme.primaryButtonBg` (`#16193F` light / `#F5F7FF` dark) + `16px` rhythm below 72px wordmark.
+- [x] **Fix 2 (Device-Morph App <-> Web Transition)**: Replaced text overlay in `ExperienceTransitionOverlay` with 650ms monitor ↔ phone outline & skeleton morph + converging emerald/coral nodes + ripple + scale-out exit (150ms cross-fade under reduced motion/lite).
+- [x] **Fix 3 (Cinematic Settle Orbit Loading Screen)**: Upgraded `web/index.html` and `SettleOrbitSplash` with drifting cool teal-slate & warm fields, film grain, 9 viewport-spanning rings/arcs, 1.8s curved-arc convergence + ripple, letter-by-letter `SETTLIV` reveal + hairline sweep.
+- [x] **Tests Added**: `test/final_polish_round2_test.dart` covering Settings icon AA contrast, Add expense vertical alignment, wordless device-morph transition, and 360px/1920px splash.

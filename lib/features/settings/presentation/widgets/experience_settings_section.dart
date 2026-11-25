@@ -25,8 +25,6 @@ class _ExperienceSettingsSectionState extends ConsumerState<ExperienceSettingsSe
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
   late final AnimationController _orbitController;
-  final GlobalKey _webTileKey = GlobalKey();
-  final GlobalKey _appTileKey = GlobalKey();
 
   @override
   void initState() {
@@ -148,20 +146,13 @@ class _ExperienceSettingsSectionState extends ConsumerState<ExperienceSettingsSe
         children: [
           Expanded(
             flex: 10,
-            child: Container(
-              key: _webTileKey,
-              child: _buildSelectableTile(
-                title: 'PC website',
-                subtitle: 'Shipped to: PC users',
-                isSelected: isWebActive,
-                painter: PcWebsiteThumbnailPainter(color: isWebActive ? theme.accent : theme.muted),
-                theme: theme,
-                onTap: () => _switchMode(
-                  ExperienceMode.web,
-                  tileKey: _webTileKey,
-                  targetLabel: 'PC website',
-                ),
-              ),
+            child: _buildSelectableTile(
+              title: 'PC website',
+              subtitle: 'Shipped to: PC users',
+              isSelected: isWebActive,
+              painter: PcWebsiteThumbnailPainter(color: isWebActive ? theme.accent : theme.muted),
+              theme: theme,
+              onTap: () => _switchMode(ExperienceMode.web),
             ),
           ),
           const SizedBox(width: 8),
@@ -177,20 +168,13 @@ class _ExperienceSettingsSectionState extends ConsumerState<ExperienceSettingsSe
           const SizedBox(width: 8),
           Expanded(
             flex: 10,
-            child: Container(
-              key: _appTileKey,
-              child: _buildSelectableTile(
-                title: 'Mobile app',
-                subtitle: 'Compatibility preview',
-                isSelected: isAppActive,
-                painter: MobileAppThumbnailPainter(color: isAppActive ? theme.accent : theme.muted),
-                theme: theme,
-                onTap: () => _switchMode(
-                  ExperienceMode.app,
-                  tileKey: _appTileKey,
-                  targetLabel: 'Mobile app',
-                ),
-              ),
+            child: _buildSelectableTile(
+              title: 'Mobile app',
+              subtitle: 'Compatibility preview',
+              isSelected: isAppActive,
+              painter: MobileAppThumbnailPainter(color: isAppActive ? theme.accent : theme.muted),
+              theme: theme,
+              onTap: () => _switchMode(ExperienceMode.app),
             ),
           ),
         ],
@@ -213,39 +197,25 @@ class _ExperienceSettingsSectionState extends ConsumerState<ExperienceSettingsSe
           const SizedBox(width: 8),
           Expanded(
             flex: 10,
-            child: Container(
-              key: _webTileKey,
-              child: _buildSelectableTile(
-                title: 'Mobile web',
-                subtitle: 'In the browser',
-                isSelected: isWebActive,
-                painter: MobileWebThumbnailPainter(color: isWebActive ? theme.accent : theme.muted),
-                theme: theme,
-                onTap: () => _switchMode(
-                  ExperienceMode.web,
-                  tileKey: _webTileKey,
-                  targetLabel: 'Mobile web',
-                ),
-              ),
+            child: _buildSelectableTile(
+              title: 'Mobile web',
+              subtitle: 'In the browser',
+              isSelected: isWebActive,
+              painter: MobileWebThumbnailPainter(color: isWebActive ? theme.accent : theme.muted),
+              theme: theme,
+              onTap: () => _switchMode(ExperienceMode.web),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             flex: 10,
-            child: Container(
-              key: _appTileKey,
-              child: _buildSelectableTile(
-                title: 'Mobile app',
-                subtitle: 'Installed app',
-                isSelected: isAppActive,
-                painter: MobileAppThumbnailPainter(color: isAppActive ? theme.accent : theme.muted),
-                theme: theme,
-                onTap: () => _switchMode(
-                  ExperienceMode.app,
-                  tileKey: _appTileKey,
-                  targetLabel: 'Mobile app',
-                ),
-              ),
+            child: _buildSelectableTile(
+              title: 'Mobile app',
+              subtitle: 'Installed app',
+              isSelected: isAppActive,
+              painter: MobileAppThumbnailPainter(color: isAppActive ? theme.accent : theme.muted),
+              theme: theme,
+              onTap: () => _switchMode(ExperienceMode.app),
             ),
           ),
         ],
@@ -485,23 +455,14 @@ class _ExperienceSettingsSectionState extends ConsumerState<ExperienceSettingsSe
     );
   }
 
-  void _switchMode(
-    ExperienceMode mode, {
-    GlobalKey? tileKey,
-    required String targetLabel,
-  }) {
+  void _switchMode(ExperienceMode mode) {
     final currentEffective = ref.read(effectiveExperienceProvider);
     final profile = ref.read(deviceProfileProvider);
     final nextEffective = resolveEffectiveExperience(profile: profile, mode: mode);
     if (currentEffective != nextEffective) {
-      Offset origin = MediaQuery.sizeOf(context).center(Offset.zero);
-      final box = tileKey?.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null && box.hasSize) {
-        origin = box.localToGlobal(box.size.center(Offset.zero));
-      }
       ref.read(experienceTransitionProvider.notifier).trigger(
-            origin: origin,
-            targetLabel: targetLabel,
+            fromWeb: currentEffective == EffectiveExperience.web,
+            toWeb: nextEffective == EffectiveExperience.web,
           );
     }
 
