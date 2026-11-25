@@ -12,6 +12,7 @@ import 'widgets/security_settings_section.dart';
 import 'widgets/help_feedback_settings_section.dart';
 import 'widgets/settliv_brand_block.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/widgets/aurora_background.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
 import '../../../../core/widgets/screen_header.dart';
@@ -34,7 +35,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _nameController;
   late TextEditingController _upiController;
   late final ScrollController _scrollController;
+  final GlobalKey _appearanceSectionKey = GlobalKey();
   final GlobalKey _experienceSectionKey = GlobalKey();
+  final GlobalKey _ledgerSectionKey = GlobalKey();
+  final GlobalKey _backupSectionKey = GlobalKey();
   final GlobalKey _privacySectionKey = GlobalKey();
   final GlobalKey _securitySectionKey = GlobalKey();
   final GlobalKey _helpSectionKey = GlobalKey();
@@ -50,12 +54,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = repo.currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
     _upiController = TextEditingController(text: user?.upiId ?? '');
-    _scrollController = ScrollController();
-    _selectedNavSection = widget.initialSection ?? 'account';
+    _scrollController = ScrollController()..addListener(_onDesktopScroll);
+    _selectedNavSection = widget.initialSection ?? 'appearance';
 
-    if (_selectedNavSection == 'experience') {
-      _highlightExperience = true;
-      _scrollToExperience();
+    if (widget.initialSection != null) {
+      if (_selectedNavSection == 'experience') {
+        _highlightExperience = true;
+      }
+      _scrollToSection(_selectedNavSection);
     }
   }
 
@@ -67,19 +73,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _selectedNavSection = widget.initialSection!;
         if (_selectedNavSection == 'experience') {
           _highlightExperience = true;
-          _scrollToExperience();
         }
       });
+      _scrollToSection(_selectedNavSection);
     }
   }
 
-  void _scrollToExperience() {
+  GlobalKey? _keyForSection(String section) {
+    switch (section) {
+      case 'appearance':
+      case 'account':
+        return _appearanceSectionKey;
+      case 'experience':
+        return _experienceSectionKey;
+      case 'ledger':
+        return _ledgerSectionKey;
+      case 'backup':
+        return _backupSectionKey;
+      case 'security':
+        return _securitySectionKey;
+      case 'help':
+        return _helpSectionKey;
+      case 'privacy':
+        return _privacySectionKey;
+      default:
+        return null;
+    }
+  }
+
+  void _onDesktopScroll() {
+    if (!mounted) return;
+    const sections = [
+      'appearance',
+      'experience',
+      'ledger',
+      'backup',
+      'security',
+      'help',
+      'privacy',
+    ];
+    String best = _selectedNavSection;
+    double bestDist = double.infinity;
+    for (final s in sections) {
+      final ctx = _keyForSection(s)?.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final dy = box.localToGlobal(Offset.zero).dy;
+      final dist = (dy - 120).abs();
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = s;
+      }
+    }
+    if (best != _selectedNavSection) {
+      setState(() => _selectedNavSection = best);
+    }
+  }
+
+  void _scrollToSection(String section) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _experienceSectionKey.currentContext;
+      final key = _keyForSection(section);
+      final ctx = key?.currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 380),
           curve: Curves.easeInOut,
           alignment: 0.05,
         );
@@ -91,6 +150,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void dispose() {
     _nameController.dispose();
     _upiController.dispose();
+    _scrollController.removeListener(_onDesktopScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -445,8 +505,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = context.settliv;
     final themeMode = ref.watch(themeModeProvider);
-    final repo = ref.watch(appRepositoryProvider);
-    final user = repo.currentUser;
+    final user = ref.watch(currentUserProvider);
     final effective = ref.watch(effectiveExperienceProvider);
     final layout = AdaptiveLayout.of(context);
     final isDesktopWeb = effective == EffectiveExperience.web && layout != LayoutClass.compact;
@@ -595,6 +654,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Appearance Section
             Text(
               'APPEARANCE',
+              key: _appearanceSectionKey,
               style: AppTypography.caption.copyWith(
                 color: theme.muted,
                 fontWeight: FontWeight.w700,
@@ -637,6 +697,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Recurring Expenses
             Text(
               'LEDGER FEATURES',
+              key: _ledgerSectionKey,
               style: AppTypography.caption.copyWith(
                 color: theme.muted,
                 fontWeight: FontWeight.w700,
@@ -684,6 +745,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Backup & Restore
             Text(
               'BACKUP & EXPORT',
+              key: _backupSectionKey,
               style: AppTypography.caption.copyWith(
                 color: theme.muted,
                 fontWeight: FontWeight.w700,
@@ -905,6 +967,82 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 32),
     ];
 
+    if (isDesktopWeb) {
+      final desktopRightSections = settingsContent.sublist(2);
+      return Scaffold(
+        backgroundColor: theme.transparent,
+        body: AuroraBackground(
+          child: SafeArea(
+            child: Column(
+              children: [
+                ScreenHeader(
+                  title: 'Profile & Settings',
+                  onBack: () => BackNavigation.handleBack(context, currentPath: '/settings'),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1040),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(32, 16, 48, 0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 288,
+                                  child: _buildDesktopProfileSummaryCard(
+                                    theme: theme,
+                                    user: user,
+                                    effective: effective,
+                                  ),
+                                ),
+                                const SizedBox(width: 36),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.only(bottom: 40),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: desktopRightSections,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _SettingsDotProgressRail(
+                            selectedSection: _selectedNavSection,
+                            onSelectSection: (section) {
+                              setState(() {
+                                _selectedNavSection = section;
+                                if (section == 'experience') {
+                                  _highlightExperience = true;
+                                }
+                              });
+                              _scrollToSection(section);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return ScreenScaffold(
       hasBottomBar: false,
       scrollController: _scrollController,
@@ -914,149 +1052,158 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktopWeb ? 32 : 20,
-            vertical: isDesktopWeb ? 16 : 0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: isDesktopWeb ? 1000 : 600),
-              child: isDesktopWeb
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 220,
-                          child: GlassSurface(
-                            level: GlassLevel.level2,
-                            borderRadius: 20,
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildNavPill(
-                                  'Account & Theme',
-                                  Icons.person_outline_rounded,
-                                  _selectedNavSection == 'account',
-                                  theme,
-                                  onTap: () {
-                                    setState(() => _selectedNavSection = 'account');
-                                    _scrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                _buildNavPill(
-                                  'Experience',
-                                  Icons.devices_rounded,
-                                  _selectedNavSection == 'experience',
-                                  theme,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedNavSection = 'experience';
-                                      _highlightExperience = true;
-                                    });
-                                    _scrollToExperience();
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                _buildNavPill(
-                                  'Recurring Bills',
-                                  Icons.repeat_rounded,
-                                  false,
-                                  theme,
-                                  onTap: () => context.push('/settings/recurring'),
-                                ),
-                                const SizedBox(height: 8),
-                                _buildNavPill(
-                                  'Security',
-                                  Icons.lock_outline_rounded,
-                                  _selectedNavSection == 'security',
-                                  theme,
-                                  onTap: () {
-                                    setState(() => _selectedNavSection = 'security');
-                                    final ctx = _securitySectionKey.currentContext;
-                                    if (ctx != null) {
-                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                _buildNavPill(
-                                  'Help & Feedback',
-                                  Icons.help_outline_rounded,
-                                  _selectedNavSection == 'help',
-                                  theme,
-                                  onTap: () {
-                                    setState(() => _selectedNavSection = 'help');
-                                    final ctx = _helpSectionKey.currentContext;
-                                    if (ctx != null) {
-                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                _buildNavPill(
-                                  'Privacy & Data',
-                                  Icons.shield_outlined,
-                                  _selectedNavSection == 'privacy',
-                                  theme,
-                                  onTap: () {
-                                    setState(() => _selectedNavSection = 'privacy');
-                                    final ctx = _privacySectionKey.currentContext;
-                                    if (ctx != null) {
-                                      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 350), curve: Curves.easeInOut, alignment: 0.05);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 28),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: settingsContent,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: settingsContent,
-                    ),
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: settingsContent,
+              ),
             ),
           ),
         ),
       ],
     );
-}
+  }
 
-  Widget _buildNavPill(String title, IconData icon, bool isSelected, SettlivThemeExtension theme, {VoidCallback? onTap}) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.accent.withValues(alpha: 0.12) : theme.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: isSelected ? theme.accent : theme.muted),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                title,
-                style: AppTypography.bodySemiBold.copyWith(
-                  color: isSelected ? theme.accent : theme.ink,
-                  fontSize: 13,
+  Widget _buildDesktopProfileSummaryCard({
+    required SettlivThemeExtension theme,
+    required dynamic user,
+    required EffectiveExperience effective,
+  }) {
+    final bool hasUpi = (user?.upiId as String?)?.trim().isNotEmpty ?? false;
+    final String experienceLabel = effective == EffectiveExperience.web
+        ? 'Current layout: PC website'
+        : 'Current layout: Mobile app';
+
+    return GlassSurface(
+      level: GlassLevel.level2,
+      borderRadius: 24,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (user != null)
+                PersonAvatar(
+                  person: user,
+                  size: 64,
+                  showRing: true,
+                ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.name ?? 'User',
+                      style: AppTypography.titleLarge.copyWith(
+                        color: theme.ink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      hasUpi ? 'UPI ID: saved' : 'UPI ID: not set',
+                      style: AppTypography.caption.copyWith(
+                        color: hasUpi ? theme.textEmerald : theme.muted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            experienceLabel,
+            style: AppTypography.caption.copyWith(
+              color: theme.muted,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: theme.hairline),
+          const SizedBox(height: 16),
+          if (_isEditingProfile) ...[
+            TextField(
+              controller: _nameController,
+              style: TextStyle(color: theme.ink, fontSize: 14),
+              decoration: InputDecoration(
+                labelText: 'Display Name',
+                labelStyle: TextStyle(color: theme.muted, fontSize: 12),
+                filled: true,
+                fillColor: theme.raised,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: theme.hairline),
                 ),
               ),
             ),
-          ],
-        ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _upiController,
+              style: TextStyle(color: theme.ink, fontSize: 14),
+              decoration: InputDecoration(
+                labelText: 'UPI ID',
+                hintText: 'name@bank',
+                errorText: _upiError,
+                labelStyle: TextStyle(color: theme.muted, fontSize: 12),
+                filled: true,
+                fillColor: theme.raised,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: theme.hairline),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    _isEditingProfile = false;
+                    _upiError = null;
+                  }),
+                  child: Text('Cancel', style: TextStyle(color: theme.muted)),
+                ),
+                const Spacer(),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.primaryButtonBg,
+                    foregroundColor: theme.primaryButtonText,
+                  ),
+                  onPressed: _saveProfile,
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ] else
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _isEditingProfile = true),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Edit profile'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.ink,
+                  side: BorderSide(color: theme.hairline),
+                  minimumSize: const Size(double.infinity, 44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1096,6 +1243,69 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SettingsDotProgressRail extends StatelessWidget {
+  final String selectedSection;
+  final ValueChanged<String> onSelectSection;
+
+  const _SettingsDotProgressRail({
+    required this.selectedSection,
+    required this.onSelectSection,
+  });
+
+  static const List<({String id, String label})> _sections = [
+    (id: 'appearance', label: 'Appearance'),
+    (id: 'experience', label: 'Experience'),
+    (id: 'ledger', label: 'Ledger features'),
+    (id: 'backup', label: 'Backup and export'),
+    (id: 'security', label: 'Security'),
+    (id: 'help', label: 'Help and feedback'),
+    (id: 'privacy', label: 'Privacy and data'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.settliv;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: theme.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: theme.hairline),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final section in _sections) ...[
+            Tooltip(
+              message: section.label,
+              preferBelow: false,
+              child: InkWell(
+                onTap: () => onSelectSection(section.id),
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: selectedSection == section.id ? 8 : 6,
+                    height: selectedSection == section.id ? 18 : 6,
+                    decoration: BoxDecoration(
+                      color: selectedSection == section.id
+                          ? theme.accent
+                          : theme.muted.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import '../../../../core/profile/experience_mode.dart';
 import 'day_period_tile.dart';
 import 'month_dial.dart';
+import 'this_month_web_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,14 +65,15 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
     final sharedGroups = allGroups.where((g) => !g.isPersonal).toList();
     final allExpenses = ref.watch(allExpensesProvider);
     final settlements = ref.watch(allSettlementsProvider);
-    final currentUserId = repo.currentUserId;
+    final currentUser = ref.watch(currentUserProvider);
+    final currentUserId = currentUser?.id ?? repo.currentUserId;
     final now = DateTime.now();
 
     // Counterparties across groups + IOUs
     final allPeople = ref.watch(allPeopleProvider);
     final peopleMap = {for (final p in allPeople) p.id: p};
     final groupMembersMap = {for (final g in allGroups) g.id: g.memberIds};
-    final iouNotes = repo.getAllIouNotes();
+    final iouNotes = ref.watch(allIouNotesProvider);
 
     final counterpartyNets = const BalanceEngine().computeCounterpartyNets(
       currentUserId: currentUserId,
@@ -262,7 +264,14 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                 // Stacked layout
                 _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: false),
                 const SizedBox(height: 16),
-                _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, diffSpend, spendChangePercent, showAbsolute, isCompact: isCompact),
+                ThisMonthWebCard(
+                  expenses: allExpenses,
+                  currentUserId: currentUserId,
+                  now: now,
+                  thisMonthSpend: thisMonthYourSpend,
+                  lastMonthSpend: lastMonthYourSpend,
+                  isCompact: true,
+                ),
                 if (attentionMessage != null) ...[
                   const SizedBox(height: 16),
                   _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
@@ -286,7 +295,14 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                       const SizedBox(width: 20),
                       Expanded(
                         flex: 5,
-                        child: _buildThisMonthCard(context, theme, thisMonthYourSpend, lastMonthYourSpend, diffSpend, spendChangePercent, showAbsolute, isCompact: isCompact),
+                        child: ThisMonthWebCard(
+                          expenses: allExpenses,
+                          currentUserId: currentUserId,
+                          now: now,
+                          thisMonthSpend: thisMonthYourSpend,
+                          lastMonthSpend: lastMonthYourSpend,
+                          isCompact: false,
+                        ),
                       ),
                     ],
                   ),
@@ -447,117 +463,6 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
       onTap: () => context.push('/balances'),
       isLarge: isLarge,
     );
-  }
-
-  Widget _buildThisMonthCard(
-    BuildContext context,
-    SettlivThemeExtension theme,
-    int thisMonthSpend,
-    int lastMonthSpend,
-    int diffSpend,
-    double changePercent,
-    bool showAbsolute, {
-    required bool isCompact,
-  }) {
-    return WebGlassCard(
-      borderRadius: 24,
-      padding: EdgeInsets.all(isCompact ? 16 : 24),
-      onTap: () => context.go('/insights'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'This month',
-                    style: TextStyle(
-                      fontFamily: AppTypography.fontBrand,
-                      fontFamilyFallback: AppTypography.brandFallback,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: theme.ink,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_rounded, size: 16, color: theme.muted),
-                ],
-              ),
-                const SizedBox(height: 14),
-                Text(
-                  CurrencyFormatter.formatPaise(thisMonthSpend),
-                  style: TextStyle(
-                    fontFamily: AppTypography.fontFamily,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: theme.ink,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (lastMonthSpend > 0) ...[
-                  if (showAbsolute) ...[
-                    Text(
-                      diffSpend >= 0
-                          ? '${CurrencyFormatter.formatPaise(diffSpend, absolute: true)} more than last month'
-                          : '${CurrencyFormatter.formatPaise(diffSpend.abs(), absolute: true)} less than last month',
-                      style: AppTypography.caption.copyWith(
-                        color: diffSpend > 0 ? theme.coral : theme.emerald,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ] else ...[
-                    Row(
-                      children: [
-                        Icon(
-                          changePercent >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                          size: 14,
-                          color: changePercent > 0 ? theme.coral : theme.emerald,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${changePercent.abs().toStringAsFixed(0)}% vs last month',
-                            style: AppTypography.caption.copyWith(
-                              color: changePercent > 0 ? theme.coral : theme.emerald,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ] else ...[
-                  Text(
-                    'First month on Settliv',
-                    style: AppTypography.caption.copyWith(color: theme.muted),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Spend indicator bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: lastMonthSpend > 0
-                    ? (thisMonthSpend / (lastMonthSpend * 1.5)).clamp(0.05, 1.0)
-                    : 0.5,
-                backgroundColor: theme.hairline,
-                color: theme.accent,
-                minHeight: 6,
-              ),
-            ),
-          ],
-        ),
-      );
   }
 
   Widget _buildRecentGroupsCard(

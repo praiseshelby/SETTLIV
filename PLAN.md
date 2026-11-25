@@ -636,3 +636,23 @@
 ### Test results at completion:
 - `flutter analyze` → 0 issues
 - All test files pass
+
+
+---
+
+## Final Polish — Set 1 (Functional & Correctness)
+- [x] **Item 6 (Add Expense Quick + Manual)**: Constrained desktop dialog height to `viewportHeight - 48` with fixed header, scrolling body, and pinned footer; replaced long button labels with `"Add expense"` / `"Add ₹X to <Group>"` (`FittedBox` scaleDown, min height 48); made primary button always tappable with post-attempt validation, auto-focus/scroll to amount, Enter-to-submit, and optional description.
+- [x] **Item 11 (Reactive Single Source of Truth)**: Fixed `appRepositoryProvider` identity trap by making all derived providers watch `appStateProvider` and return `List.unmodifiable(...)`; added `currentUserProvider`; removed duplicate `sharedPreferencesProvider` in `experience_mode.dart`; made `themeModeProvider` read `sharedPreferencesProvider` synchronously. Providers fixed: `currentUserProvider`, `userOverallBalanceProvider`, `allGroupsProvider`, `groupProvider`, `groupSummaryProvider`, `allExpensesProvider`, `allSettlementsProvider`, `groupExpensesProvider`, `allPeopleProvider`, `personProvider`, `allRecurringTemplatesProvider`, `allIouNotesProvider`, `allSavingsGoalsProvider`, `allFeedbackReportsProvider`, `experienceModeProvider`, `themeModeProvider`.
+- [x] **Item 2 (FeatureComingSheet & Containment)**: Added reusable `FeatureComingSheet` with settle-orbit motif and `AdaptivePresenter` `maxWidth: 440` support (sheet inside PhoneFrame, centered dialog on Web); gated WebAuthn behind `AppConfig.kScreenLockEnabled = false` so Screen & biometric lock opens `FeatureComingSheet` calmly.
+- [x] **Item 1 (App Net Position Hero Light Mode)**: Updated `SettlivThemeExtension.light` `heroMeshStart`/`End`/`Accent` to pearl-lavender (`#EAE8FA` -> `#DFDCF6`) and `BalanceHeroCard` to use `theme.ink`/`theme.muted`/`theme.textEmerald`/`theme.textCoral` in light mode while keeping dark mode untouched.
+- [x] **Tests Added**: `test/final_polish_set1_test.dart` covering Manual validation & add, reactive profile/expense/balance updates, `FeatureComingSheet` PhoneFrame containment, and AA contrast in both themes.
+
+
+---
+
+## Final Polish — Set 2 (Web Layout Polish)
+- [x] **Item 3 (Compatibility Preview Message)**: Removed `FirstVisitCompatibilityCard` from PC desktop web (`_buildMediumWeb`, `_buildExpandedWeb`) and PC phone frame; replaced compact web / phone touch toast with `CompatibilityPreviewSheet` (scrim, 24px radius, safe-area, 3 code-drawn wireframe tiles, `"Got it"` + `"View layouts"`).
+- [x] **Item 10 (PC Web Settings)**: Removed left section list (`Account & Theme`, etc.); built 1040px two-column layout with sticky profile summary card on left (avatar, name, UPI status, Edit profile, current layout), continuous sections on right, and far-right dot progress rail with tooltips and jump-to-section.
+- [x] **Item 4 ("This month" Web Card)**: Created `ThisMonthWebCard` with month header, count-up amount, sensible delta line, `CustomPainter` cumulative spend chart (solid + area, dashed last month, today dot, hover tooltip), Daily average & Biggest expense stats; removed purple bar.
+- [x] **Item 5 (Day-Countdown Dial)**: Enlarged dial to 86px, computed inner clear box inside tick/arc ring, wrapped center `"N / days left"` in `MediaQuery.withNoTextScaling` + `FittedBox.scaleDown` for guaranteed clearance.
+- [x] **Items 8 & 9 (Sidebar Wordmark & Add Expense Button)**: Enlarged sidebar wordmark to 22px (`0.28em` tracking) aligned with nav icons in a 72px header + optically centered rail/compact wordmarks; redesigned `_SidebarAddExpenseButton` (48px, deep ink vertical tonal gradient, 1px top highlight, glass circle `+`, Plus Jakarta Sans 600, hover lift + transform sheen, 0.98 press scale, focus ring, rail tooltip).

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/repositories/in_memory_app_repository.dart' show sharedPreferencesProvider;
 import 'device_profile.dart';
+export '../../data/repositories/in_memory_app_repository.dart' show sharedPreferencesProvider;
 
 enum ExperienceMode {
   auto,
@@ -42,11 +44,6 @@ class ExperienceModeNotifier extends StateNotifier<ExperienceMode> {
     }
   }
 }
-
-final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) {
-  // Override in main.dart or tests with initialized instance
-  return null;
-});
 
 final experienceModeProvider =
     StateNotifierProvider<ExperienceModeNotifier, ExperienceMode>((ref) {

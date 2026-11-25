@@ -295,7 +295,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('PRIVACY & SECURITY'), findsOneWidget);
-      expect(find.text('Screen lock'), findsOneWidget);
+      expect(find.text('Screen & biometric lock'), findsOneWidget);
       expect(find.text('HELP & FEEDBACK'), findsOneWidget);
       expect(find.text('Report a problem'), findsOneWidget);
       expect(find.text('Request a feature'), findsOneWidget);

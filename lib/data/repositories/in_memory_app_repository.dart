@@ -220,68 +220,87 @@ final appRepositoryProvider = Provider<AppRepository>((ref) {
 });
 
 final userOverallBalanceProvider = Provider<UserOverallBalance>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
   return repo.getUserOverallBalance();
 });
 
-final allGroupsProvider = Provider<List<Group>>((ref) {
+final currentUserProvider = Provider<Person?>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getGroups();
+  return repo.currentUser;
+});
+
+final allGroupsProvider = Provider<List<Group>>((ref) {
+  ref.watch(appStateProvider);
+  final repo = ref.watch(appRepositoryProvider);
+  return List.unmodifiable(repo.getGroups());
 });
 
 final groupProvider = Provider.family<Group?, String>((ref, groupId) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
   return repo.getGroup(groupId);
 });
 
 final groupSummaryProvider =
     Provider.family<GroupBalanceSummary, String>((ref, groupId) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
   return repo.getGroupSummary(groupId);
 });
 
 final allExpensesProvider = Provider<List<Expense>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getAllExpenses();
+  return List.unmodifiable(repo.getAllExpenses());
 });
 
 final allSettlementsProvider = Provider<List<Settlement>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getAllSettlements();
+  return List.unmodifiable(repo.getAllSettlements());
 });
 
 final groupExpensesProvider =
     Provider.family<List<Expense>, String>((ref, groupId) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getExpensesForGroup(groupId);
+  return List.unmodifiable(repo.getExpensesForGroup(groupId));
 });
 
 final allPeopleProvider = Provider<List<Person>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getPeople();
+  return List.unmodifiable(repo.getPeople());
 });
 
 final personProvider = Provider.family<Person?, String>((ref, personId) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
   return repo.getPerson(personId);
 });
 
 final allRecurringTemplatesProvider = Provider<List<RecurringTemplate>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getRecurringTemplates();
+  return List.unmodifiable(repo.getRecurringTemplates());
 });
 
 final allIouNotesProvider = Provider<List<IouNote>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getAllIouNotes();
+  return List.unmodifiable(repo.getAllIouNotes());
 });
 
 final allSavingsGoalsProvider = Provider<List<SavingsGoal>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getSavingsGoals();
+  return List.unmodifiable(repo.getSavingsGoals());
 });
 
 final allFeedbackReportsProvider = Provider<List<FeedbackReport>>((ref) {
+  ref.watch(appStateProvider);
   final repo = ref.watch(appRepositoryProvider);
-  return repo.getFeedbackReports();
+  return List.unmodifiable(repo.getFeedbackReports());
 });

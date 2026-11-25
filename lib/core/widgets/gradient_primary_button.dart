@@ -73,39 +73,42 @@ class _GradientPrimaryButtonState extends State<GradientPrimaryButton> {
                 : null,
           ),
           child: Center(
-            child: widget.isLoading
-                ? SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isEnabled ? theme.primaryButtonText : theme.muted,
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.icon != null) ...[
-                        widget.icon!,
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          widget.label,
-                          style: AppTypography.button.copyWith(
-                            color: isEnabled ? theme.primaryButtonText : theme.muted,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: widget.isLoading
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isEnabled ? theme.primaryButtonText : theme.muted,
                         ),
                       ),
-                    ],
-                  ),
+                    )
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            widget.icon!,
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            widget.label,
+                            style: AppTypography.button.copyWith(
+                              color: isEnabled ? theme.primaryButtonText : theme.muted,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
           ),
         ),
       ),

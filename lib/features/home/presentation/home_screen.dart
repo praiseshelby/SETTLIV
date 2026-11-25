@@ -49,15 +49,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final people = ref.watch(allPeopleProvider);
     final allExpenses = ref.watch(allExpensesProvider);
     final settlements = ref.watch(allSettlementsProvider);
-    final currentUser = repo.currentUser;
-    final currentUserId = repo.currentUserId;
+    final currentUser = ref.watch(currentUserProvider);
+    final currentUserId = currentUser?.id ?? repo.currentUserId;
     final now = DateTime.now();
 
     // 1. Counterparties across groups + IOUs for Hero card
     final allPeople = ref.watch(allPeopleProvider);
     final peopleMap = {for (final p in allPeople) p.id: p};
     final groupMembersMap = {for (final g in allGroups) g.id: g.memberIds};
-    final iouNotes = repo.getAllIouNotes();
+    final iouNotes = ref.watch(allIouNotesProvider);
 
     final counterpartyNets = const BalanceEngine().computeCounterpartyNets(
       currentUserId: currentUserId,

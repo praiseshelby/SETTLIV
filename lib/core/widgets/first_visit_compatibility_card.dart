@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,9 +6,11 @@ import '../layout/adaptive_layout.dart';
 import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
-import '../theme/motion_tokens.dart';
-import 'glass_surface.dart';
+import 'gradient_primary_button.dart';
 
+/// Triggered on narrow/touch viewports (compact web & phone app) once per
+/// install, after the loading screen settles. Never shown on PC desktop web
+/// or inside the PC phone frame.
 class FirstVisitCompatibilityCard extends ConsumerStatefulWidget {
   const FirstVisitCompatibilityCard({super.key});
 
@@ -20,191 +22,321 @@ class FirstVisitCompatibilityCard extends ConsumerStatefulWidget {
 }
 
 class _FirstVisitCompatibilityCardState
-    extends ConsumerState<FirstVisitCompatibilityCard>
-    with SingleTickerProviderStateMixin {
-  bool _dismissed = true;
-  Timer? _autoFadeTimer;
-  late final AnimationController _animController;
-  late final Animation<double> _fadeAnimation;
+    extends ConsumerState<FirstVisitCompatibilityCard> {
+  bool _scheduled = false;
 
   @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: MotionTokens.durationStandard,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animController,
-      curve: MotionTokens.curveStandard,
-    );
-
-    _checkDismissed();
-  }
-
-  void _checkDismissed() {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final isDismissed = prefs?.getBool(FirstVisitCompatibilityCard.prefKey) ?? false;
-    if (!isDismissed) {
-      setState(() => _dismissed = false);
-      _animController.forward();
-      // Auto-fades after 20 seconds
-      _autoFadeTimer = Timer(const Duration(seconds: 20), () {
-        _dismiss(remember: false);
-      });
-    }
-  }
-
-  void _dismiss({bool remember = true}) {
-    if (!mounted || _dismissed) return;
-    _autoFadeTimer?.cancel();
-    _animController.reverse().then((_) {
-      if (mounted) {
-        setState(() => _dismissed = true);
-      }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_scheduled) return;
+    _scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      CompatibilityPreviewSheet.showIfNeeded(context, ref);
     });
-    if (remember) {
-      final prefs = ref.read(sharedPreferencesProvider);
-      prefs?.setBool(FirstVisitCompatibilityCard.prefKey, true);
-    }
   }
 
   @override
-  void dispose() {
-    _autoFadeTimer?.cancel();
-    _animController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+class CompatibilityPreviewSheet extends StatelessWidget {
+  final EffectiveExperience effectiveExperience;
+  final bool isCompact;
+
+  const CompatibilityPreviewSheet({
+    super.key,
+    required this.effectiveExperience,
+    required this.isCompact,
+  });
+
+  static bool _hasShownThisSession = false;
+
+  static Future<void> showIfNeeded(BuildContext context, WidgetRef ref) async {
+    if (_hasShownThisSession) return;
+    final profile = ref.read(deviceProfileProvider);
+    final isCompact = AdaptiveLayout.isCompact(context);
+    // Never show on PC desktop web or inside App-in-frame on PC
+    if (profile.isDesktop || !isCompact) return;
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final dismissed =
+        prefs?.getBool(FirstVisitCompatibilityCard.prefKey) ?? false;
+    if (dismissed) return;
+
+    _hasShownThisSession = true;
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!context.mounted) return;
+
+    final theme = context.settliv;
+    final effective = ref.read(effectiveExperienceProvider);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: theme.transparent,
+      barrierColor: theme.scrim,
+      builder: (ctx) => CompatibilityPreviewSheet(
+        effectiveExperience: effective,
+        isCompact: isCompact,
+      ),
+    );
+
+    // Persist on any dismissal (Got it, View layouts, scrim tap, back)
+    prefs?.setBool(FirstVisitCompatibilityCard.prefKey, true);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_dismissed) return const SizedBox.shrink();
-
     final theme = context.settliv;
-    final isCompact = AdaptiveLayout.isCompact(context);
+    final currentTile = effectiveExperience == EffectiveExperience.app
+        ? 2
+        : (isCompact ? 1 : 0);
 
-    final cardContent = GlassSurface(
-      level: GlassLevel.level3,
-      borderRadius: 20,
-      padding: const EdgeInsets.all(18),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: theme.hairline)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.hairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Compatibility preview',
+                    style: AppTypography.titleLarge.copyWith(
+                      color: theme.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This link shows every Settliv layout. The switch is for this preview only; each device gets its own layout in the shipped product.',
+                    style: AppTypography.body.copyWith(
+                      color: theme.muted,
+                      fontSize: 13,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MiniWireframeTile(
+                          label: 'PC website',
+                          kind: _WireframeKind.pcWeb,
+                          isCurrent: currentTile == 0,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _MiniWireframeTile(
+                          label: 'Mobile web',
+                          kind: _WireframeKind.mobileWeb,
+                          isCurrent: currentTile == 1,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _MiniWireframeTile(
+                          label: 'Mobile app',
+                          kind: _WireframeKind.mobileApp,
+                          isCurrent: currentTile == 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: theme.hairline),
+                              foregroundColor: theme.ink,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text('Got it'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: GradientPrimaryButton(
+                            height: 48,
+                            label: 'View layouts',
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              context.push('/settings?section=experience');
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _WireframeKind { pcWeb, mobileWeb, mobileApp }
+
+class _MiniWireframeTile extends StatelessWidget {
+  final String label;
+  final _WireframeKind kind;
+  final bool isCurrent;
+
+  const _MiniWireframeTile({
+    required this.label,
+    required this.kind,
+    required this.isCurrent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.settliv;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? theme.accent.withValues(alpha: theme.isDark ? 0.14 : 0.08)
+            : theme.raised,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isCurrent ? theme.accent : theme.hairline,
+          width: isCurrent ? 1.5 : 1.0,
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: theme.accent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Compatibility preview',
-                        style: AppTypography.titleCard.copyWith(
-                          color: theme.ink,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+          RepaintBoundary(
+            child: SizedBox(
+              width: 44,
+              height: 30,
+              child: CustomPaint(
+                painter: _WireframePainter(
+                  kind: kind,
+                  strokeColor: isCurrent ? theme.accent : theme.muted,
+                  fillColor: (isCurrent ? theme.accent : theme.muted)
+                      .withValues(alpha: 0.14),
                 ),
               ),
-              Semantics(
-                button: true,
-                label: 'Dismiss notice',
-                child: InkWell(
-                  onTap: () => _dismiss(remember: true),
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Icon(Icons.close, size: 16, color: theme.muted),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'This link shows all three Settliv layouts. The switch is for this preview only; in the shipped product each device gets just its own layout.',
-            style: AppTypography.body.copyWith(
-              color: theme.secondary,
-              fontSize: 13,
-              height: 1.4,
+            label,
+            style: AppTypography.caption.copyWith(
+              color: isCurrent ? theme.ink : theme.muted,
+              fontSize: 11,
+              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
             ),
-          ),
-          const SizedBox(height: 14),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () => _dismiss(remember: true),
-                  child: Text(
-                    'Got it',
-                    style: TextStyle(
-                      fontFamily: AppTypography.fontBody,
-                      color: theme.muted,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryButtonBg,
-                    foregroundColor: theme.primaryButtonText,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    _dismiss(remember: true);
-                    context.push('/settings?section=experience');
-                  },
-                  child: const Text(
-                    'View layouts',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
-
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: isCompact
-          ? Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-              child: cardContent,
-            )
-          : ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: cardContent,
-            ),
-    );
   }
+}
+
+class _WireframePainter extends CustomPainter {
+  final _WireframeKind kind;
+  final Color strokeColor;
+  final Color fillColor;
+
+  const _WireframePainter({
+    required this.kind,
+    required this.strokeColor,
+    required this.fillColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = strokeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final fill = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+
+    if (kind == _WireframeKind.pcWeb) {
+      final outer = RRect.fromRectAndRadius(
+        Rect.fromLTWH(2, 2, size.width - 4, size.height - 4),
+        const Radius.circular(4),
+      );
+      canvas.drawRRect(outer, stroke);
+      // Left sidebar
+      canvas.drawRect(Rect.fromLTWH(4, 4, 10, size.height - 8), fill);
+      // Hero block
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(17, 6, size.width - 23, 10),
+          const Radius.circular(2),
+        ),
+        fill,
+      );
+    } else if (kind == _WireframeKind.mobileWeb) {
+      final outer = RRect.fromRectAndRadius(
+        Rect.fromLTWH(13, 1, 18, size.height - 2),
+        const Radius.circular(4),
+      );
+      canvas.drawRRect(outer, stroke);
+      // Top header bar
+      canvas.drawRect(const Rect.fromLTWH(15, 3, 14, 4), fill);
+      // Content block
+      canvas.drawRect(const Rect.fromLTWH(15, 10, 14, 10), fill);
+    } else {
+      final outer = RRect.fromRectAndRadius(
+        Rect.fromLTWH(13, 1, 18, size.height - 2),
+        const Radius.circular(4),
+      );
+      canvas.drawRRect(outer, stroke);
+      // Hero card
+      canvas.drawRect(const Rect.fromLTWH(15, 4, 14, 9), fill);
+      // Bottom docked bar
+      canvas.drawRect(Rect.fromLTWH(15, size.height - 6, 14, 3), fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WireframePainter oldDelegate) =>
+      oldDelegate.kind != kind || oldDelegate.strokeColor != strokeColor;
 }

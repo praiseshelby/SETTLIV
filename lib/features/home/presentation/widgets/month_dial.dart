@@ -26,7 +26,7 @@ class MonthDial extends StatelessWidget {
   const MonthDial({
     super.key,
     required this.now,
-    this.size = 64.0,
+    this.size = 86.0,
     this.upcomingItems = const [],
     this.onTap,
   });
@@ -120,22 +120,73 @@ class MonthDial extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
 
-                // Radial Dial
-                SizedBox(
-                  width: size,
-                  height: size,
-                  child: CustomPaint(
-                    painter: MonthDialPainter(
-                      today: today,
-                      daysInMonth: daysInMonth,
-                      daysLeft: daysLeft,
-                      dueDays: dueDays,
-                      accentColor: theme.accent,
-                      hairlineColor: theme.hairline,
-                      inkColor: theme.ink,
-                      mutedColor: theme.muted,
-                      coralColor: theme.coral,
-                    ),
+                // Radial Dial (text inside ring never follows system text scaling)
+                MediaQuery.withNoTextScaling(
+                  child: Builder(
+                    builder: (context) {
+                      final double outerR = (size / 2) - 2.5;
+                      final double clearR = math.max(12.0, outerR - 17.5);
+                      final double clearBox = clearR * 1.72;
+                      return RepaintBoundary(
+                        child: SizedBox(
+                          width: size,
+                          height: size,
+                          child: CustomPaint(
+                            painter: MonthDialPainter(
+                              today: today,
+                              daysInMonth: daysInMonth,
+                              daysLeft: daysLeft,
+                              dueDays: dueDays,
+                              accentColor: theme.accent,
+                              hairlineColor: theme.hairline,
+                              inkColor: theme.ink,
+                              mutedColor: theme.muted,
+                              coralColor: theme.coral,
+                            ),
+                            child: Center(
+                              child: SizedBox(
+                                width: clearBox,
+                                height: clearBox,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '$daysLeft',
+                                        style: TextStyle(
+                                          fontFamily: AppTypography.fontDisplay,
+                                          fontSize: 27,
+                                          fontWeight: FontWeight.w800,
+                                          color: theme.ink,
+                                          letterSpacing: -0.8,
+                                          height: 1.0,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'days left',
+                                        style: TextStyle(
+                                          fontFamily: AppTypography.fontBody,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.muted,
+                                          letterSpacing: 0.1,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -238,50 +289,6 @@ class MonthDialPainter extends CustomPainter {
       false,
       arcPaint,
     );
-
-    // Center: Large "N" (days left)
-    final numPainter = TextPainter(
-      text: TextSpan(
-        text: '$daysLeft',
-        style: TextStyle(
-          fontFamily: AppTypography.fontHeading,
-          fontSize: 17,
-          fontWeight: FontWeight.w800,
-          color: inkColor,
-          letterSpacing: -0.8,
-          height: 1.0,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    final numOffset = Offset(
-      center.dx - (numPainter.width / 2),
-      center.dy - (numPainter.height / 2) - 4.5,
-    );
-    numPainter.paint(canvas, numOffset);
-
-    // Below "N": "days left"
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: 'days left',
-        style: TextStyle(
-          fontFamily: AppTypography.fontBody,
-          fontSize: 8.0,
-          fontWeight: FontWeight.w600,
-          color: mutedColor,
-          letterSpacing: 0.2,
-          height: 1.0,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    final labelOffset = Offset(
-      center.dx - (labelPainter.width / 2),
-      center.dy + 8.5,
-    );
-    labelPainter.paint(canvas, labelOffset);
   }
 
   @override

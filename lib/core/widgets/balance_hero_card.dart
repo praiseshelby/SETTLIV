@@ -94,6 +94,13 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
   Widget build(BuildContext context) {
     final theme = context.settliv;
     final isDark = theme.isDark;
+    final primaryTextColor = isDark ? theme.white : theme.ink;
+    final secondaryTextColor =
+        isDark ? theme.white.withValues(alpha: 0.78) : theme.muted;
+    final dividerColor =
+        isDark ? theme.white.withValues(alpha: 0.14) : theme.hairline;
+    final barEmerald = isDark ? theme.emerald : theme.textEmerald;
+    final barCoral = isDark ? theme.coral : theme.textCoral;
     final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (disableAnimations) {
       _countUpController.value = 1.0;
@@ -139,12 +146,12 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isDark ? theme.hairline : theme.white.withOpacity(0.18),
+                  color: theme.hairline,
                   width: 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadow.withOpacity(isDark ? 0.40 : 0.16),
+                    color: theme.cardAmbientShadow.withValues(alpha: isDark ? 0.40 : 0.18),
                     blurRadius: 18,
                     offset: const Offset(0, 6),
                   ),
@@ -154,7 +161,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                 borderRadius: BorderRadius.circular(22),
                 child: Stack(
                   children: [
-                    // 1. Layered navy mesh with faint topographic contour arcs on the right & grain
+                    // 1. Layered pearl-lavender (light) / navy (dark) mesh with contour arcs
                     Positioned.fill(
                       child: CustomPaint(
                         painter: _HeroMeshTopographicPainter(
@@ -174,7 +181,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                       right: 12,
                       height: 1.0,
                       child: Container(
-                        color: theme.white.withOpacity(0.22),
+                        color: theme.innerHighlight.withValues(alpha: isDark ? 0.22 : 0.75),
                       ),
                     ),
 
@@ -195,7 +202,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   Text(
                                     'NET POSITION',
                                     style: AppTypography.eyebrow.copyWith(
-                                      color: theme.white.withValues(alpha: 0.70),
+                                      color: secondaryTextColor,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -218,7 +225,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                 child: Text(
                                   headlineSentence,
                                   style: AppTypography.caption.copyWith(
-                                    color: theme.white.withValues(alpha: 0.85),
+                                    color: primaryTextColor,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
                                   ),
@@ -231,7 +238,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                           ),
                           const SizedBox(height: 4),
 
-                          // Big amount in white Sora 38-40px with count-up, NO minus sign, never coloured on navy
+                          // Big amount in Sora 38px with count-up, NO minus sign
                           AnimatedBuilder(
                             animation: _countUpAnimation,
                             builder: (context, _) {
@@ -247,7 +254,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   fontSize: 38,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -1.0,
-                                  color: theme.white,
+                                  color: primaryTextColor,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               );
@@ -269,14 +276,14 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                       Flexible(
                                         flex: (animRatio * 100).round(),
                                         child: Container(
-                                          color: theme.emerald,
+                                          color: barEmerald,
                                         ),
                                       ),
                                       const SizedBox(width: 2),
                                       Flexible(
                                         flex: ((1.0 - animRatio) * 100).round(),
                                         child: Container(
-                                          color: theme.coral,
+                                          color: barCoral,
                                         ),
                                       ),
                                     ],
@@ -295,7 +302,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                 child: Text(
                                   'Owed to you ${CurrencyFormatter.formatPaise(widget.totalOwedToUserPaise)} · ${widget.owedFromCount} ${widget.owedFromCount == 1 ? "person" : "people"}',
                                   style: AppTypography.caption.copyWith(
-                                    color: theme.white.withOpacity(0.75),
+                                    color: secondaryTextColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                     height: 1.25,
@@ -308,13 +315,13 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                 width: 1,
                                 height: 14,
                                 margin: const EdgeInsets.symmetric(horizontal: 8),
-                                color: theme.white.withOpacity(0.20),
+                                color: dividerColor,
                               ),
                               Expanded(
                                 child: Text(
                                   'You owe ${CurrencyFormatter.formatPaise(widget.totalUserOwesPaise)} · ${widget.owesToCount} ${widget.owesToCount == 1 ? "person" : "people"}',
                                   style: AppTypography.caption.copyWith(
-                                    color: theme.white.withOpacity(0.75),
+                                    color: secondaryTextColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                     height: 1.25,
@@ -330,7 +337,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                           // Hairline divider above footer
                           Container(
                             height: 1,
-                            color: theme.white.withOpacity(0.12),
+                            color: dividerColor,
                           ),
                           const SizedBox(height: 8),
 
@@ -364,7 +371,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   Text(
                                     'View breakdown',
                                     style: AppTypography.caption.copyWith(
-                                      color: theme.white.withOpacity(0.85),
+                                      color: primaryTextColor.withValues(alpha: 0.85),
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
@@ -373,7 +380,7 @@ class _BalanceHeroCardState extends State<BalanceHeroCard>
                                   Icon(
                                     Icons.chevron_right_rounded,
                                     size: 16,
-                                    color: theme.white.withOpacity(0.85),
+                                    color: primaryTextColor.withValues(alpha: 0.85),
                                   ),
                                 ],
                               ),
@@ -450,15 +457,17 @@ class _HeroMeshTopographicPainter extends CustomPainter {
         center: const Alignment(0.85, -0.85),
         radius: 1.0,
         colors: [
-          accentColor.withOpacity(0.28),
-          startColor.withOpacity(0.0),
+          accentColor.withValues(alpha: isDark ? 0.28 : 0.16),
+          startColor.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), glowPaint);
 
     // Faint topographic contour arcs on the right
     final arcPaint = Paint()
-      ..color = whiteColor.withOpacity(0.04)
+      ..color = isDark
+          ? whiteColor.withValues(alpha: 0.04)
+          : accentColor.withValues(alpha: 0.09)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

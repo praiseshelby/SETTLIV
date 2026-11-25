@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'settliv_wordmark.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import '../widgets/aurora_background.dart';
 import '../widgets/person_avatar.dart';
 import '../../data/repositories/in_memory_app_repository.dart';
 import 'first_visit_compatibility_card.dart';
-import 'magnetic_button.dart';
 
 class AdaptiveWebShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -68,7 +68,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                     child: Container(
-                      height: 60,
+                      height: 64,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: theme.surface.withValues(alpha: 0.85),
@@ -105,7 +105,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                               ),
                               const SizedBox(width: 8),
                               // Wordmark beside menu button
-                              const SettlivWordmark(fontSize: 16),
+                              const SettlivWordmark(fontSize: 20, trackingFactor: 0.24),
                               const Spacer(),
                               // Add button
                               IconButton(
@@ -127,13 +127,8 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
                 ),
               ],
             ),
-            // First visit compatibility toast/card
-            const Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: FirstVisitCompatibilityCard(),
-            ),
+            // First visit compatibility sheet trigger (touch/narrow only)
+            const FirstVisitCompatibilityCard(),
           ],
         ),
       ),
@@ -145,27 +140,18 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     return Scaffold(
       backgroundColor: theme.canvas,
       body: AuroraBackground(
-        child: Stack(
+        child: Row(
           children: [
-            Row(
-              children: [
-                // 76px Icon Rail
-                _buildIconRail(context, theme),
-                // Main content
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
-                      child: widget.navigationShell,
-                    ),
-                  ),
+            // 76px Icon Rail
+            _buildIconRail(context, theme),
+            // Main content
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
+                  child: widget.navigationShell,
                 ),
-              ],
-            ),
-            const Positioned(
-              right: 24,
-              bottom: 24,
-              child: FirstVisitCompatibilityCard(),
+              ),
             ),
           ],
         ),
@@ -178,27 +164,18 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
     return Scaffold(
       backgroundColor: theme.canvas,
       body: AuroraBackground(
-        child: Stack(
+        child: Row(
           children: [
-            Row(
-              children: [
-                // 264px Glass Sidebar
-                _buildSidebar(context, theme),
-                // Main content area
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
-                      child: widget.navigationShell,
-                    ),
-                  ),
+            // 264px Glass Sidebar
+            _buildSidebar(context, theme),
+            // Main content area
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AdaptiveLayout.maxContentWidth),
+                  child: widget.navigationShell,
                 ),
-              ],
-            ),
-            const Positioned(
-              right: 24,
-              bottom: 24,
-              child: FirstVisitCompatibilityCard(),
+              ),
             ),
           ],
         ),
@@ -208,8 +185,7 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
 
   Widget _buildSidebar(BuildContext context, SettlivThemeExtension theme) {
     final currentPath = _getCurrentPath(context);
-    final repo = ref.watch(appRepositoryProvider);
-    final user = repo.currentUser;
+    final user = ref.watch(currentUserProvider);
 
     final isDashboardActive = currentPath == '/';
     final isGroupsActive = currentPath.startsWith('/groups') || currentPath.startsWith('/group');
@@ -230,35 +206,30 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header: SETTLIV wordmark (~18px, left-aligned with nav items' text column)
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
-                        child: SettlivWordmark(fontSize: 18),
-                      ),
-
-                      // Primary "Add expense" button with subtle magnetic pull
-                      MagneticButton(
-                        child: ElevatedButton.icon(
-                          onPressed: () => context.push('/add'),
-                          icon: const Icon(Icons.add_rounded, size: 20),
-                          label: const Text('Add expense'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.accent,
-                            foregroundColor: theme.white,
-                            elevation: 0,
-                            minimumSize: const Size(double.infinity, 44),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                      // 72px header area: SETTLIV wordmark aligned with nav icons & primary button
+                      const SizedBox(
+                        height: 72,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: SettlivWordmark(
+                              fontSize: 22,
+                              trackingFactor: 0.28,
                             ),
-                            textStyle: AppTypography.bodySemiBold.copyWith(fontSize: 14),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+
+                      // Primary "Add expense" button
+                      _SidebarAddExpenseButton(
+                        onTap: () => context.push('/add'),
+                      ),
+                      const SizedBox(height: 22),
 
                 // Group 1: OVERVIEW
                 Padding(
@@ -466,21 +437,21 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 28),
-          const Center(
-            child: SettlivWordmark(
-              fontSize: 13,
-              rotated: true,
+          const SizedBox(
+            height: 72,
+            child: Center(
+              child: SettlivWordmark(
+                fontSize: 13,
+                rotated: true,
+                opticallyCenter: true,
+              ),
             ),
           ),
-          const SizedBox(height: 28),
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            color: theme.accent,
-            tooltip: 'Add expense',
-            onPressed: () => context.push('/add'),
+          _SidebarAddExpenseButton(
+            compact: true,
+            onTap: () => context.push('/add'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _buildRailIcon(
             icon: Icons.dashboard_rounded,
             tooltip: 'Dashboard',
@@ -763,5 +734,242 @@ class _AdaptiveWebShellState extends ConsumerState<AdaptiveWebShell> {
         ),
       ),
     );
+  }
+}
+
+class _SidebarAddExpenseButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final bool compact;
+
+  const _SidebarAddExpenseButton({
+    required this.onTap,
+    this.compact = false,
+  });
+
+  @override
+  State<_SidebarAddExpenseButton> createState() =>
+      _SidebarAddExpenseButtonState();
+}
+
+class _SidebarAddExpenseButtonState extends State<_SidebarAddExpenseButton>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  bool _isPressed = false;
+  bool _isFocused = false;
+  late final AnimationController _sheenCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _sheenCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sheenCtrl.dispose();
+    super.dispose();
+  }
+
+  void _triggerSheen() {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) return;
+    _sheenCtrl.forward(from: 0.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.settliv;
+    final isDark = theme.isDark;
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    final List<Color> gradientColors = isDark
+        ? [theme.raised, theme.surfaceSolid]
+        : [theme.ink, theme.navy];
+    final Color fgColor = isDark ? theme.ink : theme.white;
+    final Color glassCircleBg = isDark
+        ? theme.ink.withValues(alpha: 0.12)
+        : theme.white.withValues(alpha: 0.16);
+
+    final double scale = _isPressed ? 0.98 : 1.0;
+    final double liftY = (_isHovered && !_isPressed && !reduceMotion) ? -1.0 : 0.0;
+
+    final buttonBody = Semantics(
+      button: true,
+      label: 'Add expense',
+      child: Focus(
+        onFocusChange: (focused) => setState(() => _isFocused = focused),
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.space)) {
+            widget.onTap();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) {
+            setState(() => _isHovered = true);
+            _triggerSheen();
+          },
+          onExit: (_) => setState(() => _isHovered = false),
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 140),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.identity()
+                ..scale(scale)
+                ..translate(0.0, liftY),
+              width: widget.compact ? 48 : double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: gradientColors,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: _isFocused
+                      ? theme.accent
+                      : (isDark
+                          ? theme.hairline
+                          : theme.ink.withValues(alpha: 0.12)),
+                  width: _isFocused ? 2.0 : 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.shadow.withValues(alpha: isDark ? 0.35 : 0.16),
+                    blurRadius: _isHovered ? 16 : 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: Stack(
+                  children: [
+                    // 1px inner top highlight
+                    Positioned(
+                      top: 0,
+                      left: 10,
+                      right: 10,
+                      height: 1,
+                      child: Container(
+                        color: theme.innerHighlight.withValues(
+                          alpha: isDark ? 0.18 : 0.28,
+                        ),
+                      ),
+                    ),
+                    // Soft sheen sweep via transform (no blur)
+                    if (!reduceMotion)
+                      AnimatedBuilder(
+                        animation: _sheenCtrl,
+                        builder: (context, _) {
+                          if (_sheenCtrl.value <= 0.0 ||
+                              _sheenCtrl.value >= 1.0) {
+                            return const SizedBox.shrink();
+                          }
+                          final x = -60.0 + (_sheenCtrl.value * 320.0);
+                          return Positioned(
+                            top: 0,
+                            bottom: 0,
+                            left: 0,
+                            child: Transform.translate(
+                              offset: Offset(x, 0),
+                              child: Container(
+                                width: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      fgColor.withValues(alpha: 0.0),
+                                      fgColor.withValues(alpha: 0.12),
+                                      fgColor.withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    // Button content
+                    if (widget.compact)
+                      Center(
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: glassCircleBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 18,
+                            color: fgColor,
+                          ),
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: glassCircleBg,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                size: 17,
+                                color: fgColor,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Add expense',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.fontBody,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: fgColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (widget.compact) {
+      return Tooltip(
+        message: 'Add expense',
+        child: buttonBody,
+      );
+    }
+    return buttonBody;
   }
 }

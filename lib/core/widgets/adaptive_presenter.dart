@@ -22,6 +22,7 @@ class AdaptivePresenter {
     Widget? trailing,
     PresentationType type = PresentationType.formOrConfirmation,
     bool isScrollControlled = true,
+    double maxWidth = 560,
   }) {
     final layoutClass = AdaptiveLayout.of(context);
     final theme = context.settliv;
@@ -84,6 +85,7 @@ class AdaptivePresenter {
           return _AdaptiveDialogContent(
             title: title,
             trailing: trailing,
+            maxWidth: maxWidth,
             child: child,
           );
         },
@@ -105,11 +107,13 @@ class AdaptivePresenter {
 class _AdaptiveDialogContent extends StatelessWidget {
   final String title;
   final Widget? trailing;
+  final double maxWidth;
   final Widget child;
 
   const _AdaptiveDialogContent({
     required this.title,
     this.trailing,
+    this.maxWidth = 560,
     required this.child,
   });
 
@@ -127,7 +131,7 @@ class _AdaptiveDialogContent extends StatelessWidget {
         },
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints: BoxConstraints(maxWidth: maxWidth),
             child: Material(
               color: theme.transparent,
               child: ClipRRect(

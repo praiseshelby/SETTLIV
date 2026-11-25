@@ -5,4 +5,8 @@ class AppConfig {
   
   /// Feedback email recipient. If non-empty, shows the 'Send by email' button.
   static const String kFeedbackEmail = 'feedback@settliv.app';
+
+  /// WebAuthn screen lock is disabled in the web prototype so unsupported
+  /// environments show the designed FeatureComingSheet instead.
+  static const bool kScreenLockEnabled = false;
 }

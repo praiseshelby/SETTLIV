@@ -2,6 +2,7 @@ import '../../../core/layout/adaptive_layout.dart';
 import '../../../core/navigation/back_navigation.dart';
 import '../../../core/profile/experience_mode.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,6 +87,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   bool _isSaving = false;
   bool _showSavedSuccess = false;
   bool _attemptedSave = false;
+  final GlobalKey _amountFieldKey = GlobalKey();
+  final GlobalKey _quickFieldKey = GlobalKey();
 
   @override
   void initState() {
@@ -532,6 +535,175 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     }
   }
 
+  String _quickCtaLabel(QuickParseResult parseResult, Group currentGroup) {
+    if (_showSavedSuccess) return 'Saved!';
+    if (!parseResult.isValid || parseResult.amountPaise == null) {
+      return 'Add expense';
+    }
+    final formatted =
+        CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true);
+    final targetGroup = parseResult.inferredGroup ?? currentGroup;
+    if (targetGroup.isPersonal) return 'Add $formatted · Personal';
+    return 'Add $formatted to ${targetGroup.name}';
+  }
+
+  String _manualCtaLabel(int amountPaise, Group currentGroup) {
+    if (_showSavedSuccess) return 'Saved!';
+    if (amountPaise <= 0) {
+      return widget.initialExpense != null ? 'Update expense' : 'Add expense';
+    }
+    final formatted = CurrencyFormatter.formatPaise(amountPaise, absolute: true);
+    if (widget.initialExpense != null) return 'Update $formatted';
+    if (currentGroup.isPersonal) return 'Add $formatted · Personal';
+    return 'Add $formatted to ${currentGroup.name}';
+  }
+
+  void _submitQuick(QuickParseResult parseResult) {
+    if (_isSaving) return;
+    if (!parseResult.isValid || parseResult.amountPaise == null) {
+      setState(() => _attemptedSave = true);
+      _quickFocusNode.requestFocus();
+      final ctx = _quickFieldKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      }
+      return;
+    }
+    final memberIds = parseResult.participants.map((p) => p.id).toList();
+    final payerId = parseResult.payerId ?? SeedData.currentUserId;
+    final shares = SplitCalculator.splitEqual(
+      totalPaise: parseResult.amountPaise!,
+      memberIds: memberIds,
+      paidBy: payerId,
+    );
+    final newExp = Expense(
+      id: widget.initialExpense?.id ??
+          'exp_${DateTime.now().millisecondsSinceEpoch}',
+      groupId: parseResult.inferredGroup?.id ?? _selectedGroupId,
+      title: parseResult.description,
+      category: parseResult.category,
+      amount: parseResult.amountPaise!,
+      date: DateTime.now(),
+      paidBy: payerId,
+      splitMode: SplitMode.equal,
+      shares: shares,
+    );
+    _checkAndSaveExpense(newExp);
+  }
+
+  void _submitManual(
+    int amountPaise,
+    ({bool isValid, String? errorMessage}) validation,
+  ) {
+    if (_isSaving) return;
+    if (!validation.isValid) {
+      setState(() => _attemptedSave = true);
+      if (amountPaise <= 0) {
+        _amountFocusNode.requestFocus();
+        final ctx = _amountFieldKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      }
+      return;
+    }
+    final shares = _computeFinalShares(amountPaise);
+    final newExp = Expense(
+      id: widget.initialExpense?.id ??
+          'exp_${DateTime.now().millisecondsSinceEpoch}',
+      groupId: _selectedGroupId,
+      title: _descriptionController.text.trim().isEmpty
+          ? _selectedCategory.label
+          : _descriptionController.text.trim(),
+      category: _selectedCategory,
+      amount: amountPaise,
+      date: _selectedDate,
+      paidBy: _paidById,
+      splitMode: _splitMode,
+      shares: shares,
+    );
+    _checkAndSaveExpense(newExp);
+  }
+
+  Widget _buildPinnedFooter({
+    required SettlivThemeExtension theme,
+    required String ctaLabel,
+    required VoidCallback onPrimaryTap,
+    String? validationCaption,
+    bool showTopHairline = true,
+  }) {
+    return Container(
+      padding: showTopHairline
+          ? const EdgeInsets.only(top: 14)
+          : const EdgeInsets.fromLTRB(20, 10, 20, 14),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.hairline)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (validationCaption != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                validationCaption,
+                style: AppTypography.caption.copyWith(
+                  color: theme.textCoral,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: TextButton(
+                  onPressed: () async {
+                    final shouldPop = await _onWillPop();
+                    if (shouldPop && mounted) {
+                      BackNavigation.handleBack(context, currentPath: '/add');
+                    }
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: AppTypography.button.copyWith(color: theme.muted),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360, minHeight: 48),
+                  child: GradientPrimaryButton(
+                    height: 48,
+                    label: ctaLabel,
+                    isLoading: _isSaving && !_showSavedSuccess,
+                    icon: _showSavedSuccess
+                        ? Icon(Icons.check_circle_rounded,
+                            color: theme.onNavy, size: 20)
+                        : null,
+                    onPressed: _isSaving ? null : onPrimaryTap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
@@ -547,6 +719,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final layout = AdaptiveLayout.of(context);
     final isDesktopWeb = effective == EffectiveExperience.web && layout != LayoutClass.compact;
     final hideScanReceipt = profile.isDesktop && effective == EffectiveExperience.web;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    final double desktopDialogMaxHeight = math.max(320.0, viewportHeight - 48.0);
 
     return CallbackShortcuts(
       bindings: {
@@ -573,14 +747,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           child: SafeArea(
             child: isDesktopWeb
                 ? Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 960),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: 960,
+                          maxHeight: desktopDialogMaxHeight,
+                        ),
                         child: GlassSurface(
                           level: GlassLevel.level2,
                           borderRadius: 24,
-                          padding: const EdgeInsets.all(32),
+                          padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -612,14 +789,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               // GlassSegmented: Quick | Manual
                               GlassSegmented<int>(
                                 values: const [0, 1],
                                 labels: const ['Quick', 'Manual'],
                                 selectedValue: _selectedTab,
                                 onValueChanged: (idx) {
-                                  setState(() => _selectedTab = idx);
+                                  setState(() {
+                                    _selectedTab = idx;
+                                    _attemptedSave = false;
+                                  });
                                   if (idx == 0) {
                                     _quickFocusNode.requestFocus();
                                   } else {
@@ -627,11 +807,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                   }
                                 },
                               ),
-                              const SizedBox(height: 20),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 520),
+                              const SizedBox(height: 16),
+                              Flexible(
                                 child: _selectedTab == 0
-                                    ? _buildQuickDesktopTwoPane(people, groups, allExpenses, hideScanReceipt: hideScanReceipt)
+                                    ? _buildQuickDesktopTwoPane(people, groups, allExpenses, currentGroup, hideScanReceipt: hideScanReceipt)
                                     : _buildManualDesktopTwoPane(people, groups, currentGroup, hideScanReceipt: hideScanReceipt),
                               ),
                             ],
@@ -677,7 +856,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           labels: const ['Quick', 'Manual'],
                           selectedValue: _selectedTab,
                           onValueChanged: (idx) {
-                            setState(() => _selectedTab = idx);
+                            setState(() {
+                              _selectedTab = idx;
+                              _attemptedSave = false;
+                            });
                             if (idx == 0) {
                               _quickFocusNode.requestFocus();
                             } else {
@@ -690,7 +872,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       // Tab Body
                       Expanded(
                         child: _selectedTab == 0
-                            ? _buildQuickTab(people, groups, allExpenses, hideScanReceipt: hideScanReceipt)
+                            ? _buildQuickTab(people, groups, allExpenses, currentGroup, hideScanReceipt: hideScanReceipt)
                             : _buildManualTab(people, groups, currentGroup, hideScanReceipt: hideScanReceipt),
                       ),
                     ],
@@ -705,7 +887,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Widget _buildQuickDesktopTwoPane(
     List<Person> people,
     List<Group> groups,
-    List<Expense> allExpenses, {
+    List<Expense> allExpenses,
+    Group currentGroup, {
     required bool hideScanReceipt,
   }) {
     final theme = context.settliv;
@@ -723,9 +906,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       defaultGroupId: _selectedGroupId,
     );
     final bool hasValidExpense = parseResult.isValid;
-    final String ctaLabel = hasValidExpense
-        ? 'Confirm · ${CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true)} with ${parseResult.participants.length} people'
-        : 'Add expense';
+    final String ctaLabel = _quickCtaLabel(parseResult, currentGroup);
 
     final repeatSuggestions = RepeatSuggestionEngine.getRepeatSuggestions(
       expenses: allExpenses,
@@ -735,8 +916,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final currentExample = _placeholderExamples[_exampleIndex];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
+        Flexible(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -748,6 +930,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       GlassSurface(
+                        key: _quickFieldKey,
                         level: GlassLevel.level2,
                         borderRadius: 20,
                         padding: const EdgeInsets.all(20),
@@ -949,53 +1132,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         ),
 
         // Footer Actions separated by hairline
-        Container(
-          padding: const EdgeInsets.only(top: 16),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: theme.hairline)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () async {
-                  final shouldPop = await _onWillPop();
-                  if (shouldPop && mounted) {
-                    BackNavigation.handleBack(context, currentPath: '/add');
-                  }
-                },
-                child: Text('Cancel', style: AppTypography.button.copyWith(color: theme.muted)),
-              ),
-              const SizedBox(width: 12),
-              GradientPrimaryButton(
-                label: _showSavedSuccess ? 'Saved!' : ctaLabel,
-                isLoading: _isSaving && !_showSavedSuccess,
-                onPressed: (!hasValidExpense || _isSaving)
-                    ? null
-                    : () {
-                        final memberIds = parseResult.participants.map((p) => p.id).toList();
-                        final payerId = parseResult.payerId ?? SeedData.currentUserId;
-                        final shares = SplitCalculator.splitEqual(
-                          totalPaise: parseResult.amountPaise!,
-                          memberIds: memberIds,
-                          paidBy: payerId,
-                        );
-                        final newExp = Expense(
-                          id: widget.initialExpense?.id ?? 'exp_${DateTime.now().millisecondsSinceEpoch}',
-                          groupId: parseResult.inferredGroup?.id ?? _selectedGroupId,
-                          title: parseResult.description,
-                          category: parseResult.category,
-                          amount: parseResult.amountPaise!,
-                          date: DateTime.now(),
-                          paidBy: payerId,
-                          splitMode: SplitMode.equal,
-                          shares: shares,
-                        );
-                        _checkAndSaveExpense(newExp);
-                      },
-              ),
-            ],
-          ),
+        const SizedBox(height: 12),
+        _buildPinnedFooter(
+          theme: theme,
+          ctaLabel: ctaLabel,
+          validationCaption: (_attemptedSave && !hasValidExpense)
+              ? 'Add an amount to continue'
+              : null,
+          onPrimaryTap: () => _submitQuick(parseResult),
         ),
       ],
     );
@@ -1014,14 +1158,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final int amountPaise = enteredPaise ?? 0;
     final validation = _validateManualSplit(amountPaise);
 
-    final String buttonLabel;
-    if (widget.initialExpense != null) {
-      buttonLabel = 'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
-    } else if (currentGroup.isPersonal) {
-      buttonLabel = 'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · personal';
-    } else {
-      buttonLabel = 'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · split with ${_selectedMemberIds.length} people';
-    }
+    final String buttonLabel = _manualCtaLabel(amountPaise, currentGroup);
 
     final payer = people.firstWhere(
       (p) => p.id == _paidById,
@@ -1029,8 +1166,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
+        Flexible(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1043,6 +1181,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     children: [
                       // Amount Hero
                       Center(
+                        key: _amountFieldKey,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -1081,6 +1220,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                 ),
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _submitManual(amountPaise, validation),
                                 onChanged: (_) => setState(() {}),
                               ),
                             ),
@@ -1105,6 +1246,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             hintStyle: AppTypography.body.copyWith(color: theme.tertiary),
                             border: InputBorder.none,
                           ),
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _submitManual(amountPaise, validation),
                           onChanged: (_) => setState(() {}),
                         ),
                       ),
@@ -1224,47 +1367,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         ),
 
         // Footer Actions separated by hairline
-        Container(
-          padding: const EdgeInsets.only(top: 16),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: theme.hairline)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () async {
-                  final shouldPop = await _onWillPop();
-                  if (shouldPop && mounted) {
-                    BackNavigation.handleBack(context, currentPath: '/add');
-                  }
-                },
-                child: Text('Cancel', style: AppTypography.button.copyWith(color: theme.muted)),
-              ),
-              const SizedBox(width: 12),
-              GradientPrimaryButton(
-                label: _showSavedSuccess ? 'Saved!' : buttonLabel,
-                isLoading: _isSaving && !_showSavedSuccess,
-                onPressed: (!validation.isValid || _isSaving)
-                    ? () => setState(() => _attemptedSave = true)
-                    : () {
-                        final shares = _computeFinalShares(amountPaise);
-                        final newExp = Expense(
-                          id: widget.initialExpense?.id ?? 'exp_${DateTime.now().millisecondsSinceEpoch}',
-                          groupId: _selectedGroupId,
-                          title: _descriptionController.text.trim().isEmpty ? _selectedCategory.label : _descriptionController.text.trim(),
-                          category: _selectedCategory,
-                          amount: amountPaise,
-                          date: _selectedDate,
-                          paidBy: _paidById,
-                          splitMode: _splitMode,
-                          shares: shares,
-                        );
-                        _checkAndSaveExpense(newExp);
-                      },
-              ),
-            ],
-          ),
+        const SizedBox(height: 12),
+        _buildPinnedFooter(
+          theme: theme,
+          ctaLabel: buttonLabel,
+          validationCaption: (_attemptedSave && !validation.isValid)
+              ? validation.errorMessage
+              : null,
+          onPrimaryTap: () => _submitManual(amountPaise, validation),
         ),
       ],
     );
@@ -1277,7 +1387,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Widget _buildQuickTab(
     List<Person> people,
     List<Group> groups,
-    List<Expense> allExpenses, {
+    List<Expense> allExpenses,
+    Group currentGroup, {
     required bool hideScanReceipt,
   }) {
     final theme = context.settliv;
@@ -1296,10 +1407,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
 
     final bool hasValidExpense = parseResult.isValid;
-
-    final String ctaLabel = hasValidExpense
-        ? 'Confirm · ${CurrencyFormatter.formatPaise(parseResult.amountPaise!, absolute: true)} with ${parseResult.participants.length} people'
-        : 'Add expense';
+    final String ctaLabel = _quickCtaLabel(parseResult, currentGroup);
 
     // Repeat suggestions for descriptions logged 3+ times
     final repeatSuggestions = RepeatSuggestionEngine.getRepeatSuggestions(
@@ -1309,16 +1417,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     final currentExample = _placeholderExamples[_exampleIndex];
 
-    return Stack(
+    return Column(
       children: [
-        ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
-          children: [
-            // Composer Card with cycling placeholder and "Use this" button
-            GlassSurface(
-              level: GlassLevel.level2,
-              borderRadius: 24,
-              padding: const EdgeInsets.all(20),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            children: [
+              // Composer Card with cycling placeholder and "Use this" button
+              GlassSurface(
+                key: _quickFieldKey,
+                level: GlassLevel.level2,
+                borderRadius: 24,
+                padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1509,59 +1619,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ],
           ],
         ),
-
-        // Sticky Bottom Bar
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: GlassSurface(
-            level: GlassLevel.level3,
-            borderRadius: 0,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GradientPrimaryButton(
-                  label: _showSavedSuccess ? 'Saved!' : ctaLabel,
-                  isLoading: _isSaving && !_showSavedSuccess,
-                  icon: _showSavedSuccess
-                      ? Icon(Icons.check_circle_rounded,
-                          color: theme.onNavy, size: 20)
-                      : null,
-                  onPressed: (!hasValidExpense || _isSaving)
-                      ? null
-                      : () {
-                          final memberIds = parseResult.participants
-                              .map((p) => p.id)
-                              .toList();
-                          final payerId =
-                              parseResult.payerId ?? SeedData.currentUserId;
-                          final shares = SplitCalculator.splitEqual(
-                            totalPaise: parseResult.amountPaise!,
-                            memberIds: memberIds,
-                            paidBy: payerId,
-                          );
-
-                          final newExp = Expense(
-                            id: widget.initialExpense?.id ??
-                                'exp_${DateTime.now().millisecondsSinceEpoch}',
-                            groupId: parseResult.inferredGroup?.id ??
-                                _selectedGroupId,
-                            title: parseResult.description,
-                            category: parseResult.category,
-                            amount: parseResult.amountPaise!,
-                            date: DateTime.now(),
-                            paidBy: payerId,
-                            splitMode: SplitMode.equal,
-                            shares: shares,
-                          );
-                          _checkAndSaveExpense(newExp);
-                        },
-                ),
-              ],
-            ),
-          ),
+        ),
+        _buildPinnedFooter(
+          theme: theme,
+          ctaLabel: ctaLabel,
+          showTopHairline: false,
+          validationCaption: (_attemptedSave && !hasValidExpense)
+              ? 'Add an amount to continue'
+              : null,
+          onPrimaryTap: () => _submitQuick(parseResult),
         ),
       ],
     );
@@ -1833,29 +1899,19 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     // Validate manual split
     final validation = _validateManualSplit(amountPaise);
-
-    final String buttonLabel;
-    if (widget.initialExpense != null) {
-      buttonLabel =
-          'Update ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)}';
-    } else if (currentGroup.isPersonal) {
-      buttonLabel =
-          'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · personal';
-    } else {
-      buttonLabel =
-          'Save ${CurrencyFormatter.formatPaise(amountPaise, absolute: true)} · split with ${_selectedMemberIds.length} people';
-    }
+    final String buttonLabel = _manualCtaLabel(amountPaise, currentGroup);
 
     final payer = people.firstWhere(
       (p) => p.id == _paidById,
       orElse: () => people.first,
     );
 
-    return Stack(
+    return Column(
       children: [
-        ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 160),
-          children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
             // 0. Shared | Personal toggle
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -1888,6 +1944,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
             // 1. Amount hero: digits only, max 2 decimals, live grouping + scan button
             Center(
+              key: _amountFieldKey,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1934,6 +1991,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _submitManual(amountPaise, validation),
                             onChanged: (_) => setState(() {}),
                           ),
                         ),
@@ -2326,64 +2385,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ],
           ],
         ),
-
-        // Sticky Bottom Bar
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: GlassSurface(
-            level: GlassLevel.level3,
-            borderRadius: 0,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!validation.isValid && validation.errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      validation.errorMessage!,
-                      style: AppTypography.caption.copyWith(
-                        color: theme.secondary, // Neutral helper text per rule
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                GradientPrimaryButton(
-                  label: _showSavedSuccess ? 'Saved!' : buttonLabel,
-                  isLoading: _isSaving && !_showSavedSuccess,
-                  icon: _showSavedSuccess
-                      ? Icon(Icons.check_circle_rounded,
-                          color: theme.onNavy, size: 20)
-                      : null,
-                  onPressed: (!validation.isValid || _isSaving)
-                      ? () {
-                          setState(() => _attemptedSave = true);
-                        }
-                      : () {
-                          final shares = _computeFinalShares(amountPaise);
-                          final newExp = Expense(
-                            id: widget.initialExpense?.id ??
-                                'exp_${DateTime.now().millisecondsSinceEpoch}',
-                            groupId: _selectedGroupId,
-                            title: _descriptionController.text.trim().isEmpty
-                                ? _selectedCategory.label
-                                : _descriptionController.text.trim(),
-                            category: _selectedCategory,
-                            amount: amountPaise,
-                            date: _selectedDate,
-                            paidBy: _paidById,
-                            splitMode: _splitMode,
-                            shares: shares,
-                          );
-                          _checkAndSaveExpense(newExp);
-                        },
-                ),
-              ],
-            ),
-          ),
+        ),
+        _buildPinnedFooter(
+          theme: theme,
+          ctaLabel: buttonLabel,
+          showTopHairline: false,
+          validationCaption: (_attemptedSave && !validation.isValid)
+              ? validation.errorMessage
+              : null,
+          onPrimaryTap: () => _submitManual(amountPaise, validation),
         ),
       ],
     );
@@ -2741,9 +2751,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         isValid: false,
         errorMessage: 'Amount exceeds maximum limit of ₹10,00,00,000'
       );
-    }
-    if (_descriptionController.text.trim().isEmpty) {
-      return (isValid: false, errorMessage: 'Description is required');
     }
     if (_descriptionController.text.trim().length > 60) {
       return (

@@ -10,17 +10,22 @@ class SettlivWordmark extends StatelessWidget {
   final double fontSize;
   final Color? color;
   final bool rotated; // Rotated 90 deg vertical, reading bottom-to-top
+  final double trackingFactor;
+  final bool opticallyCenter;
 
   const SettlivWordmark({
     super.key,
     this.fontSize = 18,
     this.color,
     this.rotated = false,
+    this.trackingFactor = 0.28,
+    this.opticallyCenter = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
+    final tracking = fontSize * trackingFactor;
 
     final text = Text(
       'SETTLIV',
@@ -29,7 +34,7 @@ class SettlivWordmark extends StatelessWidget {
         fontFamilyFallback: AppTypography.brandFallback,
         fontSize: fontSize,
         fontWeight: FontWeight.w800,
-        letterSpacing: fontSize * 0.18,
+        letterSpacing: tracking,
         height: 1.0,
         color: color ?? theme.ink,
       ),
@@ -37,8 +42,18 @@ class SettlivWordmark extends StatelessWidget {
 
     if (rotated) {
       // 90 degrees vertical, reading bottom-to-top
+      final child = opticallyCenter
+          ? Padding(padding: EdgeInsets.only(top: tracking), child: text)
+          : text;
       return RotatedBox(
         quarterTurns: 3,
+        child: child,
+      );
+    }
+
+    if (opticallyCenter) {
+      return Padding(
+        padding: EdgeInsets.only(left: tracking),
         child: text,
       );
     }

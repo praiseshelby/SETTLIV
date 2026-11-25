@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/device_auth.dart';
 import '../../../../core/auth/screen_lock_provider.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/feature_coming_sheet.dart';
 import '../../../../core/widgets/glass_surface.dart';
 
 class SecuritySettingsSection extends ConsumerStatefulWidget {
@@ -14,13 +16,15 @@ class SecuritySettingsSection extends ConsumerStatefulWidget {
 }
 
 class _SecuritySettingsSectionState extends ConsumerState<SecuritySettingsSection> {
-  bool _isCheckingAvailability = true;
+  bool _isCheckingAvailability = AppConfig.kScreenLockEnabled;
   bool _isAvailable = false;
 
   @override
   void initState() {
     super.initState();
-    _checkAvailability();
+    if (AppConfig.kScreenLockEnabled) {
+      _checkAvailability();
+    }
   }
 
   Future<void> _checkAvailability() async {
@@ -34,10 +38,84 @@ class _SecuritySettingsSectionState extends ConsumerState<SecuritySettingsSectio
     }
   }
 
+  void _openComingSheet(BuildContext context, {
+    required String featureName,
+    required String valueLine,
+    String? whatItWillDo,
+    IconData? icon,
+  }) {
+    FeatureComingSheet.show(
+      context,
+      featureName: featureName,
+      valueLine: valueLine,
+      availabilityLine: 'Arrives with the Android app',
+      whatItWillDo: whatItWillDo,
+      icon: icon,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.settliv;
     final lockState = ref.watch(screenLockProvider);
+
+    if (!AppConfig.kScreenLockEnabled) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PRIVACY & SECURITY',
+            style: AppTypography.caption.copyWith(
+              color: theme.muted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GlassSurface(
+            level: GlassLevel.level1,
+            borderRadius: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            onTap: () => _openComingSheet(
+              context,
+              featureName: 'Screen & biometric lock',
+              valueLine: 'Keep your balances private with fingerprint, face, or device PIN.',
+              whatItWillDo: 'Locks Settliv automatically when you switch apps or after a chosen timeout.',
+              icon: Icons.lock_outline_rounded,
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, color: theme.ink, size: 22),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Screen & biometric lock',
+                        style: AppTypography.body.copyWith(
+                          color: theme.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Arrives with the Android app',
+                        style: AppTypography.caption.copyWith(
+                          color: theme.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: theme.muted, size: 20),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
