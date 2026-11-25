@@ -732,3 +732,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Final Polish — Round 9 ("The Balance Beam" Intro)
 - [x] **Balance Beam Intro (`web/index.html`)**: Replaced rings/discs/3D-flips with `#04060D` vignette, warm amber + cool ice end blooms, elliptical legibility pad, masked upward light fan, tilted `3px` balance beam (`#FFB26B → #FFFFFF → #8FD3FF` + `14px` glow + `18%` ruler ticks + end flares), masked `SETTLIV` (`BricolageGrotesque` 800, no `text-shadow` inside masks) + specular sweep.
 - [x] **Timeline, Fallbacks & Font Method (5 lines)**: Font gated via `document.fonts.load('800 1em "BricolageGrotesque"')` (500ms timeout, asset `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf`, app stack fallback) + double-`rAF` `.play` start; `0–0.55s` beam settles `-16°→+4°→-1.5°→0°` as fan rises; `0.50–0.95s` bloom pulses & letters rise `40ms` stagger; `0.90–1.15s` sweep crosses & beam contracts to underline, then `2%` bloom / `1°` fan idle; `300ms` exit (`1.03` scale + fade) on `flutter-first-frame` + `1.15s` (`.lite-splash`, `prefers-reduced-motion`, 8s hard removal).
+
+
+---
+
+## Final Polish — Round 10 (Refined Rim-Light Intro)
+- [x] **Rim-Light Refinement (`web/index.html`)**: Replaced Balance Beam with refined Rim-Light (`135vmin` amber Ring A + `105vmin` ice Ring B >= `1.35x` wordmark width on desktop, `94vw`/`78vw` on phones, soft-edged conic heads, off-centre warm/cool light leaks, `14%` tick bezel, `-8deg` diagonal streak at `0.30–0.50s`, masked `SETTLIV` with no `text-shadow`/3D/ghosts + unclipped legibility pad).
+- [x] **Timeline, Font & Fallbacks (5 lines)**: Font gated via `document.fonts.load('800 1em "BricolageGrotesque"')` (500ms cap, asset `assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf`, app stack fallback) + double-`rAF` `.play` start; `0–0.55s` rings scale `0.8→1` & leaks bloom; `0.30–0.50s` `-8deg` streak crosses; `0.45–0.95s` letters rise `40ms` stagger; `0.85–1.10s` sweep & Ring A pulse, then 3-layer parallax idle; `300ms` exit (`1.4x` rings / `1.03x` wordmark) on `flutter-first-frame` + `1.1s` (`@supports` borders, `.lite-splash`, `prefers-reduced-motion`, 8s removal).
