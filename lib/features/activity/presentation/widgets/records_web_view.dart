@@ -12,6 +12,7 @@ import '../../../../core/widgets/expense_tile.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/expense.dart';
 import '../../../../data/models/group.dart';
+import '../../../../data/models/settlement.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
 import '../../../group_detail/sheets/expense_detail_sheet.dart';
 
@@ -201,6 +202,7 @@ class _RecordsWebViewState extends ConsumerState<RecordsWebView> {
 
     final repo = ref.watch(appRepositoryProvider);
     final allExpenses = ref.watch(allExpensesProvider);
+    final allSettlements = ref.watch(allSettlementsProvider);
     final allGroups = ref.watch(allGroupsProvider);
     final sharedGroups = allGroups.where((g) => !g.isPersonal && !g.isArchived).toList();
     final currentUserId = repo.currentUserId;
@@ -220,6 +222,23 @@ class _RecordsWebViewState extends ConsumerState<RecordsWebView> {
       return true;
     }).toList();
 
+    final filteredSettlements = _selectedCategory != null
+        ? <Settlement>[]
+        : allSettlements.where((s) {
+            if (s.isDeleted) return false;
+            if (_selectedGroupId != 'all' && s.groupId != _selectedGroupId) return false;
+            if (_searchQuery.isNotEmpty) {
+              final q = _searchQuery.toLowerCase();
+              final payer = repo.getPerson(s.from)?.name.toLowerCase() ?? '';
+              final payee = repo.getPerson(s.to)?.name.toLowerCase() ?? '';
+              if (!payer.contains(q) && !payee.contains(q) && !'paid'.contains(q)) {
+                return false;
+              }
+            }
+            return true;
+          }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
     final hasActiveFilter = _selectedGroupId != 'all' || _selectedCategory != null || _searchQuery.isNotEmpty;
 
     return SingleChildScrollView(
@@ -238,11 +257,16 @@ class _RecordsWebViewState extends ConsumerState<RecordsWebView> {
               const SizedBox(height: 12),
 
               // 2. Summary line with Clear filters
-              _buildSummaryLine(context, theme, filtered.length, hasActiveFilter),
+              _buildSummaryLine(context, theme, filtered.length + filteredSettlements.length, hasActiveFilter),
               const SizedBox(height: 16),
 
+              if (filteredSettlements.isNotEmpty) ...[
+                _buildSettlementsCard(theme, filteredSettlements, repo, currentUserId),
+                const SizedBox(height: 16),
+              ],
+
               // 3. Table or Cards
-              if (filtered.isEmpty)
+              if (filtered.isEmpty && filteredSettlements.isEmpty)
                 _buildEmptyState(theme, hasActiveFilter)
               else if (isCompact)
                 // Compact Web: Card list
@@ -493,6 +517,67 @@ class _RecordsWebViewState extends ConsumerState<RecordsWebView> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildSettlementsCard(
+    SettlivThemeExtension theme,
+    List<Settlement> settlements,
+    dynamic repo,
+    String currentUserId,
+  ) {
+    return GlassSurface(
+      level: GlassLevel.level2,
+      borderRadius: 20,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SETTLEMENTS', style: AppTypography.eyebrow.copyWith(color: theme.muted)),
+          const SizedBox(height: 10),
+          for (int i = 0; i < settlements.length; i++) ...[
+            Builder(builder: (context) {
+              final s = settlements[i];
+              final payer = s.from == currentUserId
+                  ? 'You'
+                  : (repo.getPerson(s.from)?.name ?? 'Someone');
+              final payee = s.to == currentUserId
+                  ? 'you'
+                  : (repo.getPerson(s.to)?.name ?? 'Someone');
+              final group = repo.getGroup(s.groupId);
+              final amountStr = CurrencyFormatter.formatPaise(s.paise, absolute: true);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: theme.emerald.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.check_rounded, size: 16, color: theme.textEmerald),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$payer paid $payee $amountStr · ${s.method.label}',
+                        style: AppTypography.bodySemiBold.copyWith(color: theme.ink),
+                      ),
+                    ),
+                    Text(
+                      '${group?.name ?? 'Group'} · ${DateFormat('d MMM').format(s.date)}',
+                      style: AppTypography.caption.copyWith(color: theme.muted),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            if (i < settlements.length - 1) Divider(height: 1, color: theme.hairline),
+          ],
+        ],
+      ),
     );
   }
 

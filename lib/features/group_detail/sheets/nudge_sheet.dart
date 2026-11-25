@@ -9,6 +9,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
+import 'mark_received_sheet.dart';
 
 class NudgeSheet extends StatelessWidget {
   final Group group;
@@ -145,7 +146,32 @@ class NudgeSheet extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 12),
+          if (debtor != null && amountPaise != null && amountPaise! > 0) ...[
+            const SizedBox(height: 6),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  final navContext = Navigator.of(context).context;
+                  Navigator.of(context).pop();
+                  MarkReceivedSheet.show(
+                    context: navContext,
+                    payer: debtor!,
+                    group: group,
+                    maxAmountPaise: amountPaise!,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  foregroundColor: theme.textEmerald,
+                ),
+                child: const Text(
+                  'Already paid? Mark received',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
         ],
       ),
     );

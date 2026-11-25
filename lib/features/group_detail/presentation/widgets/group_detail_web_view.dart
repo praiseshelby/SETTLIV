@@ -21,6 +21,7 @@ import '../../../../data/models/group.dart';
 import '../../../../data/models/person.dart';
 import '../../sheets/edit_group_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
+import '../../sheets/mark_received_sheet.dart';
 import '../../sheets/nudge_sheet.dart';
 import '../../sheets/settle_sheet.dart';
 import 'category_donut_chart.dart';
@@ -529,9 +530,44 @@ class GroupDetailWebView extends ConsumerWidget {
                         style: TextStyle(
                           fontFamily: AppTypography.fontFamily,
                           fontWeight: FontWeight.w700,
-                          color: isCurrentUserCreditor ? theme.emerald : (isCurrentUserDebtor ? theme.coral : theme.ink),
+                          color: isCurrentUserCreditor ? theme.textEmerald : (isCurrentUserDebtor ? theme.textCoral : theme.ink),
                         ),
                       ),
+                      if (isCurrentUserCreditor) ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => NudgeSheet.show(
+                            context: context,
+                            group: group,
+                            debt: debt,
+                            debtor: fromPerson,
+                            amountPaise: debt.amount,
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            minimumSize: const Size(48, 36),
+                          ),
+                          child: Text('Nudge', style: TextStyle(color: theme.ink, fontWeight: FontWeight.w600, fontSize: 12)),
+                        ),
+                        const SizedBox(width: 4),
+                        ElevatedButton(
+                          onPressed: () => MarkReceivedSheet.show(
+                            context: context,
+                            payer: fromPerson,
+                            group: group,
+                            maxAmountPaise: debt.amount,
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.emerald,
+                            foregroundColor: theme.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            minimumSize: const Size(48, 36),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Mark received', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                      ],
                     ],
                   ),
                 ),

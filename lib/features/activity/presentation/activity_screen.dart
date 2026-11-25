@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/expense_tile.dart';
@@ -43,6 +44,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final theme = context.settliv;
     final repo = ref.watch(appRepositoryProvider);
     final allExpenses = ref.watch(allExpensesProvider);
+    final allSettlements = ref.watch(allSettlementsProvider);
     final allGroups = ref.watch(allGroupsProvider);
     // Show shared groups + Personal chip separately; exclude archived
     final sharedGroups = allGroups.where((g) => !g.isPersonal && !g.isArchived).toList();
@@ -67,6 +69,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       }
       return true;
     }).toList();
+
+    // Filter active settlements by group and search query
+    final filteredSettlements = allSettlements.where((s) {
+      if (s.isDeleted) return false;
+      if (_selectedGroupId != 'all' && s.groupId != _selectedGroupId) return false;
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final payer = repo.getPerson(s.from)?.name.toLowerCase() ?? '';
+        final payee = repo.getPerson(s.to)?.name.toLowerCase() ?? '';
+        if (!payer.contains(query) && !payee.contains(query) && !'paid'.contains(query)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     // Group expenses by date header
     final Map<String, List<Expense>> grouped = {};
@@ -172,7 +190,49 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               const SizedBox(height: 20),
 
               // Content: List or Empty/No-results
-              if (allExpenses.isEmpty) ...[
+              if (filteredSettlements.isNotEmpty) ...[
+                GlassSurface(
+                  level: GlassLevel.level2,
+                  borderRadius: 20,
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('SETTLEMENTS', style: AppTypography.eyebrow.copyWith(color: theme.muted)),
+                      const SizedBox(height: 8),
+                      for (int i = 0; i < filteredSettlements.length; i++) ...[
+                        Builder(builder: (context) {
+                          final s = filteredSettlements[i];
+                          final payer = s.from == currentUserId
+                              ? 'You'
+                              : (repo.getPerson(s.from)?.name ?? 'Someone');
+                          final payee = s.to == currentUserId
+                              ? 'you'
+                              : (repo.getPerson(s.to)?.name ?? 'Someone');
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 18, color: theme.textEmerald),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '$payer paid $payee ${CurrencyFormatter.formatPaise(s.paise, absolute: true)} · ${s.method.label}',
+                                    style: AppTypography.bodySemiBold.copyWith(color: theme.ink, fontSize: 13.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        if (i < filteredSettlements.length - 1) Divider(height: 1, color: theme.hairline),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+              if (allExpenses.isEmpty && filteredSettlements.isEmpty) ...[
                 EmptyState(
                   title: 'No expenses yet',
                   subtitle: 'Expenses you add will show up here.',

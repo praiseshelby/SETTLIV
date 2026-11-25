@@ -131,7 +131,10 @@ class _AdaptiveDialogContent extends StatelessWidget {
         },
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+            constraints: BoxConstraints(
+              maxWidth: maxWidth,
+              maxHeight: (MediaQuery.sizeOf(context).height - 48).clamp(240.0, double.infinity),
+            ),
             child: Material(
               color: theme.transparent,
               child: ClipRRect(

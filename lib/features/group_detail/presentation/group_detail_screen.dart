@@ -26,6 +26,7 @@ import '../../../data/repositories/app_repository.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../sheets/expense_detail_sheet.dart';
 import '../sheets/settle_sheet.dart';
+import '../sheets/mark_received_sheet.dart';
 import '../sheets/nudge_sheet.dart';
 import '../sheets/edit_group_sheet.dart';
 import 'widgets/balance_bars_chart.dart';
@@ -838,54 +839,97 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                 ),
                               ),
                             ] else if (isUserOwed) ...[
-                              Semantics(
-                                button: true,
-                                label: 'Send nudge reminder to ${fromPerson?.name ?? "debtor"}',
-                                child: InkWell(
-                                  onTap: () {
-                                    final currentGroup =
-                                        repo.getGroup(widget.groupId);
-                                    if (currentGroup != null) {
-                                      NudgeSheet.show(
-                                        context: context,
-                                        group: currentGroup,
-                                        debt: debt,
-                                        debtor: fromPerson,
-                                        amountPaise: debt.amount,
-                                      );
-                                    }
-                                  },
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: theme.surface.withValues(alpha: 0.8),
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(999)),
-                                      border: Border.all(color: theme.hairline),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.notifications_none_rounded,
-                                          size: 13,
-                                          color: theme.navy,
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  Semantics(
+                                    button: true,
+                                    label: 'Send nudge reminder to ${fromPerson?.name ?? "debtor"}',
+                                    child: InkWell(
+                                      onTap: () {
+                                        final currentGroup =
+                                            repo.getGroup(widget.groupId);
+                                        if (currentGroup != null) {
+                                          NudgeSheet.show(
+                                            context: context,
+                                            group: currentGroup,
+                                            debt: debt,
+                                            debtor: fromPerson,
+                                            amountPaise: debt.amount,
+                                          );
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(999),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: theme.surface.withValues(alpha: 0.8),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(999)),
+                                          border: Border.all(color: theme.hairline),
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Nudge',
-                                          style: TextStyle(
-                                            color: theme.ink,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.notifications_none_rounded,
+                                              size: 13,
+                                              color: theme.ink,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Nudge',
+                                              style: TextStyle(
+                                                color: theme.ink,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  if (fromPerson != null)
+                                    Semantics(
+                                      button: true,
+                                      label: 'Mark received from ${fromPerson.name}',
+                                      child: InkWell(
+                                        onTap: () {
+                                          final currentGroup =
+                                              repo.getGroup(widget.groupId);
+                                          if (currentGroup != null) {
+                                            MarkReceivedSheet.show(
+                                              context: context,
+                                              payer: fromPerson,
+                                              group: currentGroup,
+                                              maxAmountPaise: debt.amount,
+                                            );
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(999),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: theme.emerald,
+                                            borderRadius: const BorderRadius.all(
+                                                Radius.circular(999)),
+                                          ),
+                                          child: Text(
+                                            'Mark received',
+                                            style: TextStyle(
+                                              color: theme.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ] else ...[
                               Text(

@@ -18,6 +18,7 @@ import '../../../data/engine/person_balance_engine.dart';
 import '../../../data/models/person.dart';
 import '../../../data/models/settlement.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import '../../group_detail/sheets/mark_received_sheet.dart';
 import '../../group_detail/sheets/nudge_sheet.dart';
 import '../../group_detail/sheets/settle_sheet.dart';
 import '../sheets/create_edit_iou_sheet.dart';
@@ -120,6 +121,59 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
       context: context,
       group: group,
       preselectedDebt: debt,
+    );
+  }
+
+  void _onMarkReceived(PersonDebtSummary summary) {
+    HapticFeedback.selectionClick();
+    final repo = ref.read(appRepositoryProvider);
+    final firstLine = summary.lines.firstOrNull;
+    final group = firstLine != null ? repo.getGroup(firstLine.groupId) : null;
+
+    MarkReceivedSheet.show(
+      context: context,
+      payer: summary.person,
+      group: group,
+      maxAmountPaise: summary.amountPaise,
+      summary: summary,
+      onRecorded: (created) {
+        if (mounted) {
+          setState(() => _sessionSettlements.insertAll(0, created));
+        }
+      },
+      onUndone: (undoneIds) {
+        if (mounted) {
+          setState(() {
+            _sessionSettlements.removeWhere((s) => undoneIds.contains(s.id));
+          });
+        }
+      },
+    );
+  }
+
+  void _onMarkReceivedGroupLine(Person person, GroupDebtLine line) {
+    HapticFeedback.selectionClick();
+    final repo = ref.read(appRepositoryProvider);
+    final group = repo.getGroup(line.groupId);
+    if (group == null) return;
+
+    MarkReceivedSheet.show(
+      context: context,
+      payer: person,
+      group: group,
+      maxAmountPaise: line.amountPaise,
+      onRecorded: (created) {
+        if (mounted) {
+          setState(() => _sessionSettlements.insertAll(0, created));
+        }
+      },
+      onUndone: (undoneIds) {
+        if (mounted) {
+          setState(() {
+            _sessionSettlements.removeWhere((s) => undoneIds.contains(s.id));
+          });
+        }
+      },
     );
   }
 
@@ -537,7 +591,7 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Primary action button (Nudge / Settle / IOU)
+                  // Primary action button (Nudge + Mark received / Settle / IOU)
                   if (summary.lines.isEmpty && summary.iouNotes.isNotEmpty)
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -550,15 +604,34 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                       child: Text(isOwedToUser ? 'View IOU' : 'Settle', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     )
                   else if (isOwedToUser)
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.hairline),
-                        foregroundColor: theme.ink,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      ),
-                      onPressed: () => _onNudge(summary.person, summary.amountPaise, summary.lines),
-                      child: const Text('Nudge', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: theme.hairline),
+                            foregroundColor: theme.ink,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: const Size(48, 40),
+                          ),
+                          onPressed: () => _onNudge(summary.person, summary.amountPaise, summary.lines),
+                          child: const Text('Nudge', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.emerald,
+                            foregroundColor: theme.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: const Size(48, 40),
+                          ),
+                          onPressed: () => _onMarkReceived(summary),
+                          child: const Text('Mark received', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        ),
+                      ],
                     )
                   else
                     ElevatedButton(
@@ -624,32 +697,57 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                               ),
                             ],
                           ),
-                          TextButton(
-                            onPressed: () {
-                              if (line.personOwesUser) {
-                                final repo = ref.read(appRepositoryProvider);
-                                final grp = repo.getGroup(line.groupId);
-                                if (grp != null) {
-                                  NudgeSheet.show(
-                                    context: context,
-                                    group: grp,
-                                    debtor: summary.person,
-                                    amountPaise: line.amountPaise,
-                                  );
-                                }
-                              } else {
-                                _onSettleGroupLine(summary.person, line);
-                              }
-                            },
-                            child: Text(
-                              line.personOwesUser ? 'Nudge' : 'Settle',
-                              style: TextStyle(
-                                color: theme.accent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                          if (line.personOwesUser)
+                            Wrap(
+                              spacing: 4,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    final repo = ref.read(appRepositoryProvider);
+                                    final grp = repo.getGroup(line.groupId);
+                                    if (grp != null) {
+                                      NudgeSheet.show(
+                                        context: context,
+                                        group: grp,
+                                        debtor: summary.person,
+                                        amountPaise: line.amountPaise,
+                                      );
+                                    }
+                                  },
+                                  child: Text(
+                                    'Nudge',
+                                    style: TextStyle(
+                                      color: theme.ink,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => _onMarkReceivedGroupLine(summary.person, line),
+                                  child: Text(
+                                    'Mark received',
+                                    style: TextStyle(
+                                      color: theme.textEmerald,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            TextButton(
+                              onPressed: () => _onSettleGroupLine(summary.person, line),
+                              child: Text(
+                                'Settle',
+                                style: TextStyle(
+                                  color: theme.accent,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -730,14 +828,18 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
                     const SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryButtonBg,
-                        foregroundColor: theme.primaryButtonText,
+                        backgroundColor: summary.personOwesUser ? theme.emerald : theme.primaryButtonBg,
+                        foregroundColor: summary.personOwesUser ? theme.white : theme.primaryButtonText,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      onPressed: () => _onSettleAll(summary),
+                      onPressed: () => summary.personOwesUser
+                          ? _onMarkReceived(summary)
+                          : _onSettleAll(summary),
                       child: Text(
-                        'Settle all with ${summary.person.name} (${CurrencyFormatter.formatPaise(summary.amountPaise)})',
+                        summary.personOwesUser
+                            ? 'Mark all received (${CurrencyFormatter.formatPaise(summary.amountPaise)})'
+                            : 'Settle all with ${summary.person.name} (${CurrencyFormatter.formatPaise(summary.amountPaise)})',
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                     ),
