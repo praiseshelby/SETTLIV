@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +73,8 @@ class SettlivApp extends ConsumerStatefulWidget {
 
 class _SettlivAppState extends ConsumerState<SettlivApp> {
   late bool _revealReady;
+  bool _postRevealLite = false;
+  Timer? _liteTimer;
 
   @override
   void initState() {
@@ -80,10 +83,25 @@ class _SettlivAppState extends ConsumerState<SettlivApp> {
     if (!_revealReady) {
       listenForIntroReveal(() {
         if (mounted && !_revealReady) {
-          setState(() => _revealReady = true);
+          setState(() {
+            _revealReady = true;
+            _postRevealLite = true;
+          });
+          _liteTimer?.cancel();
+          _liteTimer = Timer(const Duration(milliseconds: 900), () {
+            if (mounted && _postRevealLite) {
+              setState(() => _postRevealLite = false);
+            }
+          });
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _liteTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -115,7 +133,12 @@ class _SettlivAppState extends ConsumerState<SettlivApp> {
                 : content;
         return TickerMode(
           enabled: _revealReady,
-          child: ExperienceTransitionOverlay(child: framed),
+          child: MediaQuery(
+            data: _postRevealLite
+                ? media.copyWith(disableAnimations: true)
+                : media,
+            child: ExperienceTransitionOverlay(child: framed),
+          ),
         );
       },
     );

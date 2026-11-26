@@ -59,10 +59,6 @@ def extract_glyphs():
     font = TTFont(str(FONT_PATH))
     name_table = font["name"]
     family = name_table.getDebugName(1) or name_table.getDebugName(16) or ""
-    subfamily = name_table.getDebugName(2) or name_table.getDebugName(17) or ""
-    version = name_table.getDebugName(5) or ""
-    print(f"Font name table: family={family!r}, subfamily={subfamily!r}, version={version!r}")
-
     if "Bricolage Grotesque" not in family:
         raise RuntimeError(f"Expected family 'Bricolage Grotesque', got {family!r}")
 
@@ -128,16 +124,6 @@ def extract_glyphs():
             "stagger": abs(idx - 3) * 45,
         })
 
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-        img = Image.new("RGB", (1400, 440), (7, 9, 20))
-        draw = ImageDraw.Draw(img)
-        pil_font = ImageFont.truetype(str(FONT_PATH), 200)
-        draw.text((60, 110), "SETTLIV", font=pil_font, fill=(242, 240, 250))
-        img.save(FONT_CHECK_PNG)
-    except Exception:
-        pass
-
     return {"aspect": round(total_w / total_h, 4), "slots": slots}
 
 
@@ -155,16 +141,12 @@ def build_head_block(noise_uri: str) -> str:
     }}
     html, body {{ margin: 0; width: 100%; height: 100%; background: #070914; }}
     body.intro-lock {{ overflow: hidden; }}
-    #intro {{
-      position: fixed; inset: 0; height: 100dvh; z-index: 99999; overflow: hidden;
-    }}
+    #intro {{ position: fixed; inset: 0; z-index: 99999; overflow: hidden; }}
     #intro.exiting {{ pointer-events: none; }}
-    .half {{
-      position: absolute; left: 0; right: 0; overflow: hidden; will-change: transform;
-    }}
+    .half {{ position: absolute; left: 0; right: 0; overflow: hidden; will-change: transform; }}
     .half.top {{ top: 0; height: calc(50% + 1px); }}
     .half.bottom {{ top: 50%; height: 50%; }}
-    .scene {{ position: absolute; left: 0; right: 0; height: 100dvh; transform: scale(1); }}
+    .scene {{ position: absolute; left: 0; right: 0; height: 200%; transform: scale(1); }}
     .half.top .scene {{ top: 0; }}
     .half.bottom .scene {{ top: -100%; }}
     .go .scene {{ animation: camPush calc(1500ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) backwards; }}
@@ -175,12 +157,29 @@ def build_head_block(noise_uri: str) -> str:
     }}
     .half.top .cut-edge {{ bottom: 0; }}
     .half.bottom .cut-edge {{ top: 0; }}
-    #intro.exiting .cut-edge {{ animation: edgeFade calc(540ms / var(--spd)) ease-out forwards; }}
-    @keyframes edgeFade {{ from {{ opacity: 1; }} to {{ opacity: 0; }} }}
-    #intro.exiting .half.top {{ animation: splitUp calc(540ms / var(--spd)) cubic-bezier(0.76, 0, 0.24, 1) forwards; }}
-    #intro.exiting .half.bottom {{ animation: splitDown calc(540ms / var(--spd)) cubic-bezier(0.76, 0, 0.24, 1) calc(30ms / var(--spd)) forwards; }}
-    @keyframes splitUp {{ to {{ transform: translate3d(0, -100%, 0); }} }}
-    @keyframes splitDown {{ to {{ transform: translate3d(0, 100%, 0); }} }}
+
+    /* Freeze intro children & flatten halves during split exit */
+    #intro.frozen .half {{ contain: layout paint style; }}
+    #intro.frozen .scene,
+    #intro.frozen .rules-bg,
+    #intro.frozen .tick-ring,
+    #intro.frozen .curr,
+    #intro.frozen .head,
+    #intro.frozen .merged-line,
+    #intro.frozen .flash,
+    #intro.frozen .ripple,
+    #intro.frozen .wm-box,
+    #intro.frozen .mover,
+    #intro.frozen .tint {{
+      animation-play-state: paused !important;
+      will-change: auto !important;
+    }}
+
+    /* CSS transition fallback if WAAPI is unavailable */
+    #intro.css-exit .half {{ transition: transform calc(540ms / var(--spd)) cubic-bezier(0.76, 0, 0.24, 1); }}
+    #intro.css-exit .half.bottom {{ transition-delay: calc(30ms / var(--spd)); }}
+    #intro.css-exit .half.top {{ transform: translate3d(0, -100%, 0); }}
+    #intro.css-exit .half.bottom {{ transform: translate3d(0, 100%, 0); }}
 
     .backdrop {{
       position: absolute; inset: 0; background-color: #070914;
@@ -197,9 +196,7 @@ def build_head_block(noise_uri: str) -> str:
       -webkit-mask-image: radial-gradient(ellipse 75% 68% at 50% 50%, #000 18%, transparent 88%);
       mask-image: radial-gradient(ellipse 75% 68% at 50% 50%, #000 18%, transparent 88%);
     }}
-    .rings-bg {{
-      background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0 119px, rgba(190, 180, 255, 0.10) 119px 120px);
-    }}
+    .rings-bg {{ background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0 119px, rgba(190, 180, 255, 0.10) 119px 120px); }}
     .rules-bg {{
       background-image:
         repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 128px),
@@ -223,18 +220,13 @@ def build_head_block(noise_uri: str) -> str:
     }}
     @keyframes spinCW {{ from {{ transform: translate(-50%, -50%) rotate(0deg); }} to {{ transform: translate(-50%, -50%) rotate(360deg); }} }}
     @keyframes spinCCW {{ from {{ transform: translate(-50%, -50%) rotate(360deg); }} to {{ transform: translate(-50%, -50%) rotate(0deg); }} }}
-    @keyframes ringPulse {{
-      0%, 100% {{ transform: translate(-50%, -50%) scale(1); }}
-      50% {{ transform: translate(-50%, -50%) scale(1.012); }}
-    }}
+    @keyframes ringPulse {{ 0%, 100% {{ transform: translate(-50%, -50%) scale(1); }} 50% {{ transform: translate(-50%, -50%) scale(1.012); }} }}
 
     .line-y {{ position: absolute; top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; pointer-events: none; }}
     .curr {{ position: absolute; top: 0; width: 50%; height: 2px; opacity: 0; }}
     .curr.em {{ left: 0; background: var(--emerald); transform-origin: left center; }}
     .curr.co {{ right: 0; background: var(--coral); transform-origin: right center; }}
-    .go .curr {{
-      animation: currGrow calc(460ms / var(--spd)) cubic-bezier(0.55, 0, 0.2, 1) calc(100ms / var(--spd)) both, currCross calc(160ms / var(--spd)) ease-out calc(560ms / var(--spd)) forwards;
-    }}
+    .go .curr {{ animation: currGrow calc(460ms / var(--spd)) cubic-bezier(0.55, 0, 0.2, 1) calc(100ms / var(--spd)) both, currCross calc(160ms / var(--spd)) ease-out calc(560ms / var(--spd)) forwards; }}
     @keyframes currGrow {{ 0% {{ opacity: 0.6; transform: scaleX(0); }} 100% {{ opacity: 0.6; transform: scaleX(1); }} }}
     @keyframes currCross {{ to {{ opacity: 0; }} }}
 
@@ -291,8 +283,6 @@ def build_head_block(noise_uri: str) -> str:
 
     .repeat .curr, .repeat .head, .repeat .flash, .repeat .ripple {{ display: none; }}
     .repeat.go .mover {{ animation-duration: calc(320ms / var(--spd)); animation-delay: var(--dr, 0ms); }}
-    .repeat.exiting .half.top {{ animation-duration: calc(420ms / var(--spd)); }}
-    .repeat.exiting .half.bottom {{ animation-duration: calc(420ms / var(--spd)); }}
     .settled .curr, .settled .head, .settled .flash, .settled .ripple {{ display: none; }}
     .settled .mover {{ animation: none !important; transform: none !important; }}
     .settled .tint {{ display: none; }}
@@ -326,7 +316,7 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
           var ffMs = pFirst !== null ? parseInt(pFirst, 10) : 900;
           if (!isNaN(ffMs)) setTimeout(function () { window.__flutterFirstFrame = true; window.dispatchEvent(new CustomEvent('flutter-first-frame')); }, ffMs);
         }
-""" if is_preview else "        var pDebug = false;"
+""" if is_preview else "        var pSpeed = 1; var pDebug = false;"
 
     return f"""<!-- INTRO:START -->
   <div id="intro" role="presentation"></div>
@@ -336,6 +326,7 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
       var GLYPHS = {glyph_json};
       {preview_hooks}
 
+      var logBuf = window.__settlivIntroLog = [];
       var ctrl = window.__settlivIntro = {{
         state: 'PENDING',
         mode: 'FULL',
@@ -344,30 +335,35 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
         doneSent: false,
         timers: [],
         mo: null,
-        rafHold: 0,
-        wasHidden: false
+        po: null,
+        rafId: 0,
+        lastLongTaskAt: -9999,
+        prewarmed: null,
+        wasHidden: false,
+        themeApplied: false
       }};
 
-      function logState(next) {{
-        ctrl.state = next;
-        if (pDebug && console && console.debug) console.debug('[settliv-intro]', next, ctrl.mode, Math.round(performance.now() - ctrl.t0) + 'ms');
+      function log(state, reason) {{
+        ctrl.state = state;
+        var entry = {{ t: Math.round(performance.now() - ctrl.t0), state: state, mode: ctrl.mode, reason: reason || '' }};
+        logBuf.push(entry);
+        if (logBuf.length > 40) logBuf.shift();
+        if (pDebug && console && console.debug) console.debug('[settliv-intro]', entry);
       }}
 
-      function setTimer(fn, ms) {{
-        var id = setTimeout(fn, ms);
-        ctrl.timers.push(id);
-        return id;
-      }}
-
-      function clearAllTimers() {{
+      function setTimer(fn, ms) {{ var id = setTimeout(fn, ms); ctrl.timers.push(id); return id; }}
+      function clearTimers() {{
         for (var i = 0; i < ctrl.timers.length; i++) clearTimeout(ctrl.timers[i]);
         ctrl.timers.length = 0;
-        if (ctrl.rafHold) cancelAnimationFrame(ctrl.rafHold);
-        ctrl.rafHold = 0;
+        if (ctrl.rafId) cancelAnimationFrame(ctrl.rafId);
+        ctrl.rafId = 0;
         if (ctrl.mo) {{ ctrl.mo.disconnect(); ctrl.mo = null; }}
+        if (ctrl.po) {{ try {{ ctrl.po.disconnect(); }} catch (_) {{}} ctrl.po = null; }}
       }}
 
       function applyAppThemeBackground() {{
+        if (ctrl.themeApplied) return;
+        ctrl.themeApplied = true;
         var mode = null;
         try {{
           mode = localStorage.getItem('flutter.settliv_theme_mode') || localStorage.getItem('settliv_theme_mode');
@@ -385,32 +381,23 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
         window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
       }}
 
-      function finish() {{
+      function finish(reason) {{
         if (ctrl.state === 'DONE') return;
-        logState('DONE');
-        clearAllTimers();
+        log('DONE', reason || 'completed');
+        clearTimers();
         window.removeEventListener('flutter-first-frame', onFirstFrame);
         document.removeEventListener('visibilitychange', onVisibility);
         var el = document.getElementById('intro');
-        if (el && el.parentNode) el.parentNode.removeChild(el);
+        if (el) {{
+          el.style.visibility = 'hidden';
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }}
         if (document.body) document.body.classList.remove('intro-lock');
         dispatchRevealOnce();
         if (!ctrl.doneSent) {{
           ctrl.doneSent = true;
           window.dispatchEvent(new CustomEvent('settliv-intro-done'));
         }}
-      }}
-
-      function startExit(exitMs) {{
-        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
-        logState('EXITING');
-        try {{ sessionStorage.setItem('settliv_intro_seen', '1'); }} catch (_) {{}}
-        applyAppThemeBackground();
-        dispatchRevealOnce();
-        var el = document.getElementById('intro');
-        if (!el) {{ finish(); return; }}
-        el.classList.add('exiting');
-        setTimer(finish, exitMs);
       }}
 
       function flutterReady() {{
@@ -420,36 +407,133 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
         return fv.childElementCount > 0 || (fv.shadowRoot && fv.shadowRoot.childElementCount > 0);
       }}
 
-      function evaluateExit() {{
-        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
-        if (!flutterReady()) {{
-          if (ctrl.state === 'PLAYING') {{
-            var minMs = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
-            if (performance.now() - ctrl.t0 >= minMs) enterHolding();
-          }}
-          return;
+      function prewarmExit() {{
+        if (ctrl.prewarmed || ctrl.mode === 'GENTLE' || ctrl.mode === 'NONE') return;
+        var el = document.getElementById('intro');
+        if (!el) return;
+        var top = el.querySelector('.half.top');
+        var bot = el.querySelector('.half.bottom');
+        if (!top || !bot || typeof top.animate !== 'function') return;
+        var dur = Math.round((ctrl.mode === 'SHORT' ? 420 : 540) / pSpeed);
+        var bDelay = Math.round(30 / pSpeed);
+        var ease = 'cubic-bezier(0.76, 0, 0.24, 1)';
+        var aTop = top.animate([{{ transform: 'translate3d(0,0,0)' }}, {{ transform: 'translate3d(0,-100%,0)' }}], {{ duration: dur, easing: ease, fill: 'both' }});
+        var aBot = bot.animate([{{ transform: 'translate3d(0,0,0)' }}, {{ transform: 'translate3d(0,100%,0)' }}], {{ duration: dur, delay: bDelay, easing: ease, fill: 'both' }});
+        var cuts = el.querySelectorAll('.cut-edge');
+        var anims = [aTop, aBot];
+        for (var i = 0; i < cuts.length; i++) {{
+          var ac = cuts[i].animate([{{ opacity: 1 }}, {{ opacity: 0 }}], {{ duration: dur, easing: 'ease-out', fill: 'both' }});
+          anims.push(ac);
         }}
-        var elapsed = performance.now() - ctrl.t0;
-        var minMs = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
-        var exitDur = ctrl.mode === 'SHORT' ? 420 : (ctrl.mode === 'GENTLE' ? 300 : 570);
-        var wait = Math.max(0, minMs - elapsed);
-        setTimer(function () {{ startExit(exitDur); }}, wait);
+        for (var j = 0; j < anims.length; j++) {{
+          anims[j].pause();
+          anims[j].currentTime = 0;
+        }}
+        ctrl.prewarmed = anims;
+        log(ctrl.state, 'exit_prewarmed');
       }}
 
-      function enterHolding() {{
-        if (ctrl.state !== 'PLAYING') return;
-        logState('HOLDING');
-        function poll() {{
-          if (ctrl.state !== 'HOLDING') return;
-          if (flutterReady()) {{ window.__flutterFirstFrame = true; evaluateExit(); return; }}
-          ctrl.rafHold = requestAnimationFrame(poll);
+      function startExit(reason) {{
+        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        log('EXITING', reason || 'split_start');
+        try {{ sessionStorage.setItem('settliv_intro_seen', '1'); }} catch (_) {{}}
+        applyAppThemeBackground();
+        var el = document.getElementById('intro');
+        if (!el) {{ dispatchRevealOnce(); finish('missing_el'); return; }}
+
+        if (ctrl.mode === 'GENTLE') {{
+          dispatchRevealOnce();
+          el.classList.add('exiting');
+          setTimer(function () {{ finish('gentle_done'); }}, 300);
+          return;
         }}
-        ctrl.rafHold = requestAnimationFrame(poll);
+
+        el.classList.add('frozen', 'exiting');
+        setTimer(function () {{ finish('safety_2500ms'); }}, 2500);
+
+        if (!ctrl.prewarmed) prewarmExit();
+        var anims = ctrl.prewarmed;
+        if (anims && anims.length) {{
+          for (var i = 0; i < anims.length; i++) anims[i].play();
+          Promise.all(anims.map(function (a) {{ return a.ready; }})).then(function () {{
+            log('EXITING', 'anims_ready');
+            dispatchRevealOnce();
+          }}, dispatchRevealOnce);
+          Promise.all(anims.map(function (a) {{ return a.finished; }})).then(function () {{
+            requestAnimationFrame(function () {{
+              requestAnimationFrame(function () {{
+                finish('waapi_finished');
+              }});
+            }});
+          }}, function () {{ finish('waapi_err'); }});
+        }} else {{
+          // CSS transition fallback
+          dispatchRevealOnce();
+          el.classList.add('css-exit');
+          var bot = el.querySelector('.half.bottom');
+          if (bot) {{
+            bot.addEventListener('transitionend', function onEnd() {{
+              bot.removeEventListener('transitionend', onEnd);
+              requestAnimationFrame(function () {{ requestAnimationFrame(function () {{ finish('css_transitionend'); }}); }});
+            }});
+          }}
+        }}
+      }}
+
+      function enterArmed() {{
+        if (ctrl.state === 'ARMED' || ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        log('ARMED', 'min_and_ff_ready');
+        prewarmExit();
+        if (ctrl.mode === 'GENTLE') {{ startExit('gentle_ready'); return; }}
+
+        var calmStart = performance.now();
+        var prevT = calmStart;
+        var calmCount = 0;
+        setTimer(function () {{
+          if (ctrl.state === 'ARMED') startExit('calm_timeout_1500ms');
+        }}, 1500);
+
+        function checkCalm(now) {{
+          if (ctrl.state !== 'ARMED') return;
+          var dt = now - prevT;
+          prevT = now;
+          var noRecentLongTask = (now - ctrl.lastLongTaskAt) > 120;
+          if (dt <= 24 && noRecentLongTask) calmCount++;
+          else calmCount = 0;
+          if (calmCount >= 2) {{
+            startExit('calm_gate_passed');
+            return;
+          }}
+          ctrl.rafId = requestAnimationFrame(checkCalm);
+        }}
+        ctrl.rafId = requestAnimationFrame(checkCalm);
+      }}
+
+      function evaluate() {{
+        if (ctrl.state === 'ARMED' || ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        if (flutterReady()) applyAppThemeBackground();
+        var minMs = Math.round((ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180)) / pSpeed);
+        var elapsed = performance.now() - ctrl.t0;
+        if (elapsed < minMs) return;
+        prewarmExit();
+        if (flutterReady()) {{
+          enterArmed();
+        }} else if (ctrl.state === 'PLAYING') {{
+          log('HOLDING', 'waiting_first_frame');
+          function poll() {{
+            if (ctrl.state !== 'HOLDING') return;
+            if (flutterReady()) {{ window.__flutterFirstFrame = true; applyAppThemeBackground(); enterArmed(); return; }}
+            ctrl.rafId = requestAnimationFrame(poll);
+          }}
+          ctrl.rafId = requestAnimationFrame(poll);
+        }}
       }}
 
       function onFirstFrame() {{
         window.__flutterFirstFrame = true;
-        evaluateExit();
+        log(ctrl.state, 'flutter_first_frame');
+        applyAppThemeBackground();
+        evaluate();
       }}
 
       function onVisibility() {{
@@ -460,8 +544,9 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
           var el = document.getElementById('intro');
           if (el) {{ el.classList.remove('go'); el.classList.add('settled', 'repeat'); }}
           ctrl.mode = 'SHORT';
-          if (flutterReady()) startExit(420);
-          else enterHolding();
+          prewarmExit();
+          if (flutterReady()) enterArmed();
+          else log('HOLDING', 'returned_from_hidden');
         }}
       }}
 
@@ -509,23 +594,27 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
       }}
 
       try {{
-        if ('serviceWorker' in navigator) {{
-          navigator.serviceWorker.getRegistrations().then(function (r) {{
-            for (var i = 0; i < r.length; i++) r[i].unregister();
-          }});
-        }}
-
         window.addEventListener('flutter-first-frame', onFirstFrame);
         window.addEventListener('pageshow', function (e) {{
           if (e.persisted) {{
             ctrl.mode = 'NONE';
             applyAppThemeBackground();
-            var el = document.getElementById('intro');
-            if (el && el.parentNode) el.parentNode.removeChild(el);
-            if (document.body) document.body.classList.remove('intro-lock');
-            ctrl.state = 'DONE';
+            finish('bfcache_persisted');
           }}
         }});
+
+        if (typeof PerformanceObserver !== 'undefined') {{
+          try {{
+            ctrl.po = new PerformanceObserver(function (list) {{
+              var entries = list.getEntries();
+              for (var i = 0; i < entries.length; i++) {{
+                ctrl.lastLongTaskAt = entries[i].startTime + entries[i].duration;
+                log(ctrl.state, 'longtask_' + Math.round(entries[i].duration) + 'ms');
+              }}
+            }});
+            ctrl.po.observe({{ type: 'longtask', buffered: true }});
+          }} catch (_) {{}}
+        }}
 
         var seen = false;
         try {{ seen = sessionStorage.getItem('settliv_intro_seen') === '1'; }} catch (_) {{ seen = false; }}
@@ -540,7 +629,7 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
         if (document.hidden) {{
           ctrl.mode = 'NONE';
           applyAppThemeBackground();
-          finish();
+          finish('hidden_at_load');
           return;
         }}
 
@@ -549,7 +638,7 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
         else ctrl.mode = 'FULL';
 
         var el = document.getElementById('intro');
-        if (!el) {{ finish(); return; }}
+        if (!el) {{ finish('missing_intro_node'); return; }}
         document.body.classList.add('intro-lock');
         el.innerHTML =
           '<div class="half top">' + buildScene(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
@@ -561,35 +650,32 @@ def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
 
         if (typeof MutationObserver !== 'undefined') {{
           ctrl.mo = new MutationObserver(function () {{
-            if (flutterReady()) {{
-              window.__flutterFirstFrame = true;
-              evaluateExit();
-            }}
+            if (flutterReady()) {{ window.__flutterFirstFrame = true; applyAppThemeBackground(); evaluate(); }}
           }});
           ctrl.mo.observe(document.body, {{ childList: true, subtree: true }});
         }}
 
         setTimer(function () {{
           if (ctrl.state !== 'EXITING' && ctrl.state !== 'DONE') {{
-            startExit(ctrl.mode === 'GENTLE' ? 300 : (ctrl.mode === 'SHORT' ? 420 : 570));
+            startExit('safety_15000ms');
           }}
         }}, 15000);
 
-        var minHold = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
-        setTimer(evaluateExit, minHold);
+        var minHold = Math.round((ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180)) / pSpeed);
+        setTimer(evaluate, minHold);
 
         requestAnimationFrame(function () {{
           requestAnimationFrame(function () {{
             if (ctrl.state !== 'PENDING') return;
-            logState('PLAYING');
+            log('PLAYING', 'mode_' + ctrl.mode);
             el.classList.add('go');
-            evaluateExit();
+            evaluate();
           }});
         }});
       }} catch (_) {{
         ctrl.mode = 'NONE';
         applyAppThemeBackground();
-        finish();
+        finish('exception_fallback');
       }}
     }})();
   </script>

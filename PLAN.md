@@ -775,3 +775,11 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 - [x] **State Machine & Sync Mount (`web/index.html`, `tools/build_intro.py`)**: Implemented `window.__settlivIntro` (`PENDING → PLAYING → HOLDING → EXITING → DONE`) synchronously at top of `<body>` before first paint with double-`rAF` `.go` start; removed the 250ms skip rule so `SHORT` always completes cleanly.
 - [x] **Modes, Races & Handover**: `FULL` (new tab / mid-intro reload before exit), `SHORT` (repeat / non-persisted `back_forward`), `GENTLE` (`prefers-reduced-motion`), `NONE` (bfcache `pageshow`, `document.hidden`, errors); sets `settliv_intro_seen` on `EXITING` start, updates `html`/`body` background to saved app theme (`#F6F7FC` / `#0A0C1C`) on exit, polls `flutter-view`/`flt-glass-pane` + `flutter-first-frame` + 15s safety, and handles `visibilitychange` mid-intro.
 - [x] **Lifecycle Harness (`tools/intro_lifecycle_test.py`)**: Added Playwright Edge verification harness for reload, mid-intro reload, bfcache, and event counts (`settliv-intro-reveal` → `settliv-intro-done` once each).
+
+
+---
+
+## Follow-Up Task: Split Exit Reliability, Smoothness & Consistency
+- [x] **WAAPI Pre-Warmed Split Exit (`tools/build_intro.py`)**: Replaced `540ms` timer removal with pre-warmed WAAPI animations (`fill: 'both'`, `Promise.all(ready)` → `settliv-intro-reveal`, `Promise.all(finished)` + double-`rAF` → `DONE`, `2500ms` safety, CSS `transitionend` fallback).
+- [x] **Calm Gate, Layer Freeze & Theme (`tools/build_intro.py`)**: Added `ARMED` calm-main-thread gate (`2x rAF <= 24ms` + `PerformanceObserver` `longtask` > 120ms ago, `1500ms` max wait); froze intro child animations & promoted flat `.half` layers (`contain: layout paint style`) on exit; moved `applyAppThemeBackground()` to `flutter-first-frame`.
+- [x] **Dart Handshake & Diagnostics (`lib/main.dart`, `tools/intro_split_trace.py`)**: Added 900ms `_postRevealLite` `disableAnimations` window on `settliv-intro-reveal` so Flutter doesn't compete with the split for GPU; added silent `window.__settlivIntroLog` ring buffer (40 entries) and `tools/intro_split_trace.py` (`Page.startScreencast`).
