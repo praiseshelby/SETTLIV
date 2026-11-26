@@ -16,7 +16,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preload" href="assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
 
-  <style>
+  <!-- INTRO:START -->
+  <style id="intro-style">
     @font-face {
       font-family: 'BricolageGrotesque';
       src: url('assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf') format('truetype');
@@ -30,338 +31,292 @@
       --emerald: #4FE3B8;
       --coral: #FF8D7C;
       --ripple: rgba(201, 194, 255, 0.5);
-      --wm-w: min(86vw, clamp(280px, 52vw, 720px));
+      --spd: 1;
+      --wm-w: min(82vw, clamp(260px, 44vw, 640px));
     }
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      background: #070914;
-    }
+    html, body { margin: 0; width: 100%; height: 100%; background: #070914; }
     body.intro-lock { overflow: hidden; }
-
     #intro {
-      position: fixed;
-      inset: 0;
-      height: 100dvh;
-      z-index: 99999;
-      contain: strict;
-      overflow: hidden;
+      position: fixed; inset: 0; height: 100dvh; z-index: 99999; overflow: hidden;
     }
     #intro.exiting { pointer-events: none; }
-
     .half {
-      position: absolute;
-      left: 0;
-      right: 0;
-      overflow: hidden;
-      will-change: transform;
+      position: absolute; left: 0; right: 0; overflow: hidden; will-change: transform;
     }
     .half.top { top: 0; height: calc(50% + 1px); }
     .half.bottom { top: 50%; height: 50%; }
-
-    .scene {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 100dvh;
-    }
+    .scene { position: absolute; left: 0; right: 0; height: 100dvh; transform: scale(1); }
     .half.top .scene { top: 0; }
     .half.bottom .scene { top: -100%; }
-
+    .go .scene { animation: camPush calc(1500ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+    @keyframes camPush { from { transform: scale(1.07); } to { transform: scale(1); } }
     .cut-edge {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-      opacity: 0;
-      pointer-events: none;
+      position: absolute; left: 0; right: 0; height: 2px; opacity: 0; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
     }
     .half.top .cut-edge { bottom: 0; }
     .half.bottom .cut-edge { top: 0; }
+    #intro.exiting .cut-edge { animation: edgeFade calc(540ms / var(--spd)) ease-out forwards; }
+    @keyframes edgeFade { from { opacity: 1; } to { opacity: 0; } }
+    #intro.exiting .half.top { animation: splitUp calc(540ms / var(--spd)) cubic-bezier(0.76, 0, 0.24, 1) forwards; }
+    #intro.exiting .half.bottom { animation: splitDown calc(540ms / var(--spd)) cubic-bezier(0.76, 0, 0.24, 1) calc(30ms / var(--spd)) forwards; }
+    @keyframes splitUp { to { transform: translate3d(0, -100%, 0); } }
+    @keyframes splitDown { to { transform: translate3d(0, 100%, 0); } }
 
-    #intro.exiting .cut-edge { opacity: 1; transition: opacity 140ms ease-out; }
-    #intro.exiting .half.top { animation: splitUp 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-    #intro.exiting .half.bottom { animation: splitDown 520ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-    @keyframes splitUp { to { transform: translateY(-100%); } }
-    @keyframes splitDown { to { transform: translateY(100%); } }
-
-    /* Backdrop: fields + vignette + ledger rules + grain */
     .backdrop {
-      position: absolute;
-      inset: 0;
-      background-color: #070914;
+      position: absolute; inset: 0; background-color: #070914;
       background-image:
-        radial-gradient(60vmax 60vmax at 15% 20%, rgba(106, 76, 255, 0.40) 0%, transparent 60%),
-        radial-gradient(55vmax 55vmax at 85% 80%, rgba(40, 90, 255, 0.28) 0%, transparent 60%),
-        radial-gradient(40vmax 40vmax at 70% 15%, rgba(12, 120, 140, 0.22) 0%, transparent 60%),
-        radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+        radial-gradient(60vmax 60vmax at 15% 20%, rgba(106, 76, 255, 0.42) 0%, transparent 60%),
+        radial-gradient(55vmax 55vmax at 85% 80%, rgba(40, 90, 255, 0.30) 0%, transparent 60%),
+        radial-gradient(40vmax 40vmax at 70% 15%, rgba(12, 120, 140, 0.24) 0%, transparent 60%),
+        radial-gradient(circle at 18% 22%, transparent calc(46vmax - 1px), rgba(190, 180, 255, 0.09) 46vmax, transparent calc(46vmax + 1px)),
+        radial-gradient(circle at 84% 78%, transparent calc(38vmax - 1px), rgba(190, 180, 255, 0.09) 38vmax, transparent calc(38vmax + 1px)),
+        radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.5) 100%);
     }
-    .rules {
-      position: absolute;
-      inset: 0;
+    .rings-bg, .rules-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      -webkit-mask-image: radial-gradient(ellipse 75% 68% at 50% 50%, #000 18%, transparent 88%);
+      mask-image: radial-gradient(ellipse 75% 68% at 50% 50%, #000 18%, transparent 88%);
+    }
+    .rings-bg {
+      background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0 119px, rgba(190, 180, 255, 0.10) 119px 120px);
+    }
+    .rules-bg {
       background-image:
-        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 128px),
-        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 32px);
-      -webkit-mask-image: radial-gradient(ellipse 74% 66% at 50% 50%, #000 18%, transparent 88%);
-      mask-image: radial-gradient(ellipse 74% 66% at 50% 50%, #000 18%, transparent 88%);
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 128px),
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 32px);
     }
+    .go .rules-bg { animation: fadeIn calc(400ms / var(--spd)) ease-out backwards; }
     .grain {
-      position: absolute;
-      inset: 0;
-      opacity: 0.035;
+      position: absolute; inset: 0; opacity: 0.035; pointer-events: none;
       background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAH0lEQVQYV2NkYGD4z8DAwMgABXAGNgGwSgwVAFbmAgAw1wYFBcX5AAAAAElFTkSuQmCC");
     }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Centre-line currents racing from opposite edges */
-    .line-group {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 2px;
-      margin-top: -1px;
+    .tick-ring {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      max-width: 1100px; max-height: 1100px; pointer-events: none; will-change: transform;
     }
-    .curr {
-      position: absolute;
-      top: 0;
-      width: 50%;
-      height: 2px;
-      transform: scaleX(0);
-      will-change: transform, opacity;
+    .tick-ring.a { width: clamp(300px, 68vmin, 720px); height: clamp(300px, 68vmin, 720px); }
+    .tick-ring.b { width: clamp(420px, 104vmin, 1040px); height: clamp(420px, 104vmin, 1040px); }
+    .go .tick-ring.a {
+      animation: fadeIn calc(350ms / var(--spd)) ease-out backwards, ringPulse calc(240ms / var(--spd)) ease-out calc(560ms / var(--spd)), spinCW calc(18000ms / var(--spd)) linear infinite;
     }
-    .curr.em { left: 0; background: linear-gradient(90deg, transparent 10%, var(--emerald)); transform-origin: left center; }
-    .curr.co { right: 0; background: linear-gradient(270deg, transparent 10%, var(--coral)); transform-origin: right center; }
-    .play .curr { animation: raceIn 360ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both, currFade 220ms ease-out 440ms forwards; }
-    @keyframes raceIn { to { transform: scaleX(1); } }
-    @keyframes currFade { to { opacity: 0; } }
+    .go .tick-ring.b {
+      animation: fadeIn calc(350ms / var(--spd)) ease-out backwards, ringPulse calc(240ms / var(--spd)) ease-out calc(560ms / var(--spd)), spinCCW calc(30000ms / var(--spd)) linear infinite;
+    }
+    @keyframes spinCW { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes spinCCW { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
+    @keyframes ringPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.012); }
+    }
 
-    /* Impact ripples */
+    .line-y { position: absolute; top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; pointer-events: none; }
+    .curr { position: absolute; top: 0; width: 50%; height: 2px; opacity: 0; }
+    .curr.em { left: 0; background: var(--emerald); transform-origin: left center; }
+    .curr.co { right: 0; background: var(--coral); transform-origin: right center; }
+    .go .curr {
+      animation: currGrow calc(460ms / var(--spd)) cubic-bezier(0.55, 0, 0.2, 1) calc(100ms / var(--spd)) both, currCross calc(160ms / var(--spd)) ease-out calc(560ms / var(--spd)) forwards;
+    }
+    @keyframes currGrow { 0% { opacity: 0.6; transform: scaleX(0); } 100% { opacity: 0.6; transform: scaleX(1); } }
+    @keyframes currCross { to { opacity: 0; } }
+
+    .head { position: absolute; top: -0.5px; width: 18vw; height: 3px; opacity: 0; }
+    .head.em { left: 0; background: linear-gradient(90deg, transparent, var(--emerald) 70%, #fff); }
+    .head.co { right: 0; background: linear-gradient(270deg, transparent, var(--coral) 70%, #fff); }
+    .go .head.em { animation: headL calc(460ms / var(--spd)) cubic-bezier(0.55, 0, 0.2, 1) calc(100ms / var(--spd)) both, headOff calc(60ms / var(--spd)) ease-out calc(560ms / var(--spd)) forwards; }
+    .go .head.co { animation: headR calc(460ms / var(--spd)) cubic-bezier(0.55, 0, 0.2, 1) calc(100ms / var(--spd)) both, headOff calc(60ms / var(--spd)) ease-out calc(560ms / var(--spd)) forwards; }
+    @keyframes headL { from { opacity: 1; transform: translateX(-18vw); } to { opacity: 1; transform: translateX(calc(50vw - 18vw)); } }
+    @keyframes headR { from { opacity: 1; transform: translateX(18vw); } to { opacity: 1; transform: translateX(calc(-50vw + 18vw)); } }
+    @keyframes headOff { to { opacity: 0; } }
+
+    .merged-line { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(242, 240, 250, 0.9); }
+    .go .merged-line { animation: fadeIn calc(160ms / var(--spd)) ease-out calc(560ms / var(--spd)) backwards; }
+
+    .flash {
+      position: absolute; top: 50%; left: 50%; width: 28vmin; height: 28vmin; margin: -14vmin 0 0 -14vmin; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, transparent 70%); opacity: 0; pointer-events: none;
+    }
+    .go .flash { animation: flashHit calc(320ms / var(--spd)) ease-out calc(560ms / var(--spd)) both; }
+    @keyframes flashHit { 0% { opacity: 0; transform: scale(0.3); } 35% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
+
     .ripple {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: min(68vmin, 520px);
-      height: min(68vmin, 520px);
-      margin: calc(-0.5 * min(68vmin, 520px)) 0 0 calc(-0.5 * min(68vmin, 520px));
-      border-radius: 50%;
-      border: 1.5px solid var(--ripple);
-      opacity: 0;
-      transform: scale(0.05);
-      will-change: transform, opacity;
+      position: absolute; top: 50%; left: 50%; width: clamp(420px, 104vmin, 1040px); height: clamp(420px, 104vmin, 1040px);
+      margin: calc(-0.5 * clamp(420px, 104vmin, 1040px)) 0 0 calc(-0.5 * clamp(420px, 104vmin, 1040px));
+      border-radius: 50%; border: 1px solid var(--ripple); opacity: 0; pointer-events: none;
     }
-    .play .ripple.r1 { animation: impactRing 440ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both; }
-    .play .ripple.r2 { animation: impactRing 520ms cubic-bezier(0.16, 1, 0.3, 1) 460ms both; }
-    @keyframes impactRing {
-      0%   { opacity: 0.9; transform: scale(0.05); }
-      100% { opacity: 0; transform: scale(1.35); }
-    }
+    .go .ripple.r1 { animation: rip calc(760ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) calc(560ms / var(--spd)) both; }
+    .go .ripple.r2 { animation: rip calc(760ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) calc(650ms / var(--spd)) both; }
+    @keyframes rip { 0% { opacity: 0.5; transform: scale(0.15); } 100% { opacity: 0; transform: scale(1.5); } }
 
-    /* Wordmark centred at 50% x 50% (no trailing advance) */
-    .wm-wrap {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: var(--wm-w);
-      transform: translate(-50%, -50%);
-      display: flex;
-      justify-content: center;
-      overflow: hidden;
+    .wm-box {
+      position: absolute; top: 50%; left: 50%; width: var(--wm-w); transform: translate(-50%, -50%);
     }
-    .wm {
+    .go .wm-box { animation: thud calc(160ms / var(--spd)) cubic-bezier(0.3, 0.7, 0.4, 1) calc(900ms / var(--spd)); }
+    @keyframes thud { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.016); } }
+
+    .wm-fallback {
       font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
-      font-size: calc(var(--wm-w) / 5.15);
-      font-weight: 800;
-      line-height: 1;
-      white-space: nowrap;
-      display: inline-flex;
-      opacity: 0;
+      font-size: calc(var(--wm-w) / 5.15); font-weight: 800; line-height: 1; color: var(--ink);
+      display: flex; justify-content: center; white-space: nowrap;
     }
-    .wm span { letter-spacing: 0.12em; }
-    .wm span:last-child { letter-spacing: 0; }
+    .slot-txt { display: inline-block; overflow: hidden; }
+    .mover { position: relative; display: inline-block; will-change: transform; }
+    .mover .ch { display: inline-block; letter-spacing: 0.1em; }
+    .slot-txt:last-child .mover .ch { letter-spacing: 0; }
+    .mover .tint { position: absolute; inset: 0; pointer-events: none; }
+    .go .mover { animation: settleY calc(480ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) var(--d, 560ms) backwards; }
+    .go .tint { animation: tintOut calc(200ms / var(--spd)) ease-out calc(var(--d, 560ms) + 280ms / var(--spd)) both; }
+    @keyframes settleY { from { transform: translateY(var(--sy)); } to { transform: translateY(0); } }
+    @keyframes tintOut { from { opacity: 1; } to { opacity: 0; } }
 
-    .wm.ink { color: var(--ink); }
-    .wm.gh { position: absolute; inset: 0; justify-content: center; }
-    .wm.gh.em { color: var(--emerald); }
-    .wm.gh.co { color: var(--coral); }
-
-    .play .wm.ink { animation: snapInk 420ms cubic-bezier(0.16, 1, 0.3, 1) 460ms both; will-change: transform, opacity; }
-    .play .wm.gh.em { animation: ghostEm 480ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both; will-change: transform, opacity; }
-    .play .wm.gh.co { animation: ghostCo 480ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both; will-change: transform, opacity; }
-    @keyframes snapInk {
-      0%   { opacity: 0; transform: scale(0.94); }
-      40%  { opacity: 1; }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    @keyframes ghostEm {
-      0%   { opacity: 0.85; transform: translateX(-28px); }
-      85%  { opacity: 0.7; transform: translateX(0); }
-      100% { opacity: 0; transform: translateX(0); }
-    }
-    @keyframes ghostCo {
-      0%   { opacity: 0.85; transform: translateX(28px); }
-      85%  { opacity: 0.7; transform: translateX(0); }
-      100% { opacity: 0; transform: translateX(0); }
-    }
-
-    .sheen {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.42) 50%, transparent 68%);
-      transform: translateX(-115%);
-      opacity: 0;
-      pointer-events: none;
-    }
-    .play .sheen { animation: sheenPass 300ms ease-out 920ms both; will-change: transform, opacity; }
-    @keyframes sheenPass {
-      0%   { opacity: 1; transform: translateX(-115%); }
-      100% { opacity: 0; transform: translateX(115%); }
-    }
-
-    /* Repeat / Lite / Reduced motion */
-    .settled .wm.ink { opacity: 1; }
-    .settled .curr, .settled .ripple, .settled .wm.gh, .settled .sheen { display: none; }
-    .plain-exit.exiting { animation: plainFade 240ms ease-out forwards; }
-    .plain-exit.exiting .half { animation: none !important; }
-    @keyframes plainFade { to { opacity: 0; } }
-
+    .repeat .curr, .repeat .head, .repeat .flash, .repeat .ripple { display: none; }
+    .repeat.go .mover { animation-duration: calc(320ms / var(--spd)); animation-delay: var(--dr, 0ms); }
+    .reduced .curr, .reduced .head, .reduced .flash, .reduced .ripple { display: none; }
+    .reduced.go .tick-ring { animation: none !important; opacity: 1; }
+    .reduced.go .mover, .reduced.go .tint { animation: none !important; transform: none; opacity: 0; }
+    .reduced.go .wm-box, .reduced.go .merged-line { animation: fadeIn 400ms ease-out backwards; }
+    .reduced.exiting { animation: fadeOut 300ms ease-out forwards; }
+    .reduced.exiting .half { animation: none !important; }
+    @keyframes fadeOut { to { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) {
-      .curr, .ripple, .wm.gh, .sheen, .wm.ink { animation: none !important; }
-      .wm.ink { opacity: 1; }
-      .curr, .ripple, .wm.gh, .sheen { display: none; }
+      .tick-ring, .mover, .tint, .curr, .head, .flash, .ripple { animation: none !important; }
     }
   </style>
 
   <script>
     (function () {
-      if (window.__settlivImpactInit) return;
-      window.__settlivImpactInit = true;
+      if (window.__settlivSettleInit) return;
+      window.__settlivSettleInit = true;
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (r) {
+            for (var i = 0; i < r.length; i++) r[i].unregister();
+          });
+        }
+        var t0 = performance.now(), ff = false, done = false;
+        var seen = false;
+        try { seen = sessionStorage.getItem('settliv_intro_seen') === '1'; } catch (_) {}
+        var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          for (var i = 0; i < regs.length; i++) regs[i].unregister();
+        function wordmarkMarkup(isTop) {
+          var chs = ['S','E','T','T','L','I','V'];
+          var spans = chs.map(function (c, i) {
+            var sy = i % 2 === 0 ? '-115%' : '115%';
+            var col = i % 2 === 0 ? 'var(--emerald)' : 'var(--coral)';
+            var stag = Math.abs(i - 3) * 45;
+            return '<span class="slot-txt"><span class="mover" style="--sy:' + sy + ';--d:' + (560 + stag) + 'ms;--dr:' + Math.round(stag * 0.55) + 'ms">' +
+              '<span class="ch">' + c + '</span><span class="ch tint" style="color:' + col + '" aria-hidden="true">' + c + '</span>' +
+            '</span></span>';
+          }).join('');
+          return '<div class="wm-box"><div class="wm-fallback" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' + spans + '</div></div>';
+        }
+
+        function buildScene(isTop) {
+          return '<div class="scene">' +
+            '<div class="backdrop" aria-hidden="true"></div>' +
+            '<div class="rings-bg" aria-hidden="true"></div>' +
+            '<div class="rules-bg" aria-hidden="true"></div>' +
+            '<div class="grain" aria-hidden="true"></div>' +
+            '<svg class="tick-ring a" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.34)" stroke-width="1" stroke-dasharray="1 9" vector-effect="non-scaling-stroke"/></svg>' +
+            '<svg class="tick-ring b" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.22)" stroke-width="1" stroke-dasharray="2 14" vector-effect="non-scaling-stroke"/></svg>' +
+            '<div class="line-y" aria-hidden="true"><div class="curr em"></div><div class="curr co"></div><div class="head em"></div><div class="head co"></div></div>' +
+            '<div class="merged-line" aria-hidden="true"></div>' +
+            '<div class="flash" aria-hidden="true"></div>' +
+            '<div class="ripple r1" aria-hidden="true"></div>' +
+            '<div class="ripple r2" aria-hidden="true"></div>' +
+            wordmarkMarkup(isTop) +
+          '</div>';
+        }
+
+        function removeNow() {
+          if (done) return;
+          done = true;
+          var el = document.getElementById('intro');
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+          if (document.body) document.body.classList.remove('intro-lock');
+          try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
+          window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
+          window.dispatchEvent(new CustomEvent('settliv-intro-done'));
+        }
+
+        function startExit(ms) {
+          if (done) return;
+          done = true;
+          var el = document.getElementById('intro');
+          if (!el) { removeNow(); return; }
+          window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
+          el.classList.add('exiting');
+          try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
+          setTimeout(function () {
+            if (el.parentNode) el.parentNode.removeChild(el);
+            if (document.body) document.body.classList.remove('intro-lock');
+            window.dispatchEvent(new CustomEvent('settliv-intro-done'));
+          }, ms);
+        }
+
+        function tryExit() {
+          if (!ff || done) return;
+          var elapsed = performance.now() - t0;
+          if (reduced) { startExit(300); return; }
+          if (seen) {
+            if (elapsed <= 250) { removeNow(); return; }
+            setTimeout(function () { startExit(420); }, Math.max(0, 320 - elapsed));
+            return;
+          }
+          setTimeout(function () { startExit(570); }, Math.max(0, 1180 - elapsed));
+        }
+
+        window.addEventListener('pageshow', function (e) { if (e.persisted) removeNow(); });
+
+        window.addEventListener('DOMContentLoaded', function () {
+          if (document.hidden) { removeNow(); return; }
+          var el = document.getElementById('intro');
+          if (!el) return;
+          document.body.classList.add('intro-lock');
+          el.innerHTML =
+            '<div class="half top">' + buildScene(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
+            '<div class="half bottom">' + buildScene(false) + '<div class="cut-edge" aria-hidden="true"></div></div>';
+          if (seen) el.classList.add('repeat');
+          if (reduced) el.classList.add('reduced');
+          var fontGate = (document.fonts && document.fonts.load)
+            ? Promise.race([document.fonts.load('800 1em "BricolageGrotesque"'), new Promise(function (r) { setTimeout(r, 500); })])
+            : Promise.resolve();
+          fontGate.then(function () {
+            requestAnimationFrame(function () {
+              el.classList.add('go');
+              tryExit();
+            });
+          });
+          if (MutationObserver) {
+            var mo = new MutationObserver(function () {
+              if (document.querySelector('flt-glass-pane, flutter-view')) {
+                mo.disconnect();
+                ff = true;
+                tryExit();
+              }
+            });
+            mo.observe(document.body, { childList: true, subtree: true });
+          }
         });
-      }
 
-      var t0 = performance.now();
-      var firstFrame = false;
-      var done = false;
-      var seen = false;
-      try { seen = sessionStorage.getItem('settliv_intro_seen') === '1'; } catch (_) {}
-
-      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var lowEnd = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
-                   (navigator.deviceMemory && navigator.deviceMemory <= 4);
-      var lite = reduced || lowEnd;
-
-      function sceneHtml(isTop) {
-        var letters = '<span>S</span><span>E</span><span>T</span><span>T</span><span>L</span><span>I</span><span>V</span>';
-        return '<div class="scene">' +
-          '<div class="backdrop" aria-hidden="true"></div>' +
-          '<div class="rules" aria-hidden="true"></div>' +
-          '<div class="grain" aria-hidden="true"></div>' +
-          '<div class="line-group" aria-hidden="true"><div class="curr em"></div><div class="curr co"></div></div>' +
-          '<div class="ripple r1" aria-hidden="true"></div>' +
-          '<div class="ripple r2" aria-hidden="true"></div>' +
-          '<div class="wm-wrap" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' +
-            '<div class="wm gh em" aria-hidden="true">' + letters + '</div>' +
-            '<div class="wm gh co" aria-hidden="true">' + letters + '</div>' +
-            '<div class="wm ink">' + letters + '</div>' +
-            '<div class="sheen" aria-hidden="true"></div>' +
-          '</div>' +
-        '</div>';
-      }
-
-      function finishImmediate() {
-        if (done) return;
-        done = true;
+        window.addEventListener('flutter-first-frame', function () { ff = true; tryExit(); });
+        setTimeout(function () { if (!done) startExit(570); }, 15000);
+      } catch (_) {
         var el = document.getElementById('intro');
         if (el && el.parentNode) el.parentNode.removeChild(el);
         if (document.body) document.body.classList.remove('intro-lock');
-        try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
         window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
         window.dispatchEvent(new CustomEvent('settliv-intro-done'));
       }
-
-      function runExit(ms) {
-        if (done) return;
-        done = true;
-        var el = document.getElementById('intro');
-        if (!el) { finishImmediate(); return; }
-        window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
-        el.classList.add('exiting');
-        try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
-        setTimeout(function () {
-          if (el.parentNode) el.parentNode.removeChild(el);
-          if (document.body) document.body.classList.remove('intro-lock');
-          window.dispatchEvent(new CustomEvent('settliv-intro-done'));
-        }, ms);
-      }
-
-      function tryExit() {
-        if (!firstFrame || done) return;
-        var elapsed = performance.now() - t0;
-        if (seen) {
-          if (elapsed <= 250) { finishImmediate(); return; }
-          var el = document.getElementById('intro');
-          if (el) el.classList.add('plain-exit');
-          setTimeout(function () { runExit(240); }, Math.max(0, 200 - elapsed));
-          return;
-        }
-        if (lite) {
-          var el2 = document.getElementById('intro');
-          if (el2) el2.classList.add('plain-exit');
-          setTimeout(function () { runExit(240); }, Math.max(0, 250 - elapsed));
-          return;
-        }
-        setTimeout(function () { runExit(520); }, Math.max(0, 1250 - elapsed));
-      }
-
-      window.addEventListener('pageshow', function (e) { if (e.persisted) finishImmediate(); });
-
-      window.addEventListener('DOMContentLoaded', function () {
-        if (document.hidden) { finishImmediate(); return; }
-        var el = document.getElementById('intro');
-        if (!el) return;
-        document.body.classList.add('intro-lock');
-        el.innerHTML =
-          '<div class="half top">' + sceneHtml(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
-          '<div class="half bottom">' + sceneHtml(false) + '<div class="cut-edge" aria-hidden="true"></div></div>';
-
-        if (seen || lite) {
-          el.classList.add('settled');
-          tryExit();
-          return;
-        }
-
-        var fontGate = (document.fonts && document.fonts.load)
-          ? Promise.race([
-              document.fonts.load('800 1em "BricolageGrotesque"'),
-              new Promise(function (r) { setTimeout(r, 500); })
-            ])
-          : Promise.resolve();
-
-        fontGate.then(function () {
-          requestAnimationFrame(function () {
-            el.classList.add('play');
-            tryExit();
-          });
-        });
-      });
-
-      window.addEventListener('flutter-first-frame', function () {
-        firstFrame = true;
-        tryExit();
-      });
-
-      setTimeout(finishImmediate, 8000);
     })();
   </script>
+  <!-- INTRO:END -->
 </head>
 <body>
-  <div id="intro"></div>
-  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#070914;color:#F2F0FA;font:800 32px sans-serif;letter-spacing:.12em">SETTLIV</div></noscript>
+  <div id="intro" role="presentation"></div>
+  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#070914;color:#F2F0FA;font:800 32px sans-serif;letter-spacing:.1em">SETTLIV</div></noscript>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
