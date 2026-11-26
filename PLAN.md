@@ -767,3 +767,11 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## Follow-Up Task: "SETTLE" Intro Rebuild & Build Tooling
 - [x] **No-Hardware-Gate "SETTLE" Intro (`web/index.html`)**: Deleted previous sequence and hardware gates (`hardwareConcurrency`/`deviceMemory`); built `#070914` fixed night backdrop with violet/blue/teal fields, concentric 120px rings, 46/38vmax arcs, 32/128px rules, 3.5% grain, 2 rotating SVG tick rings (`18s`/`30s`), emerald/coral currents + comet heads (`100–560ms`), impact flash + ripples (`560–720ms`), centre-outward converging letters (`S,T,L,V` from above, `E,T,I` from below), `1.016` thud, and `540ms` split-open exit (`+30ms` bottom) with `settliv-intro-reveal`/`settliv-intro-done` & `MutationObserver` fallback.
 - [x] **Build & Preview Generator (`tools/build_intro.py`)**: Created script to extract exact `BricolageGrotesque-ExtraBold.ttf` glyph outlines via `fontTools`, generate 96x96 noise PNG data URI & `intro_font_check.png`, inject between `<!-- INTRO:START -->`/`<!-- INTRO:END -->` in `web/index.html`, and emit `tools/intro_preview/preview.html` with `?firstframe=`, `?speed=`, `?repeat=1`, and `?reduced=1`.
+
+
+---
+
+## Follow-Up Task: Intro Lifecycle Fix
+- [x] **State Machine & Sync Mount (`web/index.html`, `tools/build_intro.py`)**: Implemented `window.__settlivIntro` (`PENDING → PLAYING → HOLDING → EXITING → DONE`) synchronously at top of `<body>` before first paint with double-`rAF` `.go` start; removed the 250ms skip rule so `SHORT` always completes cleanly.
+- [x] **Modes, Races & Handover**: `FULL` (new tab / mid-intro reload before exit), `SHORT` (repeat / non-persisted `back_forward`), `GENTLE` (`prefers-reduced-motion`), `NONE` (bfcache `pageshow`, `document.hidden`, errors); sets `settliv_intro_seen` on `EXITING` start, updates `html`/`body` background to saved app theme (`#F6F7FC` / `#0A0C1C`) on exit, polls `flutter-view`/`flt-glass-pane` + `flutter-first-frame` + 15s safety, and handles `visibilitychange` mid-intro.
+- [x] **Lifecycle Harness (`tools/intro_lifecycle_test.py`)**: Added Playwright Edge verification harness for reload, mid-intro reload, bfcache, and event counts (`settliv-intro-reveal` → `settliv-intro-done` once each).

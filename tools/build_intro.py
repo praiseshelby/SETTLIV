@@ -2,19 +2,13 @@
 """
 Assembles the "SETTLE" intro into web/index.html (between <!-- INTRO:START -->
 and <!-- INTRO:END -->) and writes tools/intro_preview/preview.html with
-preview test hooks (?firstframe=<ms>|never, ?speed=<0.1..1>, ?repeat=1, ?reduced=1).
-
-When fontTools is installed, extracts exact Bricolage Grotesque ExtraBold SVG
-glyph outlines for S, E, T, T, L, I, V with 0.10em tracking and exact ink
-bounding box, and optionally generates intro_font_check.png with Pillow.
+preview test hooks (?firstframe=<ms>|never, ?speed=<0.1..1>, ?repeat=1,
+?reduced=1, ?introdebug=1).
 """
 from __future__ import annotations
 
 import base64
-import io
 import json
-import math
-import os
 import random
 import struct
 import zlib
@@ -31,7 +25,7 @@ def make_noise_png_data_uri(size: int = 96, seed: int = 357) -> str:
     rng = random.Random(seed)
     raw = bytearray()
     for _ in range(size):
-        raw.append(0)  # filter type 0
+        raw.append(0)
         for _ in range(size):
             v = rng.randint(0, 255)
             a = rng.randint(140, 255)
@@ -52,7 +46,6 @@ def make_noise_png_data_uri(size: int = 96, seed: int = 357) -> str:
 
 
 def extract_glyphs():
-    """Extract inline SVG paths for S E T T L I V from the bundled TTF."""
     try:
         from fontTools.ttLib import TTFont
         from fontTools.pens.svgPathPen import SVGPathPen
@@ -94,34 +87,24 @@ def extract_glyphs():
 
     glyph_items = []
     pen_x = 0.0
-    cap_height = float(font["OS/2"].sCapHeight if "OS/2" in font and hasattr(font["OS/2"], "sCapHeight") else upem * 0.72)
-
     for idx, ch in enumerate(letters):
         gname = cmap[ord(ch)]
         glyph = glyf_set[gname]
         bpen = BoundsPen(glyf_set)
         glyph.draw(bpen)
-        bounds = bpen.bounds  # (xmin, ymin, xmax, ymax)
+        bounds = bpen.bounds
         spen = SVGPathPen(glyf_set)
         glyph.draw(spen)
         d = spen.getCommands()
         advance = font["hmtx"][gname][0]
-        glyph_items.append({
-            "ch": ch,
-            "d": d,
-            "bounds": bounds,
-            "x_offset": pen_x,
-            "advance": advance,
-        })
+        glyph_items.append({"ch": ch, "d": d, "bounds": bounds, "x_offset": pen_x})
         if idx < len(letters) - 1:
             pen_x += advance + tracking
 
-    # Compute exact ink bounding box of whole run
     min_x = min(item["x_offset"] + item["bounds"][0] for item in glyph_items)
     min_y = min(item["bounds"][1] for item in glyph_items)
     max_x = max(item["x_offset"] + item["bounds"][2] for item in glyph_items)
     max_y = max(item["bounds"][3] for item in glyph_items)
-
     total_w = max_x - min_x
     total_h = max_y - min_y
 
@@ -131,8 +114,7 @@ def extract_glyphs():
         gw = xmax - xmin
         gh = ymax - ymin
         gx = (item["x_offset"] + xmin) - min_x
-        gy = max_y - ymax  # flipped Y in SVG
-        # SVG path in font coords needs scale(1, -1) & translate(-xmin, -ymax)
+        gy = max_y - ymax
         slots.append({
             "ch": item["ch"],
             "d": item["d"],
@@ -146,7 +128,6 @@ def extract_glyphs():
             "stagger": abs(idx - 3) * 45,
         })
 
-    # Optional specimen check with Pillow
     try:
         from PIL import Image, ImageDraw, ImageFont
         img = Image.new("RGB", (1400, 440), (7, 9, 20))
@@ -154,34 +135,14 @@ def extract_glyphs():
         pil_font = ImageFont.truetype(str(FONT_PATH), 200)
         draw.text((60, 110), "SETTLIV", font=pil_font, fill=(242, 240, 250))
         img.save(FONT_CHECK_PNG)
-        print(f"Saved font specimen: {FONT_CHECK_PNG}")
     except Exception:
         pass
 
-    return {
-        "aspect": round(total_w / total_h, 4),
-        "slots": slots,
-    }
+    return {"aspect": round(total_w / total_h, 4), "slots": slots}
 
 
-def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool) -> str:
-    glyph_json = json.dumps(glyph_data, separators=(",", ":")) if glyph_data else "null"
-    preview_hooks = """
-    var q = new URLSearchParams(location.search);
-    var pSpeed = Math.min(1, Math.max(0.1, parseFloat(q.get('speed') || '1') || 1));
-    var pFirst = q.get('firstframe');
-    var pRepeat = q.get('repeat') === '1';
-    var pReduced = q.get('reduced') === '1';
-    if (pRepeat) try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
-    if (pReduced) document.documentElement.classList.add('force-reduced');
-    document.documentElement.style.setProperty('--spd', String(pSpeed));
-    if (pFirst !== 'never') {
-      var ffMs = pFirst !== null ? parseInt(pFirst, 10) : 900;
-      if (!isNaN(ffMs)) setTimeout(function () { window.dispatchEvent(new CustomEvent('flutter-first-frame')); }, ffMs);
-    }
-""" if is_preview else ""
-
-    return f"""<!-- INTRO:START -->
+def build_head_block(noise_uri: str) -> str:
+    return f"""<!-- INTRO:HEAD:START -->
   <style id="intro-style">
     :root {{
       --bg: #070914;
@@ -203,9 +164,7 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
     }}
     .half.top {{ top: 0; height: calc(50% + 1px); }}
     .half.bottom {{ top: 50%; height: 50%; }}
-    .scene {{
-      position: absolute; left: 0; right: 0; height: 100dvh; transform: scale(1);
-    }}
+    .scene {{ position: absolute; left: 0; right: 0; height: 100dvh; transform: scale(1); }}
     .half.top .scene {{ top: 0; }}
     .half.bottom .scene {{ top: -100%; }}
     .go .scene {{ animation: camPush calc(1500ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) backwards; }}
@@ -269,7 +228,6 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
       50% {{ transform: translate(-50%, -50%) scale(1.012); }}
     }}
 
-    /* Currents & Comet Heads */
     .line-y {{ position: absolute; top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; pointer-events: none; }}
     .curr {{ position: absolute; top: 0; width: 50%; height: 2px; opacity: 0; }}
     .curr.em {{ left: 0; background: var(--emerald); transform-origin: left center; }}
@@ -289,9 +247,7 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
     @keyframes headR {{ from {{ opacity: 1; transform: translateX(18vw); }} to {{ opacity: 1; transform: translateX(calc(-50vw + 18vw)); }} }}
     @keyframes headOff {{ to {{ opacity: 0; }} }}
 
-    .merged-line {{
-      position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(242, 240, 250, 0.9);
-    }}
+    .merged-line {{ position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(242, 240, 250, 0.9); }}
     .go .merged-line {{ animation: fadeIn calc(160ms / var(--spd)) ease-out calc(560ms / var(--spd)) backwards; }}
 
     .flash {{
@@ -310,10 +266,7 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
     .go .ripple.r2 {{ animation: rip calc(760ms / var(--spd)) cubic-bezier(0.16, 1, 0.3, 1) calc(650ms / var(--spd)) both; }}
     @keyframes rip {{ 0% {{ opacity: 0.5; transform: scale(0.15); }} 100% {{ opacity: 0; transform: scale(1.5); }} }}
 
-    /* Wordmark & Letters */
-    .wm-box {{
-      position: absolute; top: 50%; left: 50%; width: var(--wm-w); transform: translate(-50%, -50%);
-    }}
+    .wm-box {{ position: absolute; top: 50%; left: 50%; width: var(--wm-w); transform: translate(-50%, -50%); }}
     .go .wm-box {{ animation: thud calc(160ms / var(--spd)) cubic-bezier(0.3, 0.7, 0.4, 1) calc(900ms / var(--spd)); }}
     @keyframes thud {{ 0%, 100% {{ transform: translate(-50%, -50%) scale(1); }} 50% {{ transform: translate(-50%, -50%) scale(1.016); }} }}
 
@@ -326,32 +279,24 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
     @keyframes settleY {{ from {{ transform: translateY(var(--sy)); }} to {{ transform: translateY(0); }} }}
     @keyframes tintOut {{ from {{ opacity: 1; }} to {{ opacity: 0; }} }}
 
-    /* Counter-translated Sheen */
-    .sheen-win {{
-      position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0;
-    }}
-    .sheen-band {{
-      position: relative; width: 100%; height: 100%;
-    }}
-    .go .sheen-win {{ animation: swMove calc(280ms / var(--spd)) ease-out calc(880ms / var(--spd)) both; }}
-    .go .sheen-band {{ animation: sbMove calc(280ms / var(--spd)) ease-out calc(880ms / var(--spd)) both; }}
-    .hold .sheen-win {{ animation: swMove calc(280ms / var(--spd)) ease-out infinite; animation-delay: 2400ms; }}
-    @keyframes swMove {{ 0% {{ opacity: 1; transform: translateX(-14%); }} 100% {{ opacity: 0; transform: translateX(100%); }} }}
-    @keyframes sbMove {{ 0% {{ transform: translateX(14%); }} 100% {{ transform: translateX(-100%); }} }}
-
-    /* Fallback text wordmark if build_intro.py hasn't injected outlines yet */
     .wm-fallback {{
       font-family: 'BricolageGrotesque', 'Sora', 'PlusJakartaSans', sans-serif;
       font-size: calc(var(--wm-w) / 5.15); font-weight: 800; line-height: 1; color: var(--ink);
       display: flex; justify-content: center; white-space: nowrap;
     }}
-    .wm-fallback span {{ letter-spacing: 0.1em; }}
-    .wm-fallback span:last-child {{ letter-spacing: 0; }}
+    .slot-txt {{ display: inline-block; overflow: hidden; }}
+    .mover .ch {{ display: inline-block; letter-spacing: 0.1em; }}
+    .slot-txt:last-child .mover .ch {{ letter-spacing: 0; }}
+    .mover .tint {{ position: absolute; inset: 0; pointer-events: none; }}
 
-    /* Repeat short & Reduced motion */
     .repeat .curr, .repeat .head, .repeat .flash, .repeat .ripple {{ display: none; }}
     .repeat.go .mover {{ animation-duration: calc(320ms / var(--spd)); animation-delay: var(--dr, 0ms); }}
-    .reduced .curr, .reduced .head, .reduced .flash, .reduced .ripple, .reduced .sheen-win {{ display: none; }}
+    .repeat.exiting .half.top {{ animation-duration: calc(420ms / var(--spd)); }}
+    .repeat.exiting .half.bottom {{ animation-duration: calc(420ms / var(--spd)); }}
+    .settled .curr, .settled .head, .settled .flash, .settled .ripple {{ display: none; }}
+    .settled .mover {{ animation: none !important; transform: none !important; }}
+    .settled .tint {{ display: none; }}
+    .reduced .curr, .reduced .head, .reduced .flash, .reduced .ripple {{ display: none; }}
     .reduced.go .tick-ring {{ animation: none !important; opacity: 1; }}
     .reduced.go .mover, .reduced.go .tint {{ animation: none !important; transform: none; opacity: 0; }}
     .reduced.go .wm-box, .reduced.go .merged-line {{ animation: fadeIn 400ms ease-out backwards; }}
@@ -359,140 +304,292 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
     .reduced.exiting .half {{ animation: none !important; }}
     @keyframes fadeOut {{ to {{ opacity: 0; }} }}
     @media (prefers-reduced-motion: reduce) {{
-      .tick-ring, .mover, .tint, .curr, .head, .flash, .ripple, .sheen-win {{ animation: none !important; }}
+      .tick-ring, .mover, .tint, .curr, .head, .flash, .ripple {{ animation: none !important; }}
     }}
   </style>
+  <!-- INTRO:HEAD:END -->"""
 
+
+def build_body_block(glyph_data: dict | None, is_preview: bool) -> str:
+    glyph_json = json.dumps(glyph_data, separators=(",", ":")) if glyph_data else "null"
+    preview_hooks = """
+        var q = new URLSearchParams(location.search);
+        var pSpeed = Math.min(1, Math.max(0.1, parseFloat(q.get('speed') || '1') || 1));
+        var pFirst = q.get('firstframe');
+        var pRepeat = q.get('repeat') === '1';
+        var pReduced = q.get('reduced') === '1';
+        var pDebug = q.get('introdebug') === '1';
+        if (pRepeat) try { sessionStorage.setItem('settliv_intro_seen', '1'); } catch (_) {}
+        if (pReduced) document.documentElement.classList.add('force-reduced');
+        document.documentElement.style.setProperty('--spd', String(pSpeed));
+        if (pFirst !== 'never') {
+          var ffMs = pFirst !== null ? parseInt(pFirst, 10) : 900;
+          if (!isNaN(ffMs)) setTimeout(function () { window.__flutterFirstFrame = true; window.dispatchEvent(new CustomEvent('flutter-first-frame')); }, ffMs);
+        }
+""" if is_preview else "        var pDebug = false;"
+
+    return f"""<!-- INTRO:START -->
+  <div id="intro" role="presentation"></div>
   <script>
     (function () {{
-      if (window.__settlivSettleInit) return;
-      window.__settlivSettleInit = true;
+      if (window.__settlivIntro) return;
+      var GLYPHS = {glyph_json};
+      {preview_hooks}
+
+      var ctrl = window.__settlivIntro = {{
+        state: 'PENDING',
+        mode: 'FULL',
+        t0: performance.now(),
+        revealSent: false,
+        doneSent: false,
+        timers: [],
+        mo: null,
+        rafHold: 0,
+        wasHidden: false
+      }};
+
+      function logState(next) {{
+        ctrl.state = next;
+        if (pDebug && console && console.debug) console.debug('[settliv-intro]', next, ctrl.mode, Math.round(performance.now() - ctrl.t0) + 'ms');
+      }}
+
+      function setTimer(fn, ms) {{
+        var id = setTimeout(fn, ms);
+        ctrl.timers.push(id);
+        return id;
+      }}
+
+      function clearAllTimers() {{
+        for (var i = 0; i < ctrl.timers.length; i++) clearTimeout(ctrl.timers[i]);
+        ctrl.timers.length = 0;
+        if (ctrl.rafHold) cancelAnimationFrame(ctrl.rafHold);
+        ctrl.rafHold = 0;
+        if (ctrl.mo) {{ ctrl.mo.disconnect(); ctrl.mo = null; }}
+      }}
+
+      function applyAppThemeBackground() {{
+        var mode = null;
+        try {{
+          mode = localStorage.getItem('flutter.settliv_theme_mode') || localStorage.getItem('settliv_theme_mode');
+          if (mode && mode.charAt(0) === '"') mode = JSON.parse(mode);
+        }} catch (_) {{}}
+        var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var bg = dark ? '#0A0C1C' : '#F6F7FC';
+        document.documentElement.style.backgroundColor = bg;
+        if (document.body) document.body.style.backgroundColor = bg;
+      }}
+
+      function dispatchRevealOnce() {{
+        if (ctrl.revealSent) return;
+        ctrl.revealSent = true;
+        window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
+      }}
+
+      function finish() {{
+        if (ctrl.state === 'DONE') return;
+        logState('DONE');
+        clearAllTimers();
+        window.removeEventListener('flutter-first-frame', onFirstFrame);
+        document.removeEventListener('visibilitychange', onVisibility);
+        var el = document.getElementById('intro');
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+        if (document.body) document.body.classList.remove('intro-lock');
+        dispatchRevealOnce();
+        if (!ctrl.doneSent) {{
+          ctrl.doneSent = true;
+          window.dispatchEvent(new CustomEvent('settliv-intro-done'));
+        }}
+      }}
+
+      function startExit(exitMs) {{
+        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        logState('EXITING');
+        try {{ sessionStorage.setItem('settliv_intro_seen', '1'); }} catch (_) {{}}
+        applyAppThemeBackground();
+        dispatchRevealOnce();
+        var el = document.getElementById('intro');
+        if (!el) {{ finish(); return; }}
+        el.classList.add('exiting');
+        setTimer(finish, exitMs);
+      }}
+
+      function flutterReady() {{
+        if (window.__flutterFirstFrame) return true;
+        var fv = document.querySelector('flutter-view, flt-glass-pane');
+        if (!fv) return false;
+        return fv.childElementCount > 0 || (fv.shadowRoot && fv.shadowRoot.childElementCount > 0);
+      }}
+
+      function evaluateExit() {{
+        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        if (!flutterReady()) {{
+          if (ctrl.state === 'PLAYING') {{
+            var minMs = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
+            if (performance.now() - ctrl.t0 >= minMs) enterHolding();
+          }}
+          return;
+        }}
+        var elapsed = performance.now() - ctrl.t0;
+        var minMs = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
+        var exitDur = ctrl.mode === 'SHORT' ? 420 : (ctrl.mode === 'GENTLE' ? 300 : 570);
+        var wait = Math.max(0, minMs - elapsed);
+        setTimer(function () {{ startExit(exitDur); }}, wait);
+      }}
+
+      function enterHolding() {{
+        if (ctrl.state !== 'PLAYING') return;
+        logState('HOLDING');
+        function poll() {{
+          if (ctrl.state !== 'HOLDING') return;
+          if (flutterReady()) {{ window.__flutterFirstFrame = true; evaluateExit(); return; }}
+          ctrl.rafHold = requestAnimationFrame(poll);
+        }}
+        ctrl.rafHold = requestAnimationFrame(poll);
+      }}
+
+      function onFirstFrame() {{
+        window.__flutterFirstFrame = true;
+        evaluateExit();
+      }}
+
+      function onVisibility() {{
+        if (ctrl.state === 'EXITING' || ctrl.state === 'DONE') return;
+        if (document.hidden) {{
+          ctrl.wasHidden = true;
+        }} else if (ctrl.wasHidden) {{
+          var el = document.getElementById('intro');
+          if (el) {{ el.classList.remove('go'); el.classList.add('settled', 'repeat'); }}
+          ctrl.mode = 'SHORT';
+          if (flutterReady()) startExit(420);
+          else enterHolding();
+        }}
+      }}
+
+      function wordmarkMarkup(isTop) {{
+        if (!GLYPHS) {{
+          var chs = ['S','E','T','T','L','I','V'];
+          var spans = chs.map(function (c, i) {{
+            var sy = i % 2 === 0 ? '-115%' : '115%';
+            var col = i % 2 === 0 ? 'var(--emerald)' : 'var(--coral)';
+            var stag = Math.abs(i - 3) * 45;
+            return '<span class="slot-txt"><span class="mover" style="--sy:' + sy + ';--d:' + (560 + stag) + 'ms;--dr:' + Math.round(stag * 0.55) + 'ms">' +
+              '<span class="ch">' + c + '</span><span class="ch tint" style="color:' + col + '" aria-hidden="true">' + c + '</span>' +
+            '</span></span>';
+          }}).join('');
+          return '<div class="wm-box"><div class="wm-fallback" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' + spans + '</div></div>';
+        }}
+        var slotsHtml = GLYPHS.slots.map(function (s) {{
+          var col = s.tint === 'em' ? 'var(--emerald)' : 'var(--coral)';
+          var d = 560 + s.stagger, dr = Math.round(s.stagger * 0.55);
+          return '<div class="slot" style="left:' + s.leftPct + '%;top:' + s.topPct + '%;width:' + s.widthPct + '%;height:' + s.heightPct + '%">' +
+            '<div class="mover" style="--sy:' + (s.dir < 0 ? '-115%' : '115%') + ';--d:' + d + 'ms;--dr:' + dr + 'ms">' +
+              '<svg viewBox="' + s.vb + '"><path d="' + s.d + '" fill="var(--ink)" transform="scale(1,-1)"/></svg>' +
+              '<svg class="tint" viewBox="' + s.vb + '"><path d="' + s.d + '" fill="' + col + '" transform="scale(1,-1)"/></svg>' +
+            '</div></div>';
+        }}).join('');
+        var padBottom = (100 / GLYPHS.aspect).toFixed(3);
+        return '<div class="wm-box"><div class="wm-inner" style="padding-bottom:' + padBottom + '%" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' + slotsHtml + '</div></div>';
+      }}
+
+      function buildScene(isTop) {{
+        return '<div class="scene">' +
+          '<div class="backdrop" aria-hidden="true"></div>' +
+          '<div class="rings-bg" aria-hidden="true"></div>' +
+          '<div class="rules-bg" aria-hidden="true"></div>' +
+          '<div class="grain" aria-hidden="true"></div>' +
+          '<svg class="tick-ring a" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.34)" stroke-width="1" stroke-dasharray="1 9" vector-effect="non-scaling-stroke"/></svg>' +
+          '<svg class="tick-ring b" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.22)" stroke-width="1" stroke-dasharray="2 14" vector-effect="non-scaling-stroke"/></svg>' +
+          '<div class="line-y" aria-hidden="true"><div class="curr em"></div><div class="curr co"></div><div class="head em"></div><div class="head co"></div></div>' +
+          '<div class="merged-line" aria-hidden="true"></div>' +
+          '<div class="flash" aria-hidden="true"></div>' +
+          '<div class="ripple r1" aria-hidden="true"></div>' +
+          '<div class="ripple r2" aria-hidden="true"></div>' +
+          wordmarkMarkup(isTop) +
+        '</div>';
+      }}
+
       try {{
         if ('serviceWorker' in navigator) {{
           navigator.serviceWorker.getRegistrations().then(function (r) {{
             for (var i = 0; i < r.length; i++) r[i].unregister();
           }});
         }}
-        {preview_hooks}
-        var GLYPHS = {glyph_json};
-        var t0 = performance.now(), ff = false, done = false;
-        var seen = false;
-        try {{ seen = sessionStorage.getItem('settliv_intro_seen') === '1'; }} catch (_) {{}}
-        var reduced = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
-                      document.documentElement.classList.contains('force-reduced');
 
-        function wordmarkMarkup(isTop) {{
-          if (!GLYPHS) {{
-            var chs = ['S','E','T','T','L','I','V'];
-            var spans = chs.map(function (c, i) {{
-              return '<span class="mover" style="--sy:' + (i%2===0?'-115%':'115%') + ';--d:' + (560+Math.abs(i-3)*45) + 'ms;--dr:' + (Math.abs(i-3)*25) + 'ms">' + c + '</span>';
-            }}).join('');
-            return '<div class="wm-box"><div class="wm-fallback" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' + spans + '</div></div>';
-          }}
-          var slotsHtml = GLYPHS.slots.map(function (s, i) {{
-            var col = s.tint === 'em' ? 'var(--emerald)' : 'var(--coral)';
-            var d = 560 + s.stagger, dr = Math.round(s.stagger * 0.55);
-            return '<div class="slot" style="left:' + s.leftPct + '%;top:' + s.topPct + '%;width:' + s.widthPct + '%;height:' + s.heightPct + '%">' +
-              '<div class="mover" style="--sy:' + (s.dir < 0 ? '-115%' : '115%') + ';--d:' + d + 'ms;--dr:' + dr + 'ms">' +
-                '<svg viewBox="' + s.vb + '"><path d="' + s.d + '" fill="var(--ink)" transform="scale(1,-1)"/></svg>' +
-                '<svg class="tint" viewBox="' + s.vb + '"><path d="' + s.d + '" fill="' + col + '" transform="scale(1,-1)"/></svg>' +
-              '</div></div>';
-          }}).join('');
-          var padBottom = (100 / GLYPHS.aspect).toFixed(3);
-          return '<div class="wm-box"><div class="wm-inner" style="padding-bottom:' + padBottom + '%" ' + (isTop ? 'role="img" aria-label="SETTLIV"' : 'aria-hidden="true"') + '>' + slotsHtml + '</div></div>';
-        }}
-
-        function buildScene(isTop) {{
-          return '<div class="scene">' +
-            '<div class="backdrop" aria-hidden="true"></div>' +
-            '<div class="rings-bg" aria-hidden="true"></div>' +
-            '<div class="rules-bg" aria-hidden="true"></div>' +
-            '<div class="grain" aria-hidden="true"></div>' +
-            '<svg class="tick-ring a" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.34)" stroke-width="1" stroke-dasharray="1 9" vector-effect="non-scaling-stroke"/></svg>' +
-            '<svg class="tick-ring b" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="98" fill="none" stroke="rgba(190,180,255,0.22)" stroke-width="1" stroke-dasharray="2 14" vector-effect="non-scaling-stroke"/></svg>' +
-            '<div class="line-y" aria-hidden="true"><div class="curr em"></div><div class="curr co"></div><div class="head em"></div><div class="head co"></div></div>' +
-            '<div class="merged-line" aria-hidden="true"></div>' +
-            '<div class="flash" aria-hidden="true"></div>' +
-            '<div class="ripple r1" aria-hidden="true"></div>' +
-            '<div class="ripple r2" aria-hidden="true"></div>' +
-            wordmarkMarkup(isTop) +
-          '</div>';
-        }}
-
-        function removeNow() {{
-          if (done) return;
-          done = true;
-          var el = document.getElementById('intro');
-          if (el && el.parentNode) el.parentNode.removeChild(el);
-          if (document.body) document.body.classList.remove('intro-lock');
-          try {{ sessionStorage.setItem('settliv_intro_seen', '1'); }} catch (_) {{}}
-          window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
-          window.dispatchEvent(new CustomEvent('settliv-intro-done'));
-        }}
-
-        function startExit(ms) {{
-          if (done) return;
-          done = true;
-          var el = document.getElementById('intro');
-          if (!el) {{ removeNow(); return; }}
-          window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
-          el.classList.add('exiting');
-          try {{ sessionStorage.setItem('settliv_intro_seen', '1'); }} catch (_) {{}}
-          setTimeout(function () {{
-            if (el.parentNode) el.parentNode.removeChild(el);
+        window.addEventListener('flutter-first-frame', onFirstFrame);
+        window.addEventListener('pageshow', function (e) {{
+          if (e.persisted) {{
+            ctrl.mode = 'NONE';
+            applyAppThemeBackground();
+            var el = document.getElementById('intro');
+            if (el && el.parentNode) el.parentNode.removeChild(el);
             if (document.body) document.body.classList.remove('intro-lock');
-            window.dispatchEvent(new CustomEvent('settliv-intro-done'));
-          }}, ms);
-        }}
-
-        function tryExit() {{
-          if (!ff || done) return;
-          var elapsed = performance.now() - t0;
-          if (reduced) {{ startExit(300); return; }}
-          if (seen) {{
-            if (elapsed <= 250) {{ removeNow(); return; }}
-            setTimeout(function () {{ startExit(420); }}, Math.max(0, 320 - elapsed));
-            return;
-          }}
-          setTimeout(function () {{ startExit(570); }}, Math.max(0, 1180 - elapsed));
-        }}
-
-        window.addEventListener('pageshow', function (e) {{ if (e.persisted) removeNow(); }});
-
-        window.addEventListener('DOMContentLoaded', function () {{
-          if (document.hidden) {{ removeNow(); return; }}
-          var el = document.getElementById('intro');
-          if (!el) return;
-          document.body.classList.add('intro-lock');
-          el.innerHTML =
-            '<div class="half top">' + buildScene(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
-            '<div class="half bottom">' + buildScene(false) + '<div class="cut-edge" aria-hidden="true"></div></div>';
-          if (seen) el.classList.add('repeat');
-          if (reduced) el.classList.add('reduced');
-          requestAnimationFrame(function () {{
-            el.classList.add('go');
-            tryExit();
-          }});
-          if (MutationObserver) {{
-            var mo = new MutationObserver(function () {{
-              if (document.querySelector('flt-glass-pane, flutter-view')) {{
-                mo.disconnect();
-                ff = true;
-                tryExit();
-              }}
-            }});
-            mo.observe(document.body, {{ childList: true, subtree: true }});
+            ctrl.state = 'DONE';
           }}
         }});
 
-        window.addEventListener('flutter-first-frame', function () {{ ff = true; tryExit(); }});
-        setTimeout(function () {{ if (!done) startExit(570); }}, 15000);
-      }} catch (_) {{
+        var seen = false;
+        try {{ seen = sessionStorage.getItem('settliv_intro_seen') === '1'; }} catch (_) {{ seen = false; }}
+        var navType = 'navigate';
+        try {{
+          var navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+          if (navEntries && navEntries.length) navType = navEntries[0].type || 'navigate';
+        }} catch (_) {{}}
+        var reduced = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+                      document.documentElement.classList.contains('force-reduced');
+
+        if (document.hidden) {{
+          ctrl.mode = 'NONE';
+          applyAppThemeBackground();
+          finish();
+          return;
+        }}
+
+        if (reduced) ctrl.mode = 'GENTLE';
+        else if (seen || navType === 'back_forward') ctrl.mode = 'SHORT';
+        else ctrl.mode = 'FULL';
+
         var el = document.getElementById('intro');
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-        if (document.body) document.body.classList.remove('intro-lock');
-        window.dispatchEvent(new CustomEvent('settliv-intro-reveal'));
-        window.dispatchEvent(new CustomEvent('settliv-intro-done'));
+        if (!el) {{ finish(); return; }}
+        document.body.classList.add('intro-lock');
+        el.innerHTML =
+          '<div class="half top">' + buildScene(true) + '<div class="cut-edge" aria-hidden="true"></div></div>' +
+          '<div class="half bottom">' + buildScene(false) + '<div class="cut-edge" aria-hidden="true"></div></div>';
+        if (ctrl.mode === 'SHORT') el.classList.add('repeat');
+        if (ctrl.mode === 'GENTLE') el.classList.add('reduced');
+
+        document.addEventListener('visibilitychange', onVisibility);
+
+        if (typeof MutationObserver !== 'undefined') {{
+          ctrl.mo = new MutationObserver(function () {{
+            if (flutterReady()) {{
+              window.__flutterFirstFrame = true;
+              evaluateExit();
+            }}
+          }});
+          ctrl.mo.observe(document.body, {{ childList: true, subtree: true }});
+        }}
+
+        setTimer(function () {{
+          if (ctrl.state !== 'EXITING' && ctrl.state !== 'DONE') {{
+            startExit(ctrl.mode === 'GENTLE' ? 300 : (ctrl.mode === 'SHORT' ? 420 : 570));
+          }}
+        }}, 15000);
+
+        var minHold = ctrl.mode === 'SHORT' ? 320 : (ctrl.mode === 'GENTLE' ? 400 : 1180);
+        setTimer(evaluateExit, minHold);
+
+        requestAnimationFrame(function () {{
+          requestAnimationFrame(function () {{
+            if (ctrl.state !== 'PENDING') return;
+            logState('PLAYING');
+            el.classList.add('go');
+            evaluateExit();
+          }});
+        }});
+      }} catch (_) {{
+        ctrl.mode = 'NONE';
+        applyAppThemeBackground();
+        finish();
       }}
     }})();
   </script>
@@ -502,31 +599,59 @@ def build_intro_block(noise_uri: str, glyph_data: dict | None, is_preview: bool)
 def main():
     noise_uri = make_noise_png_data_uri()
     glyph_data = extract_glyphs()
-    block = build_intro_block(noise_uri, glyph_data, is_preview=False)
+    head_block = build_head_block(noise_uri)
+    body_block = build_body_block(glyph_data, is_preview=False)
 
-    html = INDEX_HTML.read_text(encoding="utf-8")
-    start_marker = "<!-- INTRO:START -->"
-    end_marker = "<!-- INTRO:END -->"
-    if start_marker in html and end_marker in html:
-        pre = html[: html.index(start_marker)]
-        post = html[html.index(end_marker) + len(end_marker) :]
-        INDEX_HTML.write_text(pre + block + post, encoding="utf-8")
-        print(f"Updated {INDEX_HTML}")
-    else:
-        print("Markers not found in web/index.html")
+    html = f"""<!DOCTYPE html>
+<html style="background:#070914">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <title>Settliv — Expense Sharing & Group Ledger</title>
+  <meta name="description" content="Settliv is a modern, exact-paise group expense sharing and ledger web application.">
+  <meta name="theme-color" content="#070914">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Settliv">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preload" href="assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
+  <style>
+    @font-face {{
+      font-family: 'BricolageGrotesque';
+      src: url('assets/assets/fonts/BricolageGrotesque-ExtraBold.ttf') format('truetype');
+      font-weight: 800;
+      font-style: normal;
+      font-display: block;
+    }}
+  </style>
+  {head_block}
+</head>
+<body>
+  {body_block}
+  <noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#070914;color:#F2F0FA;font:800 32px sans-serif;letter-spacing:.1em">SETTLIV</div></noscript>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+"""
+    INDEX_HTML.write_text(html, encoding="utf-8")
+    print(f"Updated {INDEX_HTML}")
 
     PREVIEW_HTML.parent.mkdir(parents=True, exist_ok=True)
-    preview_block = build_intro_block(noise_uri, glyph_data, is_preview=True)
+    preview_body = build_body_block(glyph_data, is_preview=True)
     preview_doc = f"""<!DOCTYPE html>
 <html style="background:#070914">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Settliv Intro Preview</title>
-  {preview_block}
+  {head_block}
 </head>
 <body>
-  <div id="intro" role="presentation"></div>
+  {preview_body}
   <main style="min-height:100dvh;display:flex;align-items:center;justify-content:center;color:#F2F0FA;font-family:sans-serif">App Revealed</main>
 </body>
 </html>
