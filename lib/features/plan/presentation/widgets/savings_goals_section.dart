@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/guest_limit_sheet.dart';
+import '../../../../core/auth/guest_limits.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -157,6 +159,9 @@ class SavingsGoalsSection extends ConsumerWidget {
                     final targetPaise = (targetRupees * 100).round();
                     final initialPaise = (initialRupees * 100).round();
 
+                    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+                    if (outcome == GuestLimitOutcome.hardBlocked) return;
+
                     final goal = SavingsGoal(
                       id: 'goal_${DateTime.now().millisecondsSinceEpoch}',
                       name: name,
@@ -168,6 +173,7 @@ class SavingsGoalsSection extends ConsumerWidget {
 
                     ref.read(appStateProvider.notifier).addSavingsGoal(goal);
                     Navigator.of(dialogCtx).pop();
+                    GuestWriteGuard.showPromptIfNeeded(context, outcome);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primaryButtonBg,
@@ -265,12 +271,16 @@ class SavingsGoalsSection extends ConsumerWidget {
                       return;
                     }
 
+                    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+                    if (outcome == GuestLimitOutcome.hardBlocked) return;
+
                     if (isDeposit) {
                       ref.read(appStateProvider.notifier).contributeToSavingsGoal(goal.id, amountPaise);
                     } else {
                       ref.read(appStateProvider.notifier).withdrawFromSavingsGoal(goal.id, amountPaise);
                     }
                     Navigator.of(dialogCtx).pop();
+                    GuestWriteGuard.showPromptIfNeeded(context, outcome);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primaryButtonBg,

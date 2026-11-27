@@ -857,3 +857,10 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## P2: Profile Pictures (`p2-profile-pictures`)
 - **Stock & Uploaded Avatars**: Added 12 geometric `StockAvatarPainter` presets, `avatarKind`/`avatarRef` on `Person` and `AuthUser`, `PersonAvatar` rendering for `stock`/`upload`/`initials` (with initials fallback), and `image_picker` 256px/200KB upload to Supabase Storage `avatars/<uid>/<rand>.jpg`.
 - **Migration & Picker**: Added `supabase/migrations/202611270003_avatars.sql`, `AvatarPickerSheet` via `FormSheetScaffold` wired from Settings, `kBuildMarker = 'p2-profile-pictures'`, and `test/p2_profile_pictures_test.dart`.
+
+---
+
+## P3: Guest Limits (`p3-guest-limits`)
+- **Constants & Counter**: Added `GuestLimits` (`softLimit = 5`, `hardLimit = 12`, `prefsKey`) and `GuestWriteCountNotifier` in `lib/core/auth/guest_limits.dart`, persisted locally via `SharedPreferences`, bypassed in `TourScope` and for `AuthSignedIn`, and cleared on sign-in/sign-up in `AuthStateNotifier`.
+- **Prompt Sheet & Write Guards**: Added compact glass `GuestLimitSheet` (`"Create an account to keep going."` with `Create account`, `Sign in`, and conditional `Not now` at soft limit only) and wired `GuestWriteGuard` into `AddExpenseScreen`, `CreateEditGroupSheet`, `SettleSheet`, `MarkReceivedSheet`, `BalancesScreen`, `PlanScreen`, and `SavingsGoalsSection`.
+- **Build Marker & Tests**: Set `kBuildMarker = 'p3-guest-limits'` in `lib/main.dart` and added `test/p3_guest_limits_test.dart`.

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/guest_limit_sheet.dart';
+import '../../../core/auth/guest_limits.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -109,6 +111,9 @@ class _MarkReceivedSheetState extends ConsumerState<MarkReceivedSheet>
     setState(() => _hasAttempted = true);
     if (_validationError != null) return;
 
+    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+    if (outcome == GuestLimitOutcome.hardBlocked) return;
+
     setState(() => _isSubmitting = true);
     HapticFeedback.mediumImpact();
 
@@ -211,6 +216,7 @@ class _MarkReceivedSheetState extends ConsumerState<MarkReceivedSheet>
           widget.onUndone?.call(createdIds);
         },
       );
+      GuestWriteGuard.showPromptIfNeeded(context, outcome);
     }
   }
 

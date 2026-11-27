@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/auth/guest_limit_sheet.dart';
+import '../../../core/auth/guest_limits.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -202,6 +204,8 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
 
   Future<void> _onMarkPaid() async {
     if (_isSubmitting) return;
+    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+    if (outcome == GuestLimitOutcome.hardBlocked) return;
     setState(() => _isSubmitting = true);
 
     final repo = ref.read(appRepositoryProvider);
@@ -237,6 +241,7 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
           ref.read(appStateProvider.notifier).deleteSettlement(settlement.id);
         },
       );
+      GuestWriteGuard.showPromptIfNeeded(context, outcome);
     }
   }
 

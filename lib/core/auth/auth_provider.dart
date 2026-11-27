@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/in_memory_app_repository.dart';
 import '../../supabase_config.dart';
 import 'auth_repository.dart';
+import 'guest_limits.dart';
 import 'oauth_web_helper_stub.dart'
     if (dart.library.js_interop) 'oauth_web_helper_web.dart';
 import 'supabase_auth_repository.dart';
@@ -93,6 +94,7 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
       _sub = repo.authStateChanges.listen((next) {
         if (next is AuthSignedIn) {
           prefs?.setBool(_guestPrefKey, false);
+          prefs?.remove(GuestLimits.prefsKey);
           if (next.user.isNewProfile) {
             prefs?.setBool(
               OnboardingPendingNotifier.keyForUid(next.user.id),
@@ -108,6 +110,7 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
     if (repo != null && repo.currentStatus is AuthSignedIn) {
       final signedIn = repo.currentStatus as AuthSignedIn;
       prefs?.setBool(_guestPrefKey, false);
+      prefs?.remove(GuestLimits.prefsKey);
       if (signedIn.user.isNewProfile) {
         prefs?.setBool(
           OnboardingPendingNotifier.keyForUid(signedIn.user.id),

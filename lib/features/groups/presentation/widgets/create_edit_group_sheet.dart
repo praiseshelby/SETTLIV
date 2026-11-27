@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/guest_limit_sheet.dart';
+import '../../../../core/auth/guest_limits.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/name_normalizer.dart';
@@ -189,6 +191,9 @@ class _CreateEditGroupSheetState extends ConsumerState<CreateEditGroupSheet> {
       return;
     }
 
+    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+    if (outcome == GuestLimitOutcome.hardBlocked) return;
+
     final repoNotifier = ref.read(appStateProvider.notifier);
 
     // Add newly created people to repo
@@ -219,6 +224,7 @@ class _CreateEditGroupSheetState extends ConsumerState<CreateEditGroupSheet> {
     }
 
     Navigator.of(context, rootNavigator: true).pop();
+    GuestWriteGuard.showPromptIfNeeded(context, outcome);
   }
 
   @override

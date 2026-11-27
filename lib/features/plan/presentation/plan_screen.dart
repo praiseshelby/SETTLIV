@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/auth/guest_limit_sheet.dart';
+import '../../../core/auth/guest_limits.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -187,6 +189,8 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: () {
+                    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+                    if (outcome == GuestLimitOutcome.hardBlocked) return;
                     final newOverall = (int.tryParse(overallController.text) ?? 50000) * 100;
                     final Map<ExpenseCategory, int> newCatLimits = {};
                     catControllers.forEach((cat, controller) {
@@ -199,6 +203,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                     });
                     _saveBudgets();
                     Navigator.pop(ctx);
+                    GuestWriteGuard.showPromptIfNeeded(context, outcome);
                   },
                   child: const Text('Save budgets', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),

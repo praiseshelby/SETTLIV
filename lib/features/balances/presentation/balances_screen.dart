@@ -4,6 +4,8 @@ import '../../../core/profile/experience_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/guest_limit_sheet.dart';
+import '../../../core/auth/guest_limits.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -54,6 +56,8 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
   }
 
   void _onSettleAll(PersonDebtSummary summary) {
+    final outcome = GuestWriteGuard.checkAndRecord(context, ref);
+    if (outcome == GuestLimitOutcome.hardBlocked) return;
     HapticFeedback.selectionClick();
     final repo = ref.read(appRepositoryProvider);
     final now = DateTime.now();
@@ -82,6 +86,7 @@ class _BalancesScreenState extends ConsumerState<BalancesScreen> {
         });
       },
     );
+    GuestWriteGuard.showPromptIfNeeded(context, outcome);
   }
 
   void _onNudge(Person person, int amountPaise, List<GroupDebtLine> lines) {

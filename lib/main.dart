@@ -24,7 +24,7 @@ import 'intro_handshake_stub.dart'
 import 'routes/app_router.dart';
 import 'supabase_config.dart';
 
-const String kBuildMarker = 'p2-profile-pictures';
+const String kBuildMarker = 'p3-guest-limits';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
