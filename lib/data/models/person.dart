@@ -9,6 +9,8 @@ class Person {
   final String? phone;
   final String avatarInitials;
   final int avatarPairIndex; // 0..7 index for theme.avatarGradients
+  final String avatarKind; // 'initials' | 'stock' | 'upload'
+  final String? avatarRef;
 
   const Person({
     required this.id,
@@ -17,6 +19,8 @@ class Person {
     this.phone,
     this.avatarInitials = '',
     this.avatarPairIndex = 0,
+    this.avatarKind = 'initials',
+    this.avatarRef,
   });
 
   String get initials {
@@ -33,6 +37,9 @@ class Person {
     String? phone,
     String? avatarInitials,
     int? avatarPairIndex,
+    String? avatarKind,
+    String? avatarRef,
+    bool clearAvatarRef = false,
   }) {
     return Person(
       id: id ?? this.id,
@@ -41,6 +48,8 @@ class Person {
       phone: phone ?? this.phone,
       avatarInitials: avatarInitials ?? this.avatarInitials,
       avatarPairIndex: avatarPairIndex ?? this.avatarPairIndex,
+      avatarKind: avatarKind ?? this.avatarKind,
+      avatarRef: clearAvatarRef ? null : (avatarRef ?? this.avatarRef),
     );
   }
 
@@ -51,6 +60,8 @@ class Person {
         if (phone != null) 'phone': phone,
         'avatarInitials': avatarInitials,
         'avatarPairIndex': avatarPairIndex,
+        'avatarKind': avatarKind,
+        if (avatarRef != null) 'avatarRef': avatarRef,
       };
 
   factory Person.fromJson(Map<String, dynamic> json) {
@@ -61,6 +72,8 @@ class Person {
       phone: json['phone'] as String?,
       avatarInitials: (json['avatarInitials'] as String?) ?? '',
       avatarPairIndex: (json['avatarPairIndex'] as int?) ?? 0,
+      avatarKind: (json['avatarKind'] as String?) ?? 'initials',
+      avatarRef: json['avatarRef'] as String?,
     );
   }
 

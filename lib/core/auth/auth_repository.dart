@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 
 enum AuthProviderKind {
@@ -35,6 +36,8 @@ class AuthUser {
   final int schemaVersion;
   final String? profileWarning;
   final bool isNewProfile;
+  final String avatarKind;
+  final String? avatarRef;
 
   const AuthUser({
     required this.id,
@@ -49,6 +52,8 @@ class AuthUser {
     this.schemaVersion = 1,
     this.profileWarning,
     this.isNewProfile = false,
+    this.avatarKind = 'initials',
+    this.avatarRef,
   });
 
   String get accountIdentifier => username != null ? '@$username' : (email ?? '');
@@ -209,4 +214,8 @@ abstract class AuthRepository {
   Future<void> markOnboarded();
 
   Future<void> updateDisplayName(String displayName);
+
+  Future<void> updateAvatar({required String avatarKind, String? avatarRef});
+
+  Future<String> uploadAvatarBytes(Uint8List bytes);
 }

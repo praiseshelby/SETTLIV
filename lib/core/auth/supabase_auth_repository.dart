@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'auth_repository.dart';
@@ -234,6 +236,8 @@ class SupabaseAuthRepository implements AuthRepository {
               onboarded: (existing['onboarded'] as bool?) ?? false,
               upiId: existing['upi_id'] as String?,
               schemaVersion: (existing['schema_version'] as int?) ?? 1,
+              avatarKind: (existing['avatar_kind'] as String?) ?? 'initials',
+              avatarRef: existing['avatar_ref'] as String?,
             ),
           ),
         );
@@ -527,6 +531,58 @@ class SupabaseAuthRepository implements AuthRepository {
         debugPrint('SupabaseAuthRepository.markOnboarded error: $e\n$st');
       }
     }
+  }
+
+  @override
+  Future<void> updateAvatar({required String avatarKind, String? avatarRef}) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return;
+    await _client.from('profiles').update({
+      'avatar_kind': avatarKind,
+      'avatar_ref': avatarRef,
+    }).eq('id', uid);
+    if (_status is AuthSignedIn) {
+      final u = (_status as AuthSignedIn).user;
+      _emit(
+        AuthSignedIn(
+          AuthUser(
+            id: u.id,
+            displayName: u.displayName,
+            username: u.username,
+            email: u.email,
+            provider: u.provider,
+            lastLoginAtMs: u.lastLoginAtMs,
+            layout: u.layout,
+            onboarded: u.onboarded,
+            upiId: u.upiId,
+            schemaVersion: u.schemaVersion,
+            profileWarning: u.profileWarning,
+            isNewProfile: u.isNewProfile,
+            avatarKind: avatarKind,
+            avatarRef: avatarRef,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<String> uploadAvatarBytes(Uint8List bytes) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) {
+      throw const AuthFriendlyException('Sign in to upload a profile photo.');
+    }
+    final rand = math.Random().nextInt(1 << 30);
+    final path = '$uid/$rand.jpg';
+    await _client.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const sb.FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+    return _client.storage.from('avatars').getPublicUrl(path);
   }
 
   void dispose() {

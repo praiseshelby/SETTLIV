@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'auth_repository.dart';
 
 class FakeAuthRepository implements AuthRepository {
@@ -231,6 +232,44 @@ class FakeAuthRepository implements AuthRepository {
       );
       _emit(AuthSignedIn(updated));
     }
+  }
+
+  bool simulateUploadFailure = false;
+
+  @override
+  Future<void> updateAvatar({required String avatarKind, String? avatarRef}) async {
+    final status = _status;
+    if (status is AuthSignedIn) {
+      final u = status.user;
+      _emit(
+        AuthSignedIn(
+          AuthUser(
+            id: u.id,
+            displayName: u.displayName,
+            username: u.username,
+            email: u.email,
+            provider: u.provider,
+            lastLoginAtMs: u.lastLoginAtMs,
+            layout: u.layout,
+            onboarded: u.onboarded,
+            upiId: u.upiId,
+            schemaVersion: u.schemaVersion,
+            profileWarning: u.profileWarning,
+            isNewProfile: u.isNewProfile,
+            avatarKind: avatarKind,
+            avatarRef: avatarRef,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<String> uploadAvatarBytes(Uint8List bytes) async {
+    if (simulateUploadFailure) {
+      throw const AuthFriendlyException('Could not upload photo. Try again.');
+    }
+    return 'https://example.invalid/avatars/demo.jpg';
   }
 
   void dispose() {

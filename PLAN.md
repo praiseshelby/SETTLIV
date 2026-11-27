@@ -851,3 +851,9 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 ## P1: Groups UX + Mobile Sheet Bug (`p1-groups-sheets`)
 - **`GroupHubCard`**: Removed `"Details"` button, made entire card a single tap/Enter target with pointer cursor and semantics button role while preserving Settle/Nudge/Add handlers.
 - **`FormSheetScaffold`**: Added shared `FormSheetScaffold` (scrollable body, keyboard `viewInsets` + safe-area handling, sticky bottom action bar), moved `CreateEditGroupSheet` and `CreateEditIouSheet` onto it, added inline UPI validation on manual member add, and added `test/p1_groups_sheet_test.dart`.
+
+---
+
+## P2: Profile Pictures (`p2-profile-pictures`)
+- **Stock & Uploaded Avatars**: Added 12 geometric `StockAvatarPainter` presets, `avatarKind`/`avatarRef` on `Person` and `AuthUser`, `PersonAvatar` rendering for `stock`/`upload`/`initials` (with initials fallback), and `image_picker` 256px/200KB upload to Supabase Storage `avatars/<uid>/<rand>.jpg`.
+- **Migration & Picker**: Added `supabase/migrations/202611270003_avatars.sql`, `AvatarPickerSheet` via `FormSheetScaffold` wired from Settings, `kBuildMarker = 'p2-profile-pictures'`, and `test/p2_profile_pictures_test.dart`.

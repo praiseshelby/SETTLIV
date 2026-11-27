@@ -60,6 +60,8 @@ class AppStateNotifier extends Notifier<int> {
         id: authUser.id,
         name: profileName,
         upiId: authUser.upiId,
+        avatarKind: authUser.avatarKind,
+        avatarRef: authUser.avatarRef,
       );
       if (SupabaseConfig.isSupabaseConfigured && SupabaseConfig.isInitialized) {
         var disposed = false;

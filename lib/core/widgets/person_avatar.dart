@@ -2,6 +2,7 @@ import '../../../core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
 import '../theme/app_theme.dart';
+import 'stock_avatar_painter.dart';
 
 class PersonAvatar extends StatelessWidget {
   final Person? person;
@@ -23,6 +24,33 @@ class PersonAvatar extends StatelessWidget {
     final initials = _extractInitials(displayName);
     final theme = context.settliv;
     final gradient = _getGradientForName(displayName, theme);
+    final kind = person?.avatarKind ?? 'initials';
+    final refStr = person?.avatarRef;
+
+    Widget inner;
+    if (kind == 'stock' && refStr != null) {
+      final idx = int.tryParse(refStr) ?? 0;
+      inner = ClipOval(
+        child: RepaintBoundary(
+          child: CustomPaint(
+            size: Size.square(size),
+            painter: StockAvatarPainter(index: idx, theme: theme),
+          ),
+        ),
+      );
+    } else if (kind == 'upload' && refStr != null && refStr.isNotEmpty) {
+      inner = ClipOval(
+        child: Image.network(
+          refStr,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _initialsChild(initials, theme),
+        ),
+      );
+    } else {
+      inner = _initialsChild(initials, theme);
+    }
 
     return Container(
       width: size,
@@ -48,21 +76,25 @@ class PersonAvatar extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(size * 0.10),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              initials,
-              style: TextStyle(
-                fontFamily: AppTypography.fontBody,
-                color: theme.white,
-                fontWeight: FontWeight.w700,
-                fontSize: size * 0.44,
-                letterSpacing: -0.2,
-                height: 1.0,
-              ),
+      child: inner,
+    );
+  }
+
+  Widget _initialsChild(String initials, SettlivThemeExtension theme) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.10),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            initials,
+            style: TextStyle(
+              fontFamily: AppTypography.fontBody,
+              color: theme.white,
+              fontWeight: FontWeight.w700,
+              fontSize: size * 0.44,
+              letterSpacing: -0.2,
+              height: 1.0,
             ),
           ),
         ),

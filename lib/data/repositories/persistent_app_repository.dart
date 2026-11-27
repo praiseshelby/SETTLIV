@@ -314,12 +314,21 @@ class PersistentAppRepository implements AppRepository {
   Person? get currentUser => getPerson(_currentUserId);
 
   @override
-  void updateCurrentUser({String? name, String? upiId}) {
+  void updateCurrentUser({
+    String? name,
+    String? upiId,
+    String? avatarKind,
+    String? avatarRef,
+    bool clearAvatarRef = false,
+  }) {
     final user = currentUser;
     if (user != null) {
       final updated = user.copyWith(
         name: name ?? user.name,
         upiId: upiId ?? user.upiId,
+        avatarKind: avatarKind ?? user.avatarKind,
+        avatarRef: avatarRef,
+        clearAvatarRef: clearAvatarRef,
       );
       updatePerson(updated);
     }

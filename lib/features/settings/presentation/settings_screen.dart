@@ -10,6 +10,7 @@ import '../../../../core/auth/auth_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import 'widgets/account_settings_section.dart';
+import 'widgets/avatar_picker_sheet.dart';
 import 'widgets/experience_settings_section.dart';
 import 'widgets/security_settings_section.dart';
 import 'widgets/help_feedback_settings_section.dart';
@@ -500,10 +501,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     children: [
                       if (user != null)
-                        PersonAvatar(
-                          person: user,
-                          size: 56,
-                          showRing: true,
+                        Semantics(
+                          button: true,
+                          label: 'Change avatar',
+                          child: InkWell(
+                            onTap: () => AvatarPickerSheet.show(context),
+                            borderRadius: BorderRadius.circular(999),
+                            child: PersonAvatar(
+                              person: user,
+                              size: 56,
+                              showRing: true,
+                            ),
+                          ),
                         ),
                       const SizedBox(width: 16),
                       Expanded(
