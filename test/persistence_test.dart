@@ -49,7 +49,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 300));
 
       // Check SharedPreferences holds the serialized key
-      final savedJson = prefs.getString(PersistentAppRepository.storageKey);
+      final savedJson = prefs.getString(repo.storageKey);
       expect(savedJson, isNotNull);
 
       final decoded = jsonDecode(savedJson!) as Map<String, dynamic>;
@@ -73,7 +73,7 @@ void main() {
 
     test('Corrupt JSON fallback: recovers to seed data cleanly and flags corrupt flag', () async {
       // Store corrupted/invalid JSON in prefs
-      await prefs.setString(PersistentAppRepository.storageKey, '{"version": 999, "corrupt": true}');
+      await prefs.setString(PersistentAppRepository.defaultStorageKey, '{"version": 999, "corrupt": true}');
 
       final repo = PersistentAppRepository(prefs: prefs);
       expect(repo.wasCorruptDataRecovered, isTrue);
@@ -109,7 +109,7 @@ void main() {
         'recurringTemplates': [],
       };
 
-      await prefs.setString(PersistentAppRepository.storageKey, jsonEncode(malformedData));
+      await prefs.setString(PersistentAppRepository.defaultStorageKey, jsonEncode(malformedData));
 
       final repo = PersistentAppRepository(prefs: prefs);
       // Because invariant check threw, it recovered safely to seed

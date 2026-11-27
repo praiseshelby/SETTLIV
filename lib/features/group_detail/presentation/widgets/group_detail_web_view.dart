@@ -24,6 +24,7 @@ import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/mark_received_sheet.dart';
 import '../../sheets/nudge_sheet.dart';
 import '../../sheets/settle_sheet.dart';
+import '../../../onboarding/domain/tour_scope.dart';
 import 'category_donut_chart.dart';
 
 class GroupDetailWebView extends ConsumerWidget {
@@ -270,7 +271,13 @@ class GroupDetailWebView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildBalancesAndSettlementCard(context, theme),
+              KeyedSubtree(
+                key: TourScope.maybeOf(context)?.groupBalancesKey,
+                child: KeyedSubtree(
+                  key: TourScope.maybeOf(context)?.groupSettleKey,
+                  child: _buildBalancesAndSettlementCard(context, theme),
+                ),
+              ),
               const SizedBox(height: 20),
               if (expenses.isNotEmpty)
                 CategoryDonutChart(

@@ -13,7 +13,7 @@ import 'package:settliv/routes/app_router.dart';
 double _lum(Color c) {
   double lin(double ch) =>
       ch <= 0.03928 ? ch / 12.92 : math.pow((ch + 0.055) / 1.055, 2.4).toDouble();
-  return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+    return 0.2126 * lin(c.red / 255.0) + 0.7152 * lin(c.green / 255.0) + 0.0722 * lin(c.blue / 255.0);
 }
 
 double _contrast(Color a, Color b) {

@@ -16,6 +16,7 @@ import '../../../core/widgets/undo_snackbar.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../group_detail/sheets/expense_detail_sheet.dart';
+import '../../onboarding/domain/tour_scope.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -268,6 +269,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 ),
               ] else ...[
                 GlassSurface(
+                  key: TourScope.maybeOf(context)?.recordsEntryKey,
                   level: GlassLevel.level2,
                   borderRadius: 24,
                   padding: const EdgeInsets.symmetric(vertical: 8),

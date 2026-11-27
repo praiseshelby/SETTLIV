@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import 'widgets/account_settings_section.dart';
 import 'widgets/experience_settings_section.dart';
 import 'widgets/security_settings_section.dart';
 import 'widgets/help_feedback_settings_section.dart';
@@ -837,6 +838,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               key: _helpSectionKey,
               child: const HelpFeedbackSettingsSection(),
             ),
+            const SizedBox(height: 28),
+
+            // Account Section
+            const AccountSettingsSection(),
             const SizedBox(height: 28),
 
             // Experience Section

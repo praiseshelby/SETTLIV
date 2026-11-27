@@ -13,6 +13,7 @@ import '../../../../core/widgets/glass_surface.dart';
 import '../../../../data/models/expense.dart';
 import '../../../../data/models/group.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
+import '../../../onboarding/domain/tour_scope.dart';
 import '../insights_screen.dart';
 import 'spending_calendar.dart';
 
@@ -261,11 +262,14 @@ class _InsightsWebViewState extends ConsumerState<InsightsWebView> {
                     children: [
                       Expanded(
                         flex: 7,
-                        child: _buildSpendSummaryCard(
-                          context,
-                          theme,
-                          totalYourSpend,
-                          prevTotalSpend,
+                        child: KeyedSubtree(
+                          key: TourScope.maybeOf(context)?.insightsBudgetKey,
+                          child: _buildSpendSummaryCard(
+                            context,
+                            theme,
+                            totalYourSpend,
+                            prevTotalSpend,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 24),

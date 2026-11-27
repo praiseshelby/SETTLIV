@@ -29,6 +29,7 @@ import '../sheets/settle_sheet.dart';
 import '../sheets/mark_received_sheet.dart';
 import '../sheets/nudge_sheet.dart';
 import '../sheets/edit_group_sheet.dart';
+import '../../onboarding/domain/tour_scope.dart';
 import 'widgets/balance_bars_chart.dart';
 import 'widgets/category_donut_chart.dart';
 
@@ -318,13 +319,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                       children: [
                         // Glass Summary Card
                         GlassSurface(
+                          key: TourScope.maybeOf(context)?.groupBalancesKey,
                           level: GlassLevel.level2,
                           borderRadius: 22,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              BalancePill(paise: userNetPaise),
+                              BalancePill(
+                                key: TourScope.maybeOf(context)?.groupSettleKey,
+                                paise: userNetPaise,
+                              ),
                               // Trip Progress Bar (Trip groups only)
                               if (group.type == GroupType.trip) ...[
                                 const SizedBox(height: 14),

@@ -17,6 +17,7 @@ import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
+import '../../onboarding/domain/tour_scope.dart';
 import '../../../data/engine/balance_engine.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/models/group.dart';
@@ -230,14 +231,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 2. Hero Card (NET POSITION)
-              BalanceHeroCard(
-                netPaise: overall.netBalance,
-                totalOwedToUserPaise: overall.totalOwedToUser,
-                totalUserOwesPaise: overall.totalUserOwes,
-                owedFromCount: owedFromCount,
-                owesToCount: owesToCount,
-                counterparties: allCounterparties,
-                onTap: () => context.push('/balances'),
+              KeyedSubtree(
+                key: TourScope.maybeOf(context)?.homeHeroKey,
+                child: BalanceHeroCard(
+                  netPaise: overall.netBalance,
+                  totalOwedToUserPaise: overall.totalOwedToUser,
+                  totalUserOwesPaise: overall.totalUserOwes,
+                  owedFromCount: owedFromCount,
+                  owesToCount: owesToCount,
+                  counterparties: allCounterparties,
+                  onTap: () {
+                    final tour = TourScope.maybeOf(context);
+                    if (tour != null) {
+                      tour.onInterceptRoute?.call('/balances');
+                    } else {
+                      context.push('/balances');
+                    }
+                  },
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -247,11 +258,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // 4. "Needs attention" Card (Shown only when something exists, NO inline nudge buttons)
               if (attentionMessage != null) ...[
-                Semantics(
-                  button: true,
-                  label: 'Needs attention: $attentionMessage',
-                  child: InkWell(
-                    onTap: attentionAction,
+                KeyedSubtree(
+                  key: TourScope.maybeOf(context)?.homeAttentionKey,
+                  child: Semantics(
+                    button: true,
+                    label: 'Needs attention: $attentionMessage',
+                    child: InkWell(
+                      onTap: () {
+                        final tour = TourScope.maybeOf(context);
+                        if (tour != null) {
+                          tour.onInterceptRoute?.call('/balances');
+                        } else {
+                          attentionAction?.call();
+                        }
+                      },
                     borderRadius: BorderRadius.circular(20),
                     child: SectionCard(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -298,6 +318,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
+                ),
                 ),
                 const SizedBox(height: 28),
               ],

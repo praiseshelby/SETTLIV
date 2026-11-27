@@ -783,3 +783,59 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 - [x] **WAAPI Pre-Warmed Split Exit (`tools/build_intro.py`)**: Replaced `540ms` timer removal with pre-warmed WAAPI animations (`fill: 'both'`, `Promise.all(ready)` → `settliv-intro-reveal`, `Promise.all(finished)` + double-`rAF` → `DONE`, `2500ms` safety, CSS `transitionend` fallback).
 - [x] **Calm Gate, Layer Freeze & Theme (`tools/build_intro.py`)**: Added `ARMED` calm-main-thread gate (`2x rAF <= 24ms` + `PerformanceObserver` `longtask` > 120ms ago, `1500ms` max wait); froze intro child animations & promoted flat `.half` layers (`contain: layout paint style`) on exit; moved `applyAppThemeBackground()` to `flutter-first-frame`.
 - [x] **Dart Handshake & Diagnostics (`lib/main.dart`, `tools/intro_split_trace.py`)**: Added 900ms `_postRevealLite` `disableAnimations` window on `settliv-intro-reveal` so Flutter doesn't compete with the split for GPU; added silent `window.__settlivIntroLog` ring buffer (40 entries) and `tools/intro_split_trace.py` (`Page.startScreencast`).
+
+
+---
+
+## Supabase Backend — Set 1 (Foundation & Sign-In Screens)
+- [x] **Supabase Config & Auth Layer (`lib/supabase_config.dart`, `lib/core/auth/`)**: Added placeholder `SupabaseConfig` (`isSupabaseConfigured`, `initializeIfConfigured`), `AuthRepository`, `SupabaseAuthRepository`, `FakeAuthRepository`, `UsernameHelper` (`@u.settliv.app`), `AuthErrorMapper`, and Riverpod `authStateProvider` (persisting guest mode in `settliv_guest_mode`).
+- [x] **Auth UI, Privacy & Router Gate (`lib/features/auth/`, `lib/routes/app_router.dart`, `lib/main.dart`)**: Added adaptive `/welcome`, `/signin`, `/signup`, and `/privacy` screens (Google G painter, Username/Email tabs, confirmation pending, unconfigured note, consent checkbox, post-attempt validation) and `from` deep-link router guard.
+- [x] **SQL Migration, Edge Function & Tests (`supabase/`, `test/backend_set1_test.dart`)**: Created `public.profiles` RLS migration (`202611260001_profiles.sql`), narrowly scoped `account-actions` Edge Function (`create_username_account`, `delete_account`), and unit/widget tests in `test/backend_set1_test.dart`.
+
+
+---
+
+## Supabase Backend — Set 2 (Per-User Data, Account Section & Delete)
+- [x] **Supabase Config & Ledger Schema (`lib/supabase_config.dart`, `supabase/migrations/202611260002_ledger_schema.sql`)**: Filled in Project URL and Publishable Key; added 9 per-user PostgreSQL tables (`people`, `groups`, `expenses`, `settlements`, `ious`, `recurring`, `budgets`, `goals`, `user_settings`) with strict `auth.uid() = user_id` RLS and atomic `rpc_insert_settlements` / `rpc_delete_settlements`.
+- [x] **Per-User Repository & Isolation (`supabase_ledger_repository.dart`, `persistent_app_repository.dart`, `in_memory_app_repository.dart`)**: Added `SupabaseLedgerRepository` with UID-namespaced cache (`settliv_ledger_uid_<uid>`), idempotent chunked initial seeding, Realtime subscription, offline indicator, and immediate in-memory clearing on sign-out/switch.
+- [x] **Settings Account, README & Tests (`account_settings_section.dart`, `settings_screen.dart`, `README.md`, `test/backend_set2_test.dart`)**: Added `AccountSettingsSection` (sync/offline status, Sign out sheet, DELETE + re-auth account deletion, Guest Create account) across App/Web Settings, `Supabase Setup` docs in `README.md`, and `test/backend_set2_test.dart`.
+
+---
+
+## Auth Session Flow Fix (`fix-auth-session-flow`)
+- **Root cause**: `SupabaseAuthRepository._handleSession` caught `public.profiles` errors and turned a valid Supabase session into `AuthSignedOut` (or threw before emitting `AuthSignedIn`), while `onAuthStateChange` and `signInWithPassword` could race/duplicate session handling.
+- **Fix**: Serialised `_processSession` with a single in-flight guard + `_awaitSessionProcessed` (one authoritative path), switched new profile creation to `.upsert(..., onConflict: 'id')`, kept valid sessions in `AuthSignedIn` with `profileWarning` + Settings Retry if profile sync fails, logged errors in `kDebugMode`, and added tests in `test/backend_set1_test.dart` and `test/backend_set2_test.dart`.
+
+---
+
+## Google OAuth PKCE Return Fix (`fix-google-oauth-return`)
+- **Root cause**: `signInWithGoogle` sent `redirectTo: '${Uri.base.origin}/'` (trailing slash) and `main()` did not explicitly exchange `?code=` or surface `detectSessionInUrl` exchange failures, while `GoRouter` allowed `/welcome` when `status` was `AuthSignedOut` even with `?code=` in `Uri.base`.
+- **Fix**: Set `FlutterAuthClientOptions(authFlowType: AuthFlowType.pkce, detectSessionInUrl: true)` in `SupabaseConfig`, `redirectTo: Uri.base.origin` in `signInWithGoogle`, explicit `exchangeCodeForSession(code)` + `history.replaceState` URL cleanup (`oauth_web_helper_web.dart`) + `pendingOAuthError` surfacing in `main.dart`/`auth_screens.dart`, `/auth-loading` guard while `?code=` is pending in `app_router.dart`, and an OAuth return test in `test/backend_set1_test.dart`.
+
+---
+
+## Onboarding Tour — Set 1 (`onboarding-set1`)
+- **Trigger & Persistence**: Added `isNewProfile` to `AuthUser` (set only on real profile insert in `SupabaseAuthRepository` and new sign-up in `FakeAuthRepository`), `markOnboarded()`, and `OnboardingPendingNotifier` persisting `settliv_onboarding_pending_<uid>` in `SharedPreferences`.
+- **Router & Empty New Accounts**: Added `/tour` route and redirect gating in `app_router.dart` + `main.dart`; updated `SupabaseLedgerRepository.initialize()` to call `_initializeEmptyNewAccount()` (`startFresh()` + `user_settings` seed marker) instead of `_seedNewAccount()` so new accounts start empty.
+- **Minimal `/tour` Shell & Tests**: Added `OnboardingTourScreen` (steps `0..5`, isolated `InMemoryAppRepository` sandbox, Next/Back/Skip, swipe, Left/Right/Enter keyboard nav, `PopScope` back guard, App/Web adaptive container) and `test/onboarding_set1_test.dart`.
+
+---
+
+## Onboarding Tour — Coach Card Placement Amendment (`onboarding-coach-placement`)
+- **Anchored Placement Engine (`coach_card_placement.dart`)**: Added pure `CoachCardPlacementSolver` computing compact floating callout rects from target rect + safe viewport bounds (below/above/right/left preference on App/Web-compact, beside-first on Web-expanded, 16px edge margins, clamped horizontally with notch aimed at target center, low-left/bottom anchor on Intro/Finish).
+- **Floating Glass Callout (`onboarding_tour_screen.dart`)**: Replaced static boxed card with `_CoachCalloutCard` (`_CoachNotchShape` 10px rounded pointer notch, single `BackdropFilter`, hairline border, thin progress hairline, `"N / 6"` numerals, 48px hit targets, 280ms `easeInOutCubic` glide + 10px fade-slide, reduced-motion safe, keyboard/resize recomputation).
+- **Tests**: Added `test/onboarding_coach_placement_test.dart` covering placement solver geometry/fallback/clamping and widget rendering at 320, 390, and 1280 widths in light and dark modes at text scale 1.3.
+
+---
+
+## Onboarding Tour Final — Part A (`onboarding-final-A`)
+- **Real-Screen Sandbox & `TourScope`**: Replaced placeholder text rows in `OnboardingTourScreen` with real `HomeScreen` / `DashboardWebView` and `AddExpenseScreen` hosted inside a nested `ProviderScope` (`_SandboxAppStateNotifier` + `_SandboxAuthStateNotifier` + `sharedPreferencesProvider: null`) and `TourScope` (`tour_scope.dart`) intercepting route jumps and driving Quick/Manual tabs.
+- **Spotlight & Steps 1–3**: Added `_SpotlightOverlay` + `_SpotlightScrimPainter` (58% ink scrim, 320ms `easeInOutCubic` rounded cutout, tap absorption outside cutout) for Step 1 Intro, Step 2 Home Hero + Needs Attention, Step 3 Quick `"Try it"` human-speed typing + Manual split modes, and `"Coming next"` placeholders for Steps 4–6.
+- **Guest Offer**: Added one-time compact glass offer (`settliv_guest_tour_offered`) in `AuthScreen._exploreAsGuest()` with `"Take the tour"` and `"Skip to app"`, wired through `OnboardingPendingNotifier`.
+
+---
+
+## Onboarding Tour — Stage 3 Complete (`onboarding-complete`)
+- **Steps 4–6 Real Screens**: Added `GroupDetailScreen(groupId: 'group_goa')` + `SettleSheet` (`"Try it"` opens simulated UPI without external `launchUrl` inside `TourScope`), `ActivityScreen` / `RecordsWebView`, and `InsightsScreen` / `InsightsWebView` inside the isolated sandbox `ProviderScope` + `TourScope`.
+- **Signed-up Exit & Guest End Sheet**: Added 500ms Finish / 300ms Skip settle-fade exit (reduced-motion safe) with `"Add first expense"` / `"Go to Home"`, plus `_GuestEndSheet` (`"Keep what you build."`, `SettleOrbitMotifPainter`, `"Create account"`, `"Sign in"`, `"Continue exploring"`, Back/Esc handling, double-tap guard).
+- **Tests**: Added `test/onboarding_final_test.dart` covering the full 6-step signed-up tour (zero real-repo writes) and guest end-sheet flow.

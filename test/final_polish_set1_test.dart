@@ -17,7 +17,9 @@ import 'package:settliv/features/settings/presentation/settings_screen.dart';
 double _relativeLuminance(Color c) {
   double linear(double ch) =>
       ch <= 0.03928 ? ch / 12.92 : math.pow((ch + 0.055) / 1.055, 2.4).toDouble();
-  return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b);
+  return 0.2126 * linear(c.red / 255.0) +
+      0.7152 * linear(c.green / 255.0) +
+      0.0722 * linear(c.blue / 255.0);
 }
 
 double _contrastRatio(Color a, Color b) {
@@ -128,7 +130,8 @@ void main() {
 
         // Record initial hero net balance and Flatmates balance
         final beforeOverall = container.read(userOverallBalanceProvider).netBalance;
-        final beforeGroup = container.read(groupSummaryProvider('group_flatmates')).userNetBalance;
+        final beforeGroup =
+            container.read(groupSummaryProvider('group_flatmates')).netBalances['person_arjun'] ?? 0;
 
         // Add an expense via notifier
         final existing = container.read(allExpensesProvider).first;
@@ -153,7 +156,7 @@ void main() {
           beforeOverall + 20000,
         );
         expect(
-          container.read(groupSummaryProvider('group_flatmates')).userNetBalance,
+          container.read(groupSummaryProvider('group_flatmates')).netBalances['person_arjun'] ?? 0,
           beforeGroup + 20000,
         );
       },

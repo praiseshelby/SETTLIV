@@ -18,6 +18,7 @@ import '../../../core/widgets/screen_scaffold.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/models/expense.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import '../../onboarding/domain/tour_scope.dart';
 
 enum InsightPeriod { thisMonth, lastMonth, threeMonths, sixMonths, year }
 enum InsightsTab { overview, budgets }
@@ -274,6 +275,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 const PlanScreen(showScaffold: false),
               ] else ...[
                 AnimatedSection(
+                  key: TourScope.maybeOf(context)?.insightsBudgetKey,
                   child: MonthRecapCard(
                     expenses: allExpenses,
                     currentUserId: currentUserId,

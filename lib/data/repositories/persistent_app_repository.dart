@@ -15,13 +15,14 @@ import '../seed/seed_data.dart';
 import 'app_repository.dart';
 
 class PersistentAppRepository implements AppRepository {
-  static const String storageKey = 'settliv_ledger_v2';
+  static const String defaultStorageKey = 'settliv_ledger_v2';
   static const int schemaVersion = 2;
   static const int seedVersion = 3;
 
   final BalanceEngine _engine = const BalanceEngine();
   final SharedPreferences? _prefs;
   final DateTime Function() _clock;
+  final String storageKey;
 
   late String _currentUserId;
   late List<Person> _people;
@@ -39,6 +40,7 @@ class PersistentAppRepository implements AppRepository {
   PersistentAppRepository({
     SharedPreferences? prefs,
     DateTime Function()? clock,
+    this.storageKey = defaultStorageKey,
   })  : _prefs = prefs,
         _clock = clock ?? DateTime.now {
     _loadInitialData();
@@ -57,6 +59,25 @@ class PersistentAppRepository implements AppRepository {
         _loadFromJsonString(rawJson);
       }
     }
+  }
+
+  void replaceAllState({
+    required List<Person> people,
+    required List<Group> groups,
+    required List<Expense> expenses,
+    required List<Settlement> settlements,
+    List<IouNote> ious = const [],
+    List<RecurringTemplate> recurring = const [],
+    List<SavingsGoal> goals = const [],
+  }) {
+    _people = List.from(people);
+    _groups = List.from(groups);
+    _expenses = List.from(expenses);
+    _settlements = List.from(settlements);
+    _iouNotes = List.from(ious);
+    _recurringTemplates = List.from(recurring);
+    _savingsGoals = List.from(goals);
+    _saveToStorageImmediate();
   }
 
   void _resetToSeed() {

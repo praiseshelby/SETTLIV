@@ -67,3 +67,13 @@ Entry points:
 ## Known Limitations
 
 See [NOTES.md](NOTES.md) for the full QA findings and known limitations.
+
+## Supabase Setup
+
+1. **Create project**: Create a project on the Supabase Free plan in the **South Asia (Mumbai)** region.
+2. **Keys**: Copy the **Project URL** and **Publishable Key** from **Project Settings → API** into `lib/supabase_config.dart`. Never put the `service_role` secret key in Flutter.
+3. **Google OAuth**: Enable Google under **Authentication → Providers → Google**, and add your local/production origins (e.g. `http://localhost:3000/`) to **Authentication → URL Configuration → Redirect URLs**.
+4. **Email confirmation & SMTP**: Email accounts retain Supabase confirmation. Note that Supabase's default email sender is restricted to project-team emails; handle `email_address_not_authorized` or configure custom SMTP later if needed.
+5. **SQL Migration & RLS**: Run `supabase/migrations/202611260001_profiles.sql` and `supabase/migrations/202611260002_ledger_schema.sql` in the **Supabase SQL Editor**. Every table enforces owner-only Row Level Security (`auth.uid() = user_id`).
+6. **Edge Function (deploy later)**: Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Edge Function secrets, then deploy `supabase/functions/account-actions`. Self-service account deletion and username registration require this Edge Function to be deployed.
+7. **Dashboard Inspection**: View users in **Authentication → Users**, ledger rows in **Table Editor**, and Edge Function logs in **Edge Functions → Logs**.

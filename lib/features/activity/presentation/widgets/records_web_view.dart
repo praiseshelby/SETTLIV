@@ -15,6 +15,7 @@ import '../../../../data/models/group.dart';
 import '../../../../data/models/settlement.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
 import '../../../group_detail/sheets/expense_detail_sheet.dart';
+import '../../../onboarding/domain/tour_scope.dart';
 
 class RecordsWebView extends ConsumerStatefulWidget {
   const RecordsWebView({super.key});
@@ -270,10 +271,16 @@ class _RecordsWebViewState extends ConsumerState<RecordsWebView> {
                 _buildEmptyState(theme, hasActiveFilter)
               else if (isCompact)
                 // Compact Web: Card list
-                _buildCompactCards(context, theme, filtered, currentUserId)
+                KeyedSubtree(
+                  key: TourScope.maybeOf(context)?.recordsEntryKey,
+                  child: _buildCompactCards(context, theme, filtered, currentUserId),
+                )
               else
                 // Expanded / Medium: Full-width Table
-                _buildFullWidthTable(context, theme, filtered, repo, currentUserId),
+                KeyedSubtree(
+                  key: TourScope.maybeOf(context)?.recordsEntryKey,
+                  child: _buildFullWidthTable(context, theme, filtered, repo, currentUserId),
+                ),
             ],
           ),
         ),

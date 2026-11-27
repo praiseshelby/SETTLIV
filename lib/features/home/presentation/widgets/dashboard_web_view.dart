@@ -5,6 +5,7 @@ import 'month_dial.dart';
 import 'this_month_web_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../onboarding/domain/tour_scope.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/layout/adaptive_layout.dart';
@@ -262,7 +263,10 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
               // 2. Bento Grid (or single-column on compact)
               if (isCompact) ...[
                 // Stacked layout
-                _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: false),
+                KeyedSubtree(
+                  key: TourScope.maybeOf(context)?.homeHeroKey,
+                  child: _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: false),
+                ),
                 const SizedBox(height: 16),
                 ThisMonthWebCard(
                   expenses: allExpenses,
@@ -274,7 +278,10 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                 ),
                 if (attentionMessage != null) ...[
                   const SizedBox(height: 16),
-                  _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                  KeyedSubtree(
+                    key: TourScope.maybeOf(context)?.homeAttentionKey,
+                    child: _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 _buildRecentGroupsCard(context, theme, top2Groups, isCompact: isCompact),
@@ -290,7 +297,10 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                     children: [
                       Expanded(
                         flex: 7,
-                        child: _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: true),
+                        child: KeyedSubtree(
+                          key: TourScope.maybeOf(context)?.homeHeroKey,
+                          child: _buildHeroCard(context, overall, allCounterparties, owedFromCount, owesToCount, isLarge: true),
+                        ),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
@@ -311,7 +321,10 @@ class _DashboardWebViewState extends ConsumerState<DashboardWebView> {
                 // Attention strip moves directly BELOW Net position + This month row
                 if (attentionMessage != null) ...[
                   const SizedBox(height: 20),
-                  _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                  KeyedSubtree(
+                    key: TourScope.maybeOf(context)?.homeAttentionKey,
+                    child: _buildAttentionStrip(context, theme, attentionMessage, attentionAction),
+                  ),
                   const SizedBox(height: 20),
                 ] else ...[
                   const SizedBox(height: 20),

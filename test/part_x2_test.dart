@@ -195,13 +195,12 @@ void main() {
       expect(file.existsSync(), isTrue);
       final html = file.readAsStringSync();
 
-      expect(html.contains('settle-svg'), isTrue);
-      expect(html.contains('node-owed'), isTrue);
-      expect(html.contains('node-owe'), isTrue);
-      expect(html.contains('settle-level-line'), isTrue);
-      expect(html.contains('settleTracking'), isTrue);
-      expect(html.contains('sweep-bar'), isTrue);
-      expect(html.contains('reveal-out'), isTrue);
+      expect(html.contains('SETTLIV'), isTrue);
+      expect(html.contains('curr em'), isTrue);
+      expect(html.contains('curr co'), isTrue);
+      expect(html.contains('tick-ring'), isTrue);
+      expect(html.contains('flutter-first-frame'), isTrue);
+      expect(html.contains('settliv-intro-reveal'), isTrue);
     });
   });
 }

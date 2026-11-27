@@ -29,6 +29,7 @@ import '../../../data/models/person.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
 import '../../../data/seed/seed_data.dart';
 import '../logic/quick_expense_parser.dart';
+import '../../onboarding/domain/tour_scope.dart';
 import 'widgets/scan_sheet.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
@@ -104,10 +105,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     _startExampleTimer();
 
-    // Auto-focus Quick tab keyboard on open (when not editing an existing expense)
     if (widget.initialExpense == null && _selectedTab == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _quickFocusNode.requestFocus();
+        if (mounted && TourScope.maybeOf(context) == null) {
+          _quickFocusNode.requestFocus();
+        }
       });
     }
 
@@ -227,6 +229,27 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _selectedMemberIds = group.memberIds.toSet();
     }
     _rebuildSplitControllers();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tour = TourScope.maybeOf(context);
+    if (tour != null) {
+      tour.addController.setQuickText = (t) {
+        if (mounted) {
+          setState(() => _quickTextController.text = t);
+        }
+      };
+      tour.addController.setTab = (idx) {
+        if (mounted && _selectedTab != idx) {
+          setState(() {
+            _selectedTab = idx;
+            _attemptedSave = false;
+          });
+        }
+      };
+    }
   }
 
   @override
@@ -519,6 +542,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     }
 
     if (mounted) {
+      final tour = TourScope.maybeOf(context);
+      if (tour != null) {
+        tour.onInterceptRoute?.call('saved:${expense.id}');
+        return;
+      }
       context.pop(expense.id);
       UndoSnackbar.show(
         context: context,
@@ -791,7 +819,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               ),
                               const SizedBox(height: 12),
                               // GlassSegmented: Quick | Manual
-                              GlassSegmented<int>(
+                              KeyedSubtree(
+                                key: TourScope.maybeOf(context)?.addSplitModesKey,
+                                child: GlassSegmented<int>(
                                 values: const [0, 1],
                                 labels: const ['Quick', 'Manual'],
                                 selectedValue: _selectedTab,
@@ -806,6 +836,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                     _amountFocusNode.requestFocus();
                                   }
                                 },
+                              ),
                               ),
                               const SizedBox(height: 16),
                               Flexible(
@@ -929,8 +960,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GlassSurface(
-                        key: _quickFieldKey,
+                      KeyedSubtree(
+                        key: TourScope.maybeOf(context)?.addQuickInputKey,
+                        child: GlassSurface(
+                          key: _quickFieldKey,
                         level: GlassLevel.level2,
                         borderRadius: 20,
                         padding: const EdgeInsets.all(20),
@@ -1032,6 +1065,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             ),
                           ],
                         ),
+                      ),
                       ),
                       if (repeatSuggestions.isNotEmpty) ...[
                         const SizedBox(height: 16),

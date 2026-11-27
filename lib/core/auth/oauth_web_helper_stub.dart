@@ -1,0 +1,3 @@
+void clearOAuthCodeFromUrl() {}
+
+void replaceUrlToWelcome() {}

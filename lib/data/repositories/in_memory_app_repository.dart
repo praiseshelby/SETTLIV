@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/auth/auth_provider.dart';
+import '../../core/auth/auth_repository.dart';
+import '../../supabase_config.dart';
 import '../models/person.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
@@ -11,6 +15,7 @@ import 'app_repository.dart';
 import '../models/savings_goal.dart';
 import '../models/feedback_report.dart';
 import 'persistent_app_repository.dart';
+import 'supabase_ledger_repository.dart';
 
 // An in-memory implementation that matches AppRepository for tests and fast mocks
 class InMemoryAppRepository extends PersistentAppRepository {
@@ -29,13 +34,63 @@ final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) {
   return null;
 });
 
+final ledgerSyncStateProvider = StateProvider<LedgerSyncState>((ref) {
+  return const LedgerSyncState();
+});
+
 class AppStateNotifier extends Notifier<int> {
   late AppRepository repository;
+  bool _hadSignedInUser = false;
 
   @override
   int build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    repository = PersistentAppRepository(prefs: prefs);
+    final authStatus = ref.watch(authStateProvider);
+
+    if (authStatus is AuthSignedIn) {
+      _hadSignedInUser = true;
+      if (SupabaseConfig.isSupabaseConfigured && SupabaseConfig.isInitialized) {
+        var disposed = false;
+        ref.onDispose(() => disposed = true);
+        final sbRepo = SupabaseLedgerRepository(
+          client: Supabase.instance.client,
+          uid: authStatus.user.id,
+          prefs: prefs,
+          onRemoteChange: () {
+            Future.microtask(() {
+              if (!disposed) notifyChange();
+            });
+          },
+          onSyncStateChanged: (syncState) {
+            Future.microtask(() {
+              if (!disposed) {
+                ref.read(ledgerSyncStateProvider.notifier).state = syncState;
+              }
+            });
+          },
+        );
+        repository = sbRepo;
+        ref.onDispose(sbRepo.dispose);
+        Future.microtask(() => sbRepo.initialize());
+      } else {
+        repository = PersistentAppRepository(
+          prefs: prefs,
+          storageKey: 'settliv_ledger_uid_${authStatus.user.id}',
+        );
+      }
+    } else if (authStatus is AuthSignedOut && _hadSignedInUser) {
+      // Clear previous user's in-memory state on sign-out
+      _hadSignedInUser = false;
+      final cleanRepo = PersistentAppRepository(
+        prefs: null,
+        storageKey: 'settliv_signed_out_empty',
+      );
+      cleanRepo.startFresh();
+      repository = cleanRepo;
+    } else {
+      // Guest mode or standalone widget tests
+      repository = PersistentAppRepository(prefs: prefs);
+    }
     return 0; // State version counter
   }
 

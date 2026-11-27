@@ -18,6 +18,7 @@ import '../../../data/models/group.dart';
 import '../../../data/models/person.dart';
 import '../../../data/models/settlement.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import '../../onboarding/domain/tour_scope.dart';
 
 enum SettleStep {
   amount,
@@ -165,16 +166,19 @@ class _SettleSheetState extends ConsumerState<SettleSheet>
       'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$amountStr&cu=INR&tn=${Uri.encodeComponent(note)}',
     );
 
+    final inTour = TourScope.maybeOf(context) != null;
     bool launched = false;
-    try {
-      if (await canLaunchUrl(universalUri)) {
-        launched = await launchUrl(
-          universalUri,
-          mode: LaunchMode.externalApplication,
-        );
+    if (!inTour) {
+      try {
+        if (await canLaunchUrl(universalUri)) {
+          launched = await launchUrl(
+            universalUri,
+            mode: LaunchMode.externalApplication,
+          );
+        }
+      } catch (_) {
+        launched = false;
       }
-    } catch (_) {
-      launched = false;
     }
 
     if (!launched) {

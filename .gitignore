@@ -31,8 +31,12 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-!/build/web/
 /coverage/
+
+# Node & Supabase
+node_modules/
+supabase/.temp/
+supabase/.branches/
 
 # Symbolication related
 app.*.symbols
@@ -48,3 +52,6 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 .vercel
+
+node_modules/
+.supabase/
