@@ -23,6 +23,8 @@ class PersistentAppRepository implements AppRepository {
   final SharedPreferences? _prefs;
   final DateTime Function() _clock;
   final String storageKey;
+  final bool startEmpty;
+  final Person? initialUser;
 
   late String _currentUserId;
   late List<Person> _people;
@@ -41,13 +43,19 @@ class PersistentAppRepository implements AppRepository {
     SharedPreferences? prefs,
     DateTime Function()? clock,
     this.storageKey = defaultStorageKey,
+    this.startEmpty = false,
+    this.initialUser,
   })  : _prefs = prefs,
         _clock = clock ?? DateTime.now {
     _loadInitialData();
   }
 
   void _loadInitialData() {
-    _resetToSeed();
+    if (startEmpty) {
+      _resetToEmpty();
+    } else {
+      _resetToSeed();
+    }
     if (_prefs != null) {
       // Clean up stale v1 storage key if present
       if (_prefs.containsKey('settliv_ledger_v1')) {
@@ -59,6 +67,32 @@ class PersistentAppRepository implements AppRepository {
         _loadFromJsonString(rawJson);
       }
     }
+  }
+
+  void _resetToEmpty() {
+    final user = initialUser ??
+        const Person(
+          id: 'user_self',
+          name: 'You',
+        );
+    _currentUserId = user.id;
+    _people = [user];
+    _groups = [
+      Group(
+        id: 'group_personal',
+        name: 'Personal',
+        type: GroupType.other,
+        memberIds: [user.id],
+        coverThemeIndex: 4,
+        createdAt: _clock(),
+      ),
+    ];
+    _expenses = [];
+    _settlements = [];
+    _recurringTemplates = [];
+    _iouNotes = [];
+    _savingsGoals = [];
+    _feedbackReports = [];
   }
 
   void replaceAllState({
@@ -851,7 +885,12 @@ class PersistentAppRepository implements AppRepository {
 
   @override
   Future<void> startFresh() async {
-    final user = currentUser ?? SeedData.arjun;
+    final user = currentUser ??
+        initialUser ??
+        (startEmpty
+            ? const Person(id: 'user_self', name: 'You')
+            : SeedData.arjun);
+    _currentUserId = user.id;
     _people = [user];
     _groups = [
       Group(

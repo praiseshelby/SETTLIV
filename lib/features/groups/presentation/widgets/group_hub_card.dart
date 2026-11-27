@@ -106,11 +106,17 @@ class GroupHubCard extends ConsumerWidget {
     return Semantics(
       button: true,
       label: '${group.name} group card',
-      child: GlassSurface(
-        level: GlassLevel.level2,
-        borderRadius: 24,
-        padding: EdgeInsets.zero,
-        child: Column(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GlassSurface(
+          level: GlassLevel.level2,
+          borderRadius: 24,
+          padding: EdgeInsets.zero,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            context.push('/group/${group.id}');
+          },
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Cover Art Header with Pinned Badge & Overflow Menu
@@ -427,31 +433,13 @@ class GroupHubCard extends ConsumerWidget {
                           ),
                         ),
 
-                      // Details Button
-                      InkWell(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          context.push('/group/${group.id}');
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Details', style: AppTypography.caption.copyWith(color: theme.muted, fontWeight: FontWeight.w600, fontSize: 12)),
-                              const SizedBox(width: 2),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: theme.muted),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
         ),
       ),
     );

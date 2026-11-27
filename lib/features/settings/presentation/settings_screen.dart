@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/auth_provider.dart';
+import '../../../../core/auth/auth_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import 'widgets/account_settings_section.dart';
@@ -145,10 +147,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _isEditingProfile = false;
     });
 
+    final trimmedName = _nameController.text.trim();
     ref.read(appStateProvider.notifier).updateCurrentUser(
-          name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+          name: trimmedName.isEmpty ? null : trimmedName,
           upiId: upi.isEmpty ? null : upi,
         );
+    if (trimmedName.isNotEmpty) {
+      ref.read(authRepositoryProvider)?.updateDisplayName(trimmedName);
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -475,6 +481,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = context.settliv;
     final themeMode = ref.watch(themeModeProvider);
+    final authStatus = ref.watch(authStateProvider);
+    final isSignedIn = authStatus is AuthSignedIn;
     final user = ref.watch(currentUserProvider);
     final effective = ref.watch(effectiveExperienceProvider);
     final layout = AdaptiveLayout.of(context);
@@ -886,37 +894,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: AppTypography.caption.copyWith(color: theme.muted),
                   ),
                   const SizedBox(height: 16),
-                  Divider(color: theme.hairline, height: 1),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: theme.hairline),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  if (!isSignedIn) ...[
+                    Divider(color: theme.hairline, height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: theme.hairline),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            onPressed: () => _confirmStartFresh(context),
+                            child: Text('Start fresh', style: TextStyle(color: theme.ink)),
                           ),
-                          onPressed: () => _confirmStartFresh(context),
-                          child: Text('Start fresh', style: TextStyle(color: theme.ink)),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: theme.hairline),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: theme.hairline),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            onPressed: () => _confirmResetDemoData(context),
+                            child: Text('Reset demo data', style: TextStyle(color: theme.ink)),
                           ),
-                          onPressed: () => _confirmResetDemoData(context),
-                          child: Text('Reset demo data', style: TextStyle(color: theme.ink)),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,

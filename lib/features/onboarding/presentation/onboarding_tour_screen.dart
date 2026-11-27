@@ -682,10 +682,7 @@ class _GuestEndSheet extends StatelessWidget {
                 height: 56,
                 child: CustomPaint(
                   painter: SettleOrbitMotifPainter(
-                    ringColor: theme.hairline,
-                    accentColor: theme.accent,
-                    emeraldColor: theme.emerald,
-                    coralColor: theme.coral,
+                    theme: theme,
                   ),
                 ),
               ),

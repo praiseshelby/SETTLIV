@@ -24,9 +24,11 @@ import 'intro_handshake_stub.dart'
 import 'routes/app_router.dart';
 import 'supabase_config.dart';
 
+const String kBuildMarker = 'p1-groups-sheets';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print('[BUILD] signout-fix-1');
+  print(kBuildMarker);
   SharedPreferences? prefs;
   try {
     prefs = await SharedPreferences.getInstance();

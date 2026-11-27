@@ -63,6 +63,7 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
   SupabaseLedgerRepository({
     required SupabaseClient client,
     required this.uid,
+    Person? initialUser,
     SharedPreferences? prefs,
     DateTime Function()? clock,
     this.onRemoteChange,
@@ -72,6 +73,8 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
           prefs: prefs,
           clock: clock,
           storageKey: 'settliv_ledger_uid_$uid',
+          startEmpty: true,
+          initialUser: initialUser,
         );
 
   LedgerSyncState get syncState => _syncState;
@@ -486,6 +489,25 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
         ),
       );
     });
+  }
+
+  @override
+  void updateCurrentUser({String? name, String? upiId}) {
+    super.updateCurrentUser(name: name, upiId: upiId);
+    final updated = currentUser;
+    if (updated != null) {
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      _syncMutation(() => _client.from('people').upsert({
+            'user_id': uid,
+            'id': updated.id,
+            'name': updated.name,
+            'upi_id': updated.upiId,
+            'phone': updated.phone,
+            'is_current_user': true,
+            'schema_version': PersistentAppRepository.schemaVersion,
+            'updated_at_ms': nowMs,
+          }));
+    }
   }
 
   @override

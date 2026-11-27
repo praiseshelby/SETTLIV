@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/in_memory_app_repository.dart';
@@ -90,7 +91,6 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
     _sub?.cancel();
     if (repo != null) {
       _sub = repo.authStateChanges.listen((next) {
-        print('[AUTH] AuthStateNotifier state -> $next');
         if (next is AuthSignedIn) {
           prefs?.setBool(_guestPrefKey, false);
           if (next.user.isNewProfile) {
@@ -230,7 +230,6 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
   }
 
   void forceSignedOut() {
-    print('[AUTH] AuthStateNotifier.forceSignedOut');
     final prefs = ref.read(sharedPreferencesProvider);
     prefs?.setBool(_guestPrefKey, false);
     prefs?.remove(OnboardingPendingNotifier.guestTourPendingKey);
@@ -239,7 +238,6 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
   }
 
   Future<void> signOut() async {
-    print('[AUTH] AuthStateNotifier.signOut called');
     final current = state;
     final String? uid = current is AuthSignedIn ? current.user.id : null;
     final prefs = ref.read(sharedPreferencesProvider);
@@ -253,7 +251,9 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
       try {
         await repo.signOut();
       } catch (e, st) {
-        print('[AUTH] AuthStateNotifier.signOut error: $e\n$st');
+        if (kDebugMode) {
+          debugPrint('AuthStateNotifier.signOut error: $e\n$st');
+        }
       }
     }
     state = const AuthSignedOut();
@@ -261,7 +261,6 @@ class AuthStateNotifier extends Notifier<AuthStatus> {
   }
 
   Future<void> deleteAccount({String? password}) async {
-    print('[AUTH] AuthStateNotifier.deleteAccount called');
     final current = state;
     final String? uid = current is AuthSignedIn ? current.user.id : null;
     final repo = ref.read(authRepositoryProvider);

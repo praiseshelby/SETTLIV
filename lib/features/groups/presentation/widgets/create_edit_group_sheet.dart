@@ -4,6 +4,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/name_normalizer.dart';
 import '../../../../core/widgets/adaptive_presenter.dart';
+import '../../../../core/widgets/form_sheet_scaffold.dart';
 import '../../../../core/widgets/glass_segmented.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/group_cover_art.dart';
@@ -105,6 +106,12 @@ class _CreateEditGroupSheetState extends ConsumerState<CreateEditGroupSheet> {
     final rawName = _memberNameController.text.trim();
     if (rawName.isEmpty) {
       setState(() => _memberError = 'Name is required');
+      return;
+    }
+    final upiTrimmed = _memberUpiController.text.trim();
+    if (upiTrimmed.isNotEmpty &&
+        !RegExp(r'^[\w.\-]+@[\w\-]+$').hasMatch(upiTrimmed)) {
+      setState(() => _memberError = 'Invalid UPI ID format (e.g. name@bank)');
       return;
     }
     final normalized = NameNormalizer.normalize(rawName);
@@ -229,9 +236,12 @@ class _CreateEditGroupSheetState extends ConsumerState<CreateEditGroupSheet> {
       memberIds: _memberIds,
     );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
+    return FormSheetScaffold(
+      bottomBar: PrimaryButton(
+        label: widget.initialGroup != null ? 'Save changes' : 'Create group',
+        onPressed: _onSave,
+      ),
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Live Cover Swatch Preview
@@ -495,13 +505,6 @@ class _CreateEditGroupSheetState extends ConsumerState<CreateEditGroupSheet> {
               ),
             ),
           ],
-          const SizedBox(height: 24),
-
-          // Save Button
-          PrimaryButton(
-            label: widget.initialGroup != null ? 'Save changes' : 'Create group',
-            onPressed: _onSave,
-          ),
         ],
       ),
     );

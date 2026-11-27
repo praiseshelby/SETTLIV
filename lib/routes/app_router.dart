@@ -50,7 +50,6 @@ GoRouter createAppRouter({
     final isPublicRoute = isAuthRoute || loc == '/privacy';
     final pendingOAuth = hasPendingOAuthCode?.call() ??
         (Uri.base.queryParameters['code']?.isNotEmpty == true);
-    print('[AUTH] router redirect from=${state.uri} status=$status pendingOAuth=$pendingOAuth');
 
     if (status is AuthLoading || (status is AuthSignedOut && pendingOAuth && !isAuthRoute)) {
       if (isLoadingRoute) return null;
@@ -373,7 +372,6 @@ class _AuthLoadingScreenState extends ConsumerState<_AuthLoadingScreen> {
     super.initState();
     _timeoutTimer = Timer(const Duration(seconds: 6), () {
       if (!mounted) return;
-      print('[AUTH] /auth-loading 6s timeout -> forceSignedOut & /welcome');
       ref.read(authStateProvider.notifier).forceSignedOut();
       replaceUrlToWelcome();
       context.go('/welcome');
@@ -388,7 +386,6 @@ class _AuthLoadingScreenState extends ConsumerState<_AuthLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('[AUTH] /auth-loading build');
     return Scaffold(
       backgroundColor: context.settliv.canvas,
       body: const Center(child: CircularProgressIndicator()),

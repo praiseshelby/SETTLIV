@@ -324,7 +324,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _selectedGroupId = result.inferredGroup!.id;
     }
     _selectedMemberIds = result.participants.map((p) => p.id).toSet();
-    _paidById = result.payerId ?? SeedData.currentUserId;
+    _paidById = result.payerId ?? ref.read(appRepositoryProvider).currentUserId;
     _splitMode = SplitMode.equal;
     _rebuildSplitControllers();
 
@@ -602,7 +602,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       return;
     }
     final memberIds = parseResult.participants.map((p) => p.id).toList();
-    final payerId = parseResult.payerId ?? SeedData.currentUserId;
+    final payerId =
+        parseResult.payerId ?? ref.read(appRepositoryProvider).currentUserId;
     final shares = SplitCalculator.splitEqual(
       totalPaise: parseResult.amountPaise!,
       memberIds: memberIds,

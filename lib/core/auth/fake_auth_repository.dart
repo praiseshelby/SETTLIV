@@ -208,6 +208,31 @@ class FakeAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> updateDisplayName(String displayName) async {
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return;
+    final status = _status;
+    if (status is AuthSignedIn) {
+      final u = status.user;
+      final updated = AuthUser(
+        id: u.id,
+        displayName: trimmed,
+        username: u.username,
+        email: u.email,
+        provider: u.provider,
+        lastLoginAtMs: u.lastLoginAtMs,
+        layout: u.layout,
+        onboarded: u.onboarded,
+        upiId: u.upiId,
+        schemaVersion: u.schemaVersion,
+        profileWarning: u.profileWarning,
+        isNewProfile: u.isNewProfile,
+      );
+      _emit(AuthSignedIn(updated));
+    }
+  }
+
   void dispose() {
     _controller.close();
   }

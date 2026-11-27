@@ -207,4 +207,6 @@ abstract class AuthRepository {
   Future<void> deleteAccount({String? password});
 
   Future<void> markOnboarded();
+
+  Future<void> updateDisplayName(String displayName);
 }

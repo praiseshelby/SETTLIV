@@ -286,7 +286,6 @@ class AccountSettingsSection extends ConsumerWidget {
                       foregroundColor: theme.primaryButtonText,
                     ),
                     onPressed: () async {
-                      print('[AUTH] signOut tapped');
                       final router = GoRouter.of(context);
                       final navigator = Navigator.of(context);
                       if (navigator.canPop()) navigator.pop();
@@ -352,7 +351,6 @@ class _DeleteAccountBodyState extends ConsumerState<_DeleteAccountBody> {
       return;
     }
 
-    print('[AUTH] deleteAccount tapped');
     setState(() {
       _isDeleting = true;
       _error = null;
@@ -372,7 +370,9 @@ class _DeleteAccountBodyState extends ConsumerState<_DeleteAccountBody> {
         const SnackBar(content: Text('Account and data deleted')),
       );
     } catch (e, st) {
-      print('[AUTH] deleteAccount error: $e\n$st');
+      if (kDebugMode) {
+        debugPrint('Delete account error: $e\n$st');
+      }
       if (mounted) {
         setState(() {
           _isDeleting = false;

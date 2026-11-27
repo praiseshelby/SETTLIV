@@ -40,7 +40,6 @@ class SupabaseAuthRepository implements AuthRepository {
     final stream = authStateStreamOverride ?? _client.auth.onAuthStateChange;
     _sub = stream.listen((data) {
       final session = data.session;
-      print('[AUTH] onAuthStateChange event=${data.event.name} session=${session != null}');
       if (session == null) {
         if (_status is! AuthConfirmationPending) {
           _emit(const AuthSignedOut());
@@ -61,7 +60,6 @@ class SupabaseAuthRepository implements AuthRepository {
   AuthStatus get currentStatus => _status;
 
   void _emit(AuthStatus next) {
-    print('[AUTH] _emit -> $next');
     _status = next;
     _controller.add(next);
   }
@@ -156,7 +154,9 @@ class SupabaseAuthRepository implements AuthRepository {
     final username = isUsername ? sbUser.email!.split('@').first : null;
     final realEmail = isUsername ? null : sbUser.email;
     final fallbackName = username ??
-        (realEmail != null ? realEmail.split('@').first : 'Settliv User');
+        (realEmail != null && realEmail.contains('@')
+            ? realEmail.split('@').first
+            : 'You');
     final fallbackDisplayName =
         (metaName != null && metaName.trim().isNotEmpty)
             ? metaName.trim()
@@ -427,11 +427,12 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    print('[AUTH] SupabaseAuthRepository.signOut called');
     try {
       await _client.auth.signOut();
     } catch (e, st) {
-      print('[AUTH] SupabaseAuthRepository.signOut error: $e\n$st');
+      if (kDebugMode) {
+        debugPrint('SupabaseAuthRepository.signOut error: $e\n$st');
+      }
     } finally {
       _emit(const AuthSignedOut());
     }
@@ -439,7 +440,6 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> deleteAccount({String? password}) async {
-    print('[AUTH] SupabaseAuthRepository.deleteAccount called');
     final current = _client.auth.currentUser;
     if (current == null) {
       throw const AuthFriendlyException('You are not signed in.');
@@ -463,14 +463,56 @@ class SupabaseAuthRepository implements AuthRepository {
       try {
         await _client.auth.signOut();
       } catch (e, st) {
-        print('[AUTH] post-delete signOut error: $e\n$st');
+        if (kDebugMode) {
+          debugPrint('post-delete signOut error: $e\n$st');
+        }
       }
       _emit(const AuthSignedOut());
     } catch (e, st) {
-      print('[AUTH] SupabaseAuthRepository.deleteAccount error: $e\n$st');
+      if (kDebugMode) {
+        debugPrint('SupabaseAuthRepository.deleteAccount error: $e\n$st');
+      }
       final mapped = AuthErrorMapper.map(e);
       if (mapped != null) throw AuthFriendlyException(mapped);
       throw const AuthFriendlyException('Could not delete account. Please try again.');
+    }
+  }
+
+  @override
+  Future<void> updateDisplayName(String displayName) async {
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return;
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      await _client
+          .from('profiles')
+          .update({'display_name': trimmed}).eq('id', uid);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('SupabaseAuthRepository.updateDisplayName error: $e\n$st');
+      }
+    }
+    if (_status is AuthSignedIn) {
+      final u = (_status as AuthSignedIn).user;
+      _emit(
+        AuthSignedIn(
+          AuthUser(
+            id: u.id,
+            displayName: trimmed,
+            username: u.username,
+            email: u.email,
+            provider: u.provider,
+            lastLoginAtMs: u.lastLoginAtMs,
+            layout: u.layout,
+            onboarded: u.onboarded,
+            upiId: u.upiId,
+            schemaVersion: u.schemaVersion,
+            profileWarning: u.profileWarning,
+            isNewProfile: u.isNewProfile,
+          ),
+        ),
+      );
     }
   }
 

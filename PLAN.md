@@ -839,3 +839,15 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 - **Steps 4–6 Real Screens**: Added `GroupDetailScreen(groupId: 'group_goa')` + `SettleSheet` (`"Try it"` opens simulated UPI without external `launchUrl` inside `TourScope`), `ActivityScreen` / `RecordsWebView`, and `InsightsScreen` / `InsightsWebView` inside the isolated sandbox `ProviderScope` + `TourScope`.
 - **Signed-up Exit & Guest End Sheet**: Added 500ms Finish / 300ms Skip settle-fade exit (reduced-motion safe) with `"Add first expense"` / `"Go to Home"`, plus `_GuestEndSheet` (`"Keep what you build."`, `SettleOrbitMotifPainter`, `"Create account"`, `"Sign in"`, `"Continue exploring"`, Back/Esc handling, double-tap guard).
 - **Tests**: Added `test/onboarding_final_test.dart` covering the full 6-step signed-up tour (zero real-repo writes) and guest end-sheet flow.
+
+---
+
+## P0: Baseline + Identity + Demo Data Separation (`p0-baseline-identity`)
+- **Markers & Cleanup**: Removed temporary `[BUILD]`/`[AUTH]` prints; added `kBuildMarker = 'p0-baseline-identity'` in `lib/main.dart`.
+- **Demo Purge & Profile Identity**: Added `startEmpty` + `initialUser` to `PersistentAppRepository` and `SupabaseLedgerRepository` so signed-in accounts never load `SeedData` (`Arjun`/`Meera`/`Kabir`), replaced `SeedData.currentUserId` fallbacks in `add_expense_screen.dart` with `appRepositoryProvider.currentUserId`, added `updateDisplayName` synced to `profiles`, hid `"Start fresh"` / `"Reset demo data"` for signed-in users in Settings, and added `test/p0_identity_isolation_test.dart`.
+
+---
+
+## P1: Groups UX + Mobile Sheet Bug (`p1-groups-sheets`)
+- **`GroupHubCard`**: Removed `"Details"` button, made entire card a single tap/Enter target with pointer cursor and semantics button role while preserving Settle/Nudge/Add handlers.
+- **`FormSheetScaffold`**: Added shared `FormSheetScaffold` (scrollable body, keyboard `viewInsets` + safe-area handling, sticky bottom action bar), moved `CreateEditGroupSheet` and `CreateEditIouSheet` onto it, added inline UPI validation on manual member add, and added `test/p1_groups_sheet_test.dart`.

@@ -7,6 +7,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/name_normalizer.dart';
 import '../../../core/widgets/adaptive_presenter.dart';
+import '../../../core/widgets/form_sheet_scaffold.dart';
 import '../../../core/widgets/glass_segmented.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/primary_button.dart';
@@ -125,9 +126,12 @@ class _CreateEditIouSheetState extends ConsumerState<CreateEditIouSheet> {
     final paise = CurrencyFormatter.parseToPaise(_amountController.text);
     final amountInvalid = paise == null || paise <= 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
+    return FormSheetScaffold(
+      bottomBar: PrimaryButton(
+        label: widget.initialNote != null ? 'Save changes' : 'Add IOU',
+        onPressed: _onSave,
+      ),
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Direction selector
@@ -297,13 +301,6 @@ class _CreateEditIouSheetState extends ConsumerState<CreateEditIouSheet> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-
-          // Primary action
-          PrimaryButton(
-            label: widget.initialNote != null ? 'Save changes' : 'Add IOU',
-            onPressed: _onSave,
           ),
         ],
       ),

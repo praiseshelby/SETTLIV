@@ -49,12 +49,25 @@ class AppStateNotifier extends Notifier<int> {
 
     if (authStatus is AuthSignedIn) {
       _hadSignedInUser = true;
+      final authUser = authStatus.user;
+      final profileName = authUser.displayName.trim().isNotEmpty
+          ? authUser.displayName.trim()
+          : (authUser.username ??
+              (authUser.email != null && authUser.email!.contains('@')
+                  ? authUser.email!.split('@').first
+                  : 'You'));
+      final profilePerson = Person(
+        id: authUser.id,
+        name: profileName,
+        upiId: authUser.upiId,
+      );
       if (SupabaseConfig.isSupabaseConfigured && SupabaseConfig.isInitialized) {
         var disposed = false;
         ref.onDispose(() => disposed = true);
         final sbRepo = SupabaseLedgerRepository(
           client: Supabase.instance.client,
-          uid: authStatus.user.id,
+          uid: authUser.id,
+          initialUser: profilePerson,
           prefs: prefs,
           onRemoteChange: () {
             Future.microtask(() {
@@ -75,7 +88,9 @@ class AppStateNotifier extends Notifier<int> {
       } else {
         repository = PersistentAppRepository(
           prefs: prefs,
-          storageKey: 'settliv_ledger_uid_${authStatus.user.id}',
+          storageKey: 'settliv_ledger_uid_${authUser.id}',
+          startEmpty: true,
+          initialUser: profilePerson,
         );
       }
     } else if (authStatus is AuthSignedOut && _hadSignedInUser) {
@@ -84,8 +99,8 @@ class AppStateNotifier extends Notifier<int> {
       final cleanRepo = PersistentAppRepository(
         prefs: null,
         storageKey: 'settliv_signed_out_empty',
+        startEmpty: true,
       );
-      cleanRepo.startFresh();
       repository = cleanRepo;
     } else {
       // Guest mode or standalone widget tests
