@@ -515,8 +515,20 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
   }
 
   @override
-  void updateCurrentUser({String? name, String? upiId}) {
-    super.updateCurrentUser(name: name, upiId: upiId);
+  void updateCurrentUser({
+    String? name,
+    String? upiId,
+    String? avatarKind,
+    String? avatarRef,
+    bool clearAvatarRef = false,
+  }) {
+    super.updateCurrentUser(
+      name: name,
+      upiId: upiId,
+      avatarKind: avatarKind,
+      avatarRef: avatarRef,
+      clearAvatarRef: clearAvatarRef,
+    );
     final updated = currentUser;
     if (updated != null) {
       final nowMs = DateTime.now().millisecondsSinceEpoch;
