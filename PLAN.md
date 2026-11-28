@@ -864,3 +864,33 @@ Project root: C:\Users\shelb\Downloads\SETTLIV-X. Never read, write or run anyth
 - **Constants & Counter**: Added `GuestLimits` (`softLimit = 5`, `hardLimit = 12`, `prefsKey`) and `GuestWriteCountNotifier` in `lib/core/auth/guest_limits.dart`, persisted locally via `SharedPreferences`, bypassed in `TourScope` and for `AuthSignedIn`, and cleared on sign-in/sign-up in `AuthStateNotifier`.
 - **Prompt Sheet & Write Guards**: Added compact glass `GuestLimitSheet` (`"Create an account to keep going."` with `Create account`, `Sign in`, and conditional `Not now` at soft limit only) and wired `GuestWriteGuard` into `AddExpenseScreen`, `CreateEditGroupSheet`, `SettleSheet`, `MarkReceivedSheet`, `BalancesScreen`, `PlanScreen`, and `SavingsGoalsSection`.
 - **Build Marker & Tests**: Set `kBuildMarker = 'p3-guest-limits'` in `lib/main.dart` and added `test/p3_guest_limits_test.dart`.
+
+---
+
+## P4: Sharing Design (`p4-sharing-design`)
+- **Design Doc Only**: Audited `SupabaseLedgerRepository` and models (`Group`, `Person`, `Expense`, `Settlement`, `IouNote`, `RecurringTemplate`) and wrote `docs/SHARING_DESIGN.md` covering multi-user schema, non-recursive RLS helpers, migration backfill, join codes + rate limiting, username search RPC, 14-day invites, roles/leave-at-zero rule, placeholder claiming, `BalanceEngine` parity, failure modes, and Realtime + resume/pull-to-refresh strategy.
+
+---
+
+## P5: Sharing Backend (`p5-sharing-backend`)
+- **Migration 004**: Added `supabase/migrations/202611270004_sharing.sql` (`group_members`, `group_invites`, `group_join_attempts`, `profiles.allow_username_invites`, `groups.owner_id`/`join_code`/`join_code_enabled`, `people.linked_user_id`, non-recursive `is_group_member`/`is_group_admin` helpers, backfill, RLS policies, and `rpc_*` functions).
+- **Models & Repositories**: Added `lib/data/models/sharing_models.dart`, extended `Group` & `Person`, added `SharingRepository` (`InMemorySharingRepository` + `SupabaseSharingRepository` + providers) in `lib/data/repositories/sharing_repository.dart`, and updated `SupabaseLedgerRepository` for shared queries + Realtime subscriptions.
+- **Build Marker & Tests**: Set `kBuildMarker = 'p5-sharing-backend'` in `lib/main.dart` and added `test/p5_sharing_backend_test.dart`.
+
+---
+
+## P6: Sharing UI (`p6-sharing-ui`)
+- **Group Sharing & Join/Invites Sheets**: Added `GroupSharingSheet` (`lib/features/group_detail/sheets/group_sharing_sheet.dart`) for join code copy/toggle/regenerate, `@username` search + invite, pending invite cancel, member removal, and leave-group; added `JoinGroupSheet` (with `"I'm already listed as..."` placeholder claiming) and `InvitesInboxSheet` (`lib/features/groups/presentation/widgets/join_and_invites_sheets.dart`).
+- **Entry Points & Settings**: Wired `GroupSharingSheet` into `GroupDetailScreen` and `GroupDetailWebView`, `InvitesInboxSheet` (with badge) and `JoinGroupSheet` into `GroupsScreen`, and `"Allow username invites"` toggle into `SettingsScreen`.
+- **Build Marker & Tests**: Set `kBuildMarker = 'p6-sharing-ui'` in `lib/main.dart` and added `test/p6_sharing_ui_test.dart`.
+
+---
+
+## P7: Refresh & Sync Polish (`p7-refresh-polish`)
+- **Pull-to-Refresh & App Resume**: Added `refreshFromRemoteIfSupported()` on `AppStateNotifier`, wired `RefreshIndicator.adaptive` into `ScreenScaffold` and `GroupDetailScreen`, and added `WidgetsBindingObserver` resume refresh in `SettlivApp` (`lib/main.dart`).
+- **Build Marker & Tests**: Set `kBuildMarker = 'p7-refresh-polish'` in `lib/main.dart` and added `test/p7_refresh_sync_test.dart`.
+
+---
+
+## P8: Final QA & Release Verification (`p8-final-qa`)
+- **Final Marker & Parity Check**: Verified imports and wiring across P0–P8 modules (`guest_limits`, `sharing_repository`, `GroupSharingSheet`, `JoinGroupSheet`, `InvitesInboxSheet`, `AvatarPickerSheet`, `FormSheetScaffold`, `ScreenScaffold` refresh), set `kBuildMarker = 'p8-final-qa'` in `lib/main.dart`, and prepared final PowerShell verification commands for local execution.

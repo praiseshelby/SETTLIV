@@ -11,6 +11,7 @@ class Person {
   final int avatarPairIndex; // 0..7 index for theme.avatarGradients
   final String avatarKind; // 'initials' | 'stock' | 'upload'
   final String? avatarRef;
+  final String? linkedUserId;
 
   const Person({
     required this.id,
@@ -21,6 +22,7 @@ class Person {
     this.avatarPairIndex = 0,
     this.avatarKind = 'initials',
     this.avatarRef,
+    this.linkedUserId,
   });
 
   String get initials {
@@ -39,6 +41,7 @@ class Person {
     int? avatarPairIndex,
     String? avatarKind,
     String? avatarRef,
+    String? linkedUserId,
     bool clearAvatarRef = false,
   }) {
     return Person(
@@ -50,6 +53,7 @@ class Person {
       avatarPairIndex: avatarPairIndex ?? this.avatarPairIndex,
       avatarKind: avatarKind ?? this.avatarKind,
       avatarRef: clearAvatarRef ? null : (avatarRef ?? this.avatarRef),
+      linkedUserId: linkedUserId ?? this.linkedUserId,
     );
   }
 

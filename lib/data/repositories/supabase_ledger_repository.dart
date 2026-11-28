@@ -261,12 +261,12 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
 
   Future<void> refreshFromRemote() async {
     final results = await Future.wait([
-      _client.from('people').select().eq('user_id', uid),
-      _client.from('groups').select().eq('user_id', uid),
-      _client.from('expenses').select().eq('user_id', uid),
-      _client.from('settlements').select().eq('user_id', uid),
+      _client.from('people').select(),
+      _client.from('groups').select(),
+      _client.from('expenses').select(),
+      _client.from('settlements').select(),
       _client.from('ious').select().eq('user_id', uid),
-      _client.from('recurring').select().eq('user_id', uid),
+      _client.from('recurring').select(),
       _client.from('goals').select().eq('user_id', uid),
     ]);
 
@@ -276,6 +276,7 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
               name: r['name'] as String,
               upiId: r['upi_id'] as String?,
               phone: r['phone'] as String?,
+              linkedUserId: r['linked_user_id'] as String?,
             ))
         .toList();
 
@@ -300,7 +301,11 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
                 'endDate': DateTime.fromMillisecondsSinceEpoch(
                         (r['trip_end_ms'] as num).toInt())
                     .toIso8601String(),
-            }))
+            }).copyWith(
+              ownerId: r['owner_id'] as String?,
+              joinCode: r['join_code'] as String?,
+              joinCodeEnabled: (r['join_code_enabled'] as bool?) ?? true,
+            ))
         .toList();
 
     final expenses = (results[2] as List)
@@ -425,14 +430,32 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: uid,
-        ),
-        callback: (_) {
-          refreshFromRemote().catchError((_) {});
-        },
+        table: 'expenses',
+        callback: (_) => refreshFromRemote().catchError((_) {}),
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'settlements',
+        callback: (_) => refreshFromRemote().catchError((_) {}),
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'groups',
+        callback: (_) => refreshFromRemote().catchError((_) {}),
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'group_members',
+        callback: (_) => refreshFromRemote().catchError((_) {}),
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'group_invites',
+        callback: (_) => onRemoteChange?.call(),
       )
       ..subscribe();
   }
@@ -565,22 +588,34 @@ class SupabaseLedgerRepository extends PersistentAppRepository {
   void addGroup(Group group) {
     super.addGroup(group);
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    _syncMutation(() => _client.from('groups').upsert({
-          'user_id': uid,
-          'id': group.id,
-          'name': group.name,
-          'type': group.type.name,
-          'cover_type': group.coverType.name,
-          'member_ids': group.memberIds,
-          'is_personal': group.isPersonal,
-          'is_pinned': group.isPinned,
-          'is_archived': group.isArchived,
-          'default_split_mode': group.defaultSplitMode,
-          'trip_start_ms': group.startDate?.millisecondsSinceEpoch,
-          'trip_end_ms': group.endDate?.millisecondsSinceEpoch,
-          'schema_version': PersistentAppRepository.schemaVersion,
-          'updated_at_ms': nowMs,
-        }));
+    _syncMutation(() async {
+      await _client.from('groups').upsert({
+        'user_id': uid,
+        'owner_id': group.ownerId ?? uid,
+        'id': group.id,
+        'name': group.name,
+        'type': group.type.name,
+        'cover_type': group.coverType.name,
+        'member_ids': group.memberIds,
+        'is_personal': group.isPersonal,
+        'is_pinned': group.isPinned,
+        'is_archived': group.isArchived,
+        'default_split_mode': group.defaultSplitMode,
+        'trip_start_ms': group.startDate?.millisecondsSinceEpoch,
+        'trip_end_ms': group.endDate?.millisecondsSinceEpoch,
+        'schema_version': PersistentAppRepository.schemaVersion,
+        'updated_at_ms': nowMs,
+      });
+      if (!group.isPersonal) {
+        try {
+          await _client.from('group_members').upsert({
+            'group_id': group.id,
+            'user_id': uid,
+            'role': 'owner',
+          });
+        } catch (_) {}
+      }
+    });
   }
 
   void dispose() {

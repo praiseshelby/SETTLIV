@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/repositories/in_memory_app_repository.dart';
 import '../profile/experience_mode.dart';
 import '../theme/app_theme.dart';
 import 'aurora_background.dart';
@@ -41,7 +42,10 @@ class ScreenScaffold extends ConsumerWidget {
       backgroundColor: theme.transparent,
       floatingActionButton: floatingActionButton,
       body: AuroraBackground(
-        child: CustomScrollView(
+        child: RefreshIndicator.adaptive(
+          onRefresh: () =>
+              ref.read(appStateProvider.notifier).refreshFromRemoteIfSupported(),
+          child: CustomScrollView(
           controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -76,6 +80,7 @@ class ScreenScaffold extends ConsumerWidget {
               child: SizedBox(height: bottomScrollPadding),
             ),
           ],
+        ),
         ),
       ),
     );

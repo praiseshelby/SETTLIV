@@ -21,7 +21,9 @@ import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/person_avatar.dart';
 import '../../../../core/widgets/screen_header.dart';
 import '../../../../core/widgets/screen_scaffold.dart';
+import '../../../../data/models/sharing_models.dart';
 import '../../../../data/repositories/in_memory_app_repository.dart';
+import '../../../../data/repositories/sharing_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final String? initialSection;
@@ -50,6 +52,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _highlightExperience = false;
   bool _isEditingProfile = false;
   String? _upiError;
+  bool _allowUsernameInvites = true;
+  bool _savingInvitePref = false;
 
   @override
   void initState() {
@@ -60,12 +64,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _upiController = TextEditingController(text: user?.upiId ?? '');
     _scrollController = ScrollController();
     _selectedNavSection = widget.initialSection ?? 'appearance';
+    _loadInvitePref();
 
     if (widget.initialSection != null) {
       if (_selectedNavSection == 'experience') {
         _highlightExperience = true;
       }
       _scrollToSection(_selectedNavSection);
+    }
+  }
+
+  Future<void> _loadInvitePref() async {
+    try {
+      final allowed =
+          await ref.read(sharingRepositoryProvider).getAllowUsernameInvites();
+      if (mounted) setState(() => _allowUsernameInvites = allowed);
+    } catch (_) {}
+  }
+
+  Future<void> _toggleAllowUsernameInvites(bool value) async {
+    if (_savingInvitePref) return;
+    final prev = _allowUsernameInvites;
+    setState(() {
+      _savingInvitePref = true;
+      _allowUsernameInvites = value;
+    });
+    try {
+      await ref.read(sharingRepositoryProvider).setAllowUsernameInvites(value);
+    } on SharingException catch (e) {
+      if (mounted) {
+        setState(() => _allowUsernameInvites = prev);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _allowUsernameInvites = prev);
+    } finally {
+      if (mounted) setState(() => _savingInvitePref = false);
     }
   }
 
@@ -631,6 +667,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onPressed: _saveProfile,
                         child: const Text('Save Profile'),
                       ),
+                    ),
+                  ],
+                  if (isSignedIn) ...[
+                    const SizedBox(height: 12),
+                    Divider(color: theme.hairline, height: 1),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Allow username invites',
+                        style: AppTypography.bodySemiBold
+                            .copyWith(color: theme.ink),
+                      ),
+                      subtitle: Text(
+                        'Let others find you by @username to invite you to groups',
+                        style: AppTypography.caption
+                            .copyWith(color: theme.muted),
+                      ),
+                      value: _allowUsernameInvites,
+                      onChanged:
+                          _savingInvitePref ? null : _toggleAllowUsernameInvites,
                     ),
                   ],
                 ],

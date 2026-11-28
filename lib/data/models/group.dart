@@ -27,6 +27,9 @@ class Group {
   final DateTime? createdAt;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? ownerId;
+  final String? joinCode;
+  final bool joinCodeEnabled;
 
   const Group({
     required this.id,
@@ -40,6 +43,9 @@ class Group {
     this.createdAt,
     this.startDate,
     this.endDate,
+    this.ownerId,
+    this.joinCode,
+    this.joinCodeEnabled = true,
     GroupCoverType? coverType,
   }) : assert(coverThemeIndex >= 0 && coverThemeIndex < 6);
 
@@ -65,6 +71,9 @@ class Group {
     DateTime? createdAt,
     DateTime? startDate,
     DateTime? endDate,
+    String? ownerId,
+    String? joinCode,
+    bool? joinCodeEnabled,
     GroupCoverType? coverType,
   }) {
     return Group(
@@ -82,6 +91,9 @@ class Group {
       createdAt: createdAt ?? this.createdAt,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      ownerId: ownerId ?? this.ownerId,
+      joinCode: joinCode ?? this.joinCode,
+      joinCodeEnabled: joinCodeEnabled ?? this.joinCodeEnabled,
     );
   }
 

@@ -20,6 +20,7 @@ import '../../../../data/models/expense.dart';
 import '../../../../data/models/group.dart';
 import '../../../../data/models/person.dart';
 import '../../sheets/edit_group_sheet.dart';
+import '../../sheets/group_sharing_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/mark_received_sheet.dart';
 import '../../sheets/nudge_sheet.dart';
@@ -158,42 +159,86 @@ class GroupDetailWebView extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Edit group button
+                // Share & Edit group buttons
                 if (!group.isPersonal)
-                  InkWell(
-                    onTap: () => EditGroupSheet.show(context: context, group: group),
-                    borderRadius: BorderRadius.circular(12),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.surface.withValues(alpha: 0.75),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: theme.hairline),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.settings_outlined, size: 16, color: theme.ink),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Edit',
-                                style: AppTypography.bodySemiBold.copyWith(
-                                  color: theme.ink,
-                                  fontSize: 13,
-                                ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => GroupSharingSheet.show(
+                          context: context,
+                          group: group,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
                               ),
-                            ],
+                              decoration: BoxDecoration(
+                                color: theme.surface.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: theme.hairline),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.group_add_rounded, size: 16, color: theme.ink),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Share',
+                                    style: AppTypography.bodySemiBold.copyWith(
+                                      color: theme.ink,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => EditGroupSheet.show(context: context, group: group),
+                        borderRadius: BorderRadius.circular(12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.surface.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: theme.hairline),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.settings_outlined, size: 16, color: theme.ink),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Edit',
+                                    style: AppTypography.bodySemiBold.copyWith(
+                                      color: theme.ink,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),

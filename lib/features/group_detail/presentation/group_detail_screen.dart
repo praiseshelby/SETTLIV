@@ -29,6 +29,7 @@ import '../sheets/settle_sheet.dart';
 import '../sheets/mark_received_sheet.dart';
 import '../sheets/nudge_sheet.dart';
 import '../sheets/edit_group_sheet.dart';
+import '../sheets/group_sharing_sheet.dart';
 import '../../onboarding/domain/tour_scope.dart';
 import 'widgets/balance_bars_chart.dart';
 import 'widgets/category_donut_chart.dart';
@@ -153,7 +154,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
         backgroundColor: theme.transparent,
         body: Stack(
           children: [
-            CustomScrollView(
+            RefreshIndicator.adaptive(
+              onRefresh: () => ref
+                  .read(appStateProvider.notifier)
+                  .refreshFromRemoteIfSupported(),
+              child: CustomScrollView(
               controller: _scrollController,
               slivers: [
                 // Collapsing SliverAppBar
@@ -198,7 +203,33 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     ),
                   ),
                   actions: [
-                    if (!group.isPersonal)
+                    if (!group.isPersonal) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Center(
+                          child: Semantics(
+                            button: true,
+                            label: 'Members and sharing',
+                            child: InkWell(
+                              onTap: () => GroupSharingSheet.show(
+                                context: context,
+                                group: group,
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                              child: GlassSurface(
+                                level: GlassLevel.level1,
+                                borderRadius: 999,
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  Icons.group_add_rounded,
+                                  color: theme.ink,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Center(
@@ -225,6 +256,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           ),
                         ),
                       ),
+                    ],
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
@@ -535,6 +567,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   child: SizedBox(height: 120),
                 ),
               ],
+            ),
             ),
 
             // Sticky Bottom Actions: Floating Add Button & Settle up CTA

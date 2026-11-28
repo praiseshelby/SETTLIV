@@ -24,7 +24,7 @@ import 'intro_handshake_stub.dart'
 import 'routes/app_router.dart';
 import 'supabase_config.dart';
 
-const String kBuildMarker = 'p3-guest-limits';
+const String kBuildMarker = 'p8-final-qa';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,7 +106,8 @@ class SettlivApp extends ConsumerStatefulWidget {
   ConsumerState<SettlivApp> createState() => _SettlivAppState();
 }
 
-class _SettlivAppState extends ConsumerState<SettlivApp> {
+class _SettlivAppState extends ConsumerState<SettlivApp>
+    with WidgetsBindingObserver {
   late bool _revealReady;
   bool _postRevealLite = false;
   Timer? _liteTimer;
@@ -116,6 +117,7 @@ class _SettlivAppState extends ConsumerState<SettlivApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _revealReady = !isIntroRevealSupported;
     if (!_revealReady) {
       listenForIntroReveal(() {
@@ -136,7 +138,20 @@ class _SettlivAppState extends ConsumerState<SettlivApp> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(
+        ref
+            .read(appStateProvider.notifier)
+            .refreshFromRemoteIfSupported()
+            .catchError((_) {}),
+      );
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _liteTimer?.cancel();
     _authRefresh.dispose();
     super.dispose();

@@ -13,8 +13,10 @@ import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/screen_scaffold.dart';
 import '../../../data/models/group.dart';
 import '../../../data/repositories/in_memory_app_repository.dart';
+import '../../../data/repositories/sharing_repository.dart';
 import 'widgets/create_edit_group_sheet.dart';
 import 'widgets/group_hub_card.dart';
+import 'widgets/join_and_invites_sheets.dart';
 
 enum GroupSortOption {
   recent('Recent'),
@@ -129,6 +131,35 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           ),
         ),
         actions: [
+          // Invites inbox button
+          Consumer(
+            builder: (context, ref, _) {
+              final count = ref
+                      .watch(incomingInvitesProvider)
+                      .valueOrNull
+                      ?.length ??
+                  0;
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  child: Icon(
+                    Icons.mail_outline_rounded,
+                    size: 20,
+                    color: theme.ink,
+                  ),
+                ),
+                tooltip: 'Group invites',
+                onPressed: () => InvitesInboxSheet.show(context),
+              );
+            },
+          ),
+          // Join by code button
+          IconButton(
+            icon: Icon(Icons.qr_code_rounded, size: 20, color: theme.ink),
+            tooltip: 'Join with code',
+            onPressed: () => JoinGroupSheet.show(context),
+          ),
           // Search toggle button
           IconButton(
             icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, size: 20),

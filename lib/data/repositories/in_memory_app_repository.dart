@@ -15,6 +15,7 @@ import 'app_repository.dart';
 import '../models/savings_goal.dart';
 import '../models/feedback_report.dart';
 import 'persistent_app_repository.dart';
+import 'sharing_repository.dart';
 import 'supabase_ledger_repository.dart';
 
 // An in-memory implementation that matches AppRepository for tests and fast mocks
@@ -278,6 +279,14 @@ class AppStateNotifier extends Notifier<int> {
   Future<void> deleteAllData() async {
     await repository.deleteAllData();
     notifyChange();
+  }
+
+  Future<void> refreshFromRemoteIfSupported() async {
+    final repo = repository;
+    if (repo is SupabaseLedgerRepository) {
+      await repo.refreshFromRemote();
+    }
+    ref.read(sharingVersionProvider.notifier).state++;
   }
 }
 
